@@ -1,0 +1,80 @@
+﻿ID,分类,功能模块,建议对话框,后端与依赖,必要输入,输出与可视化,阶段,v6.2源码状态
+CORE-01,基础结果,计算结果摘要 Summary,ResultSummaryDialog,Gaussian/ORCA/cclib,有效 log/out,方法、能量、收敛状态、任务信息,P0,旧 UI 有通用入口，未形成结果模型
+CORE-02,基础结果,优化过程 Optimization,OptimizationHistoryDialog,Gaussian/xtb 输出解析,优化多步坐标或日志,能量与力收敛曲线、步骤动画,P1,轨迹工具存在，未统一关联
+CORE-03,基础结果,电子结构结果表 Atom/Bond Properties,AtomBondResultsDialog,解析器和文档映射,带原子标识的输出,原子和键表、定位选择,P0,旧 UI 有属性表
+CORE-04,基础结果,势能扫描 Scan,ScanResultsDialog,Gaussian/xtb 实际扫描输出,扫描点及能量,坐标-能量曲线、最低点,P1,旧入口可能指向示意图
+CORE-05,基础结果,IRC 与反应路径,IRCResultsDialog,Gaussian/ORCA 输出,IRC 路径和能量,双向路径与几何动画,P1,缺专用结果管线
+CORE-06,基础结果,表面与等值线管理,SurfaceManagerDialog,VTK/Cube,带单位与网格变换的体数据,等值面、透明度、色条,P0,有 Cube/轨道显示基础
+WFN-01,波函数,ESP 表面+σ²+、σ²−、ν、Π、MPI,ESPSurfaceAnalysisDialog,Multiwfn + VTK/VMD 可选,fchk/wfn/wfx及电子密度和ESP,BWR 表面、极值点、描述符、可导出图,P1,Multiwfn 未集成
+WFN-02,波函数,HOMO/LUMO 能级与等值面,FrontierOrbitalsDialog,Gaussian/cclib+Multiwfn+VTK,带轨道能量和系数的计算输出,能级图、轨道两相等值面、能隙,P1,已有轨道渲染但缺组合式结果
+WFN-03,波函数,OSC 给体受体能级对比,OSCEnergyComparisonDialog,Results 数据聚合,多个带参考基准的电子结构结果,给体/受体能级图和差值,P1,缺跨分子可追溯模型
+WFN-04,波函数,ELF 电子定域函数,ELFAnalysisDialog,Multiwfn,有效波函数,ELF 等值面与网格,P1,缺
+WFN-05,波函数,LOL 局域轨道定位器,LOLAnalysisDialog,Multiwfn,有效波函数,LOL 等值面与网格,P1,缺
+WFN-06,波函数,Mayer/Wiberg 键级,BondOrderAnalysisDialog,Multiwfn或源引擎,AO 密度矩阵或 NBO 结果,键级矩阵、阈值显示、导出,P1,缺完整结果
+WFN-07,波函数,Hirshfeld 电荷,HirshfeldChargeDialog,Multiwfn,有效波函数与原子密度参考,电荷表、3D 上色,P1,缺
+WFN-08,波函数,ADCH 电荷,ADCHChargeDialog,Multiwfn,有效波函数及对应分析支持,电荷表、3D 上色,P1,缺
+WFN-09,波函数,NPA 自然布居电荷,NPAChargeDialog,Gaussian/NBO 等输出解析,含 NPA/NBO 分析段的源结果,NPA 电荷表及来源,P2,不能假定任意 fchk 都能给出 NPA
+WFN-10,波函数,电子-空穴分布,ElectronHoleDialog,Multiwfn/激发态解析器,激发态波函数或跃迁密度,电子/空穴分布、重叠指标,P1,缺
+WFN-11,波函数,IRI 弱相互作用区域,IRIAnalysisDialog,Multiwfn,有效波函数或支持的密度输入,IRI 等值面及着色,P1,缺
+WFN-12,波函数,NCI/RDG/s(ρ) 图,NCIAnalysisDialog,Multiwfn,密度/密度梯度或波函数,RDG 等值面、sign(λ₂)ρ 配色,P1,缺
+WFN-13,波函数,AIM/QTAIM 拓扑,AIMAnalysisDialog,Multiwfn,波函数/密度,临界点、键径与拓扑指标,P2,缺
+WFN-14,波函数,电荷密度与 Laplacian,DensityLaplacianDialog,Multiwfn/VTK,电子密度或波函数,ρ、∇²ρ 等值面与切片,P1,有轨道/网格基础
+WFN-15,波函数,差分密度与密度重排,DifferenceDensityDialog,Multiwfn/体数据运算,同坐标系的两套可比密度,差分 Cube、正负等值面,P2,缺
+WFN-16,波函数,轨道组成 DOS/PDOS,DOSAnalysisDialog,Multiwfn/源引擎,MO 能量、组成及权重,DOS/PDOS 谱图,P2,缺
+WFN-17,波函数,自旋密度与多参考指标,SpinDensityDialog,Multiwfn/源引擎,开壳层密度或诊断结果,自旋等值面、表格,P2,缺
+PROP-01,分子性质,平面性与二面角分布,PlanarityDialog,NumPy/RDKit,3D 构象及选中原子,拟合平面、RMSD、离面偏差,P1,有角度测量基础
+PROP-02,分子性质,偶极矩矢量,DipoleMomentDialog,计算输出解析,电子结构源结果或清晰定义的电荷模型,矢量箭头、数值、单位,P1,缺系统化结果
+PROP-03,分子性质,SASA 与体积,SurfaceVolumeDialog,RDKit/FreeSASA/MDAnalysis,拓扑、半径、探针半径,面积、体积、参数记录,P1,缺统一算法
+PROP-04,分子性质,logP 模型预测,LogPDialog,RDKit Crippen,合法化学图,估算值、方法与适用范围,P1,缺独立 UI
+PROP-05,分子性质,pKa 模型预测,PkaPredictionDialog,外部经过验证的预测模型,可离子化结构及模型依赖,预测值、不确定性、警告,P2,不能用简单经验值冒充
+PROP-06,分子性质,MW/TPSA/HBD/HBA/可旋转键,DescriptorDashboardDialog,RDKit Descriptors,合法分子图,描述符表格与导出,P0,适合最早建立真实 Results
+PROP-07,分子性质,形状、PMI 与三维描述符,ShapeDescriptorsDialog,RDKit/NumPy,3D 构象,PBF、PMI、回旋半径等,P2,缺
+PROP-08,分子性质,多构象性质比较,ConformerPropertyDialog,RDKit/xtb 结果,多个有来源的构象,能量与描述符分布,P1,有构象工具但缺比较
+INTER-01,分子间作用,EDA 能量分解,EDAAnalysisDialog,SAPT/ALMO-EDA 等专门引擎输出,带明确分解方案的结果,静电、交换、色散、诱导分量,P2,不是普通 fchk 可直接计算
+INTER-02,分子间作用,氢键网络,HydrogenBondDialog,MDAnalysis/几何分析,拓扑、氢、几何与截断参数,交互网络、表格,P1,轨迹基础可复用
+INTER-03,分子间作用,π-π 堆积,PiStackingDialog,RDKit/几何算法,两个芳香环的有向坐标,质心距离、平面角与偏移量,P1,缺
+INTER-04,分子间作用,范德华接触,VDWContactsDialog,KDTree/半径表,两组选区与坐标,接触矩阵、距离直方图,P1,缺
+INTER-05,分子间作用,盐桥与阳离子-π,IonicContactsDialog,几何规则+形式电荷,含电荷/残基的拓扑,候选相互作用及几何证据,P2,缺
+INTER-06,分子间作用,蛋白质-配体接触指纹,InteractionFingerprintDialog,RDKit/MDAnalysis,受体-配体结构及选择,相互作用指纹/热图,P2,缺
+INTER-07,分子间作用,分子配对/结合能比较,BindingEnergyDialog,计算结果比较,明确电荷、自旋、方法、溶剂基准的多任务结果,ΔE 与方法适用性提示,P2,缺
+SPEC-01,光谱,IR 红外与模式动画,IRSpectrumDialog,Gaussian/ORCA/cclib,频率、强度、法向模态,谱图、峰表、振动动画,P1,旧菜单为概要入口
+SPEC-02,光谱,Raman 拉曼,RamanSpectrumDialog,Gaussian/ORCA/cclib,Raman 活性及频率,谱图与模态,P1,缺
+SPEC-03,光谱,UV-Vis/TD-DFT,UVVisSpectrumDialog,Gaussian/ORCA/cclib,激发能、振子强度,展宽谱、跃迁表,P1,有量化日志基础
+SPEC-04,光谱,NMR 化学位移与谱模拟,NMRSpectrumDialog,Gaussian/预测引擎,屏蔽常数或有来源的预测数据,1H/13C 位移与谱图,P2,旧入口缺真实结果模型
+SPEC-05,光谱,CD/ECD 圆二色谱,CDSpectrumDialog,TD-DFT/光谱解析,旋转强度、激发态,ECD 谱、峰归属,P2,缺
+SPEC-06,光谱,ORD 旋光色散,ORDSpectrumDialog,来源引擎结果,波长相关旋光值,ORD 曲线,P2,缺
+SPEC-07,光谱,振电耦合 Vibronic,VibronicSpectrumDialog,专业计算引擎解析,振电分辨跃迁数据,谱线与精细结构,P2,缺
+SPEC-08,光谱,振动模式表与同位素比较,VibrationModeDialog,Gaussian/ORCA 解析,频率计算输出,模式表、同位素对照,P1,旧界面无专用结果
+MD-01,分子动力学,MD 设置向导,MDSetupDialog,GROMACS adapter,力场/拓扑/盒/溶剂/离子,可复核的运行输入、任务,P1,尚无完整 GROMACS 执行链
+MD-02,分子动力学,轨迹播放器,TrajectoryAnalysisDialog,MDAnalysis+VTK,拓扑+轨迹,时间轴、帧、选区联动,P0,已有 TrajectoryWindow 基础
+MD-03,分子动力学,RMSD,RMSDAnalysisDialog,MDAnalysis/GROMACS,拓扑、轨迹、对齐和选择,时间-RMSD 曲线,P1,缺分析 UI
+MD-04,分子动力学,RMSF,RMSFAnalysisDialog,MDAnalysis/GROMACS,轨迹、残基映射、选择,按原子/残基 RMSF,P1,缺
+MD-05,分子动力学,回旋半径 Rg,RadiusGyrationDialog,MDAnalysis/GROMACS,轨迹及质量,Rg-时间曲线,P1,缺
+MD-06,分子动力学,轨迹氢键占有率,MDHydrogenBondDialog,MDAnalysis/GROMACS,轨迹+氢键选择/阈值,数量、寿命、占有率,P1,缺
+MD-07,分子动力学,RDF,RDFDialog,GROMACS/MDAnalysis,轨迹、PBC、选区,g(r)、统计及参数,P1,缺
+MD-08,分子动力学,二面角时间序列,MDDihedralDialog,MDAnalysis/GROMACS,映射到轨迹的四原子序列,角度-时间与分布,P1,缺
+MD-09,分子动力学,能量与温度压力,MDEnergyDialog,GROMACS energy/log,EDR 或结构化输出,能量/温度/压力曲线,P1,缺
+MD-10,分子动力学,构象聚类,MDClusterDialog,MDAnalysis/GROMACS/cpptraj,对齐轨迹、算法参数,聚类、代表帧、分布,P2,缺
+MD-11,分子动力学,PCA 与自由能景观,PCAFELDialog,MDAnalysis/GROMACS,轨迹与特征选择,特征向量、2D PMF,P2,缺
+MD-12,分子动力学,MSD/扩散系数,MSDDialog,GROMACS/MDAnalysis,轨迹、PBC unwrapped、选择,MSD、拟合扩散系数,P2,缺
+MD-13,分子动力学,SASA / 二级结构时间演变,MDSecondaryStructureDialog,GROMACS/MDAnalysis,轨迹与残基拓扑,时间热图、分布,P2,缺
+MD-14,分子动力学,原子接触/盐桥持久性,MDContactsDialog,MDAnalysis/GROMACS,轨迹及双选区,接触占有率/生命周期,P2,缺
+MD-15,分子动力学,伞形采样 WHAM/PMF,UmbrellaPMFDialog,GROMACS WHAM/PLUMED,窗口中心、偏置、温度和采样,PMF、窗口重叠、误差,P2,缺
+MD-16,分子动力学,Metadynamics 重加权,MetaDynamicsDialog,PLUMED,HILLS/COLVAR、CV 与偏置参数,自由能图、收敛/重加权,P2,缺
+MD-17,分子动力学,FEP/TI/BAR/MBAR,AlchemicalFreeEnergyDialog,GROMACS/AMBER+alchemlyb,λ windows、u_nk、热力学参数,ΔG、置信区间、overlap,P2,缺
+MD-18,分子动力学,MM/PBSA 或 MM/GBSA,MMPBSADialog,AmberTools/gmx_MMPBSA 外部,复合物、轨迹、拓扑,分项能量与不确定性,P2,缺
+OSC-01,OSC 专题,D/A 能级真空基准对齐,DAAlignmentDialog,Result comparison,可比参考和来源的多分子结果,对齐图、方法偏差警告,P1,缺
+OSC-02,OSC 专题,电子/空穴转移 NTO,NTOAnalysisDialog,激发态解析+Multiwfn,TDDFT 转换数据,NTO 占据与电子空穴云,P2,缺
+OSC-03,OSC 专题,激子/CT 指标与跃迁密度,ChargeTransferDialog,Multiwfn,激发态计算文件,D_CT、S_r 等有定义的指标,P2,缺
+OSC-04,OSC 专题,重组能 λh/λe,ReorganizationEnergyDialog,多任务结果聚合,中性/带电态不同几何能量,四点法 λ、逐项引用,P2,缺
+OSC-05,OSC 专题,光谱与吸收边比较,OSCOpticalDialog,结果聚合,可比 TDDFT/实验光谱,吸收/发射对照,P2,缺
+OSC-06,OSC 专题,电子耦合与电子转移路径,ElectronicCouplingDialog,外部电子结构计算,二聚体/特定计算协议,耦合数值及方法出处,P2,缺
+DRUG-01,药物化学,Lipinski/Veber/PAINS 快速评估,DrugLikenessDialog,RDKit,标准化结构,规则诊断和警告,P1,缺
+DRUG-02,药物化学,质子化/互变异构体枚举,ProtonationTautomerDialog,RDKit/外部 pKa,结构和 pH 条件,候选微观状态及来源,P2,缺
+DRUG-03,药物化学,ADMET/QSAR 预测,ADMETPredictionDialog,经校验的外部模型,有效分子/模型版本,预测和适用域、置信度,P2,缺
+DRUG-04,药物化学,受体-配体接触与口袋测量,ProteinLigandDialog,MDAnalysis/RDKit,复合物结构,接触、氢键、疏水图,P1,已有 PDB/CIF 基础
+DRUG-05,药物化学,对接结果整理与重评分,DockingReviewDialog,外部 docking engine,多姿势输出/评分,姿势排名、口袋叠合,P2,缺
+INFRA-01,分析工作流,Analysis Registry 目录,AnalysisRegistryDialog,内部框架,功能定义+输入能力,可搜索结果菜单及缺失依赖提示,P0,缺
+INFRA-02,分析工作流,结果图表与论文导出,PublicationExportDialog,matplotlib/SVG/VTK,完整 Results 对象,PNG/SVG/PDF/CSV/JSON 和 provenance,P1,基础导出零散
+INFRA-03,分析工作流,批量分析/高通量运行,BatchAnalysisDialog,任务中心与队列,多个文档、模板化 JobSpec,可追踪结果与汇总,P2,缺
+INFRA-04,分析工作流,AI 辅助分析助手,AIAnalysisAssistantDialog,受限工具/分析器,用户批准的分析数据,建议、解释、来源链接,P2,已有 AI 基础但无结果框架

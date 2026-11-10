@@ -1,0 +1,77 @@
+{
+  "document_name": "test",
+  "revision_at_export": 4,
+  "scope": "current session; document-specific IDs; chronological execute/undo/redo",
+  "events": [
+    {
+      "time_utc": "2026-11-03T11:08:31.744139+00:00",
+      "action": "execute",
+      "command": "AddAtomCommand",
+      "description": "添加原子",
+      "revision": 1,
+      "parameters": {
+        "atomic_num": 6,
+        "explicit_pos": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bond_to": null,
+        "bond_order": 1,
+        "pos_2d": null,
+        "auto_bond_nearest": false
+      }
+    },
+    {
+      "time_utc": "2026-11-03T11:08:31.744512+00:00",
+      "action": "execute",
+      "command": "AddAtomCommand",
+      "description": "添加原子",
+      "revision": 2,
+      "parameters": {
+        "atomic_num": 17,
+        "explicit_pos": null,
+        "bond_to": {
+          "value": 0
+        },
+        "bond_order": 1,
+        "pos_2d": null,
+        "auto_bond_nearest": false
+      }
+    },
+    {
+      "time_utc": "2026-11-03T11:08:31.744634+00:00",
+      "action": "undo",
+      "command": "AddAtomCommand",
+      "description": "添加原子",
+      "revision": 3,
+      "parameters": {
+        "atomic_num": 17,
+        "explicit_pos": null,
+        "bond_to": {
+          "value": 0
+        },
+        "bond_order": 1,
+        "pos_2d": null,
+        "auto_bond_nearest": false
+      }
+    },
+    {
+      "time_utc": "2026-11-03T11:08:31.744694+00:00",
+      "action": "redo",
+      "command": "AddAtomCommand",
+      "description": "添加原子",
+      "revision": 4,
+      "parameters": {
+        "atomic_num": 17,
+        "explicit_pos": null,
+        "bond_to": {
+          "value": 0
+        },
+        "bond_order": 1,
+        "pos_2d": null,
+        "auto_bond_nearest": false
+      }
+    }
+  ]
+}

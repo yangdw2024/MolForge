@@ -1,0 +1,55 @@
+﻿任务ID,阶段,任务,工作流,建议代码位置,依赖任务,交付物,验收/完成条件
+P0-01,P0,建立零改动基线与回滚包,开发基础,main.py+run_molforge.bat+docs,无,Win11 固定环境、SHA256、保存样本,能还原经典三栏并打开历史工程
+P0-02,P0,消除个人 Python 路径,启动,run_molforge.bat,P0-01,venv/配置项/py launcher 可移植启动,启动契约测试通过
+P0-03,P0,统一 main.py 与 scripts/launch.py bootstrap,启动,main.py+scripts/launch.py+新 bootstrap.py,P0-01,同一入口初始化与崩溃日志,两入口进入同一欢迎界面
+P0-04,P0,真实 WelcomeWindow UI,GUI,molforge/ui/welcome_window.py,P0-03,QMainWindow/QDialog 三个入口,点击确实启动新 Qt 工作台
+P0-05,P0,保持 Shell 后端并新增 QMainWindow Adapter,GUI,molforge/ui/shells/*+新 shell_windows/*,P0-04,2D/3D/Split 三个窗口类,三者能显示、保有独立菜单和画布
+P0-06,P0,经典工作台回退入口,兼容,molforge/ui/window.py+ShellFactory,P0-04,Legacy 可从菜单进入,原主界面功能完整不丢
+P0-07,P0,Qt 生命周期、会话解绑与异常恢复,稳定性,window.py+document_session.py+workspace_registry.py,P0-05,owner 绑定、关闭语义、无悬空 listener,反复切换不出现 Python 异常
+P0-08,P0,G:M:V 命名映射与共享编辑事件接线,窗口,gmv_window_manager.py+workspace_registry.py,P0-05,跨 V 的文档/Undo 同步,V1 编辑 V2 可见；V2 撤销一致
+P0-09,P0,建立 Action/Analysis Registry,分析框架,新 results/registry.py+menu_builder.py,P0-05,统一动作 ID、依赖状态、可用输入,Results 全目录能打开实际 Dialog/说明
+P0-10,P0,建立 AnalysisResult、Provenance 与 JobAdapter,分析框架,新 results/models.py+results/storage.py,P0-09,不可变输入 hash、单位、软件版本、revision,旧结果不被当成新分子结果
+P0-11,P0,结果 Summary/Descriptor/轨道与 Cube 基线,科学闭环,qc_result_dialog.py+rdkit_adapter.py,P0-10,至少 3 个真实 Results,数据显示实际输入，非占位值
+P0-12,P0,Gaussian Setup 正式 UI 接线,Gaussian,gaussian_calculation_setup.py+window.py,P0-05,11 Tab Dialog 原样复用,Ctrl+G 打开真实 11 页签对话框
+P0-13,P0,Gaussian 提交执行器与安全验证,Gaussian,gaussian_engine.py+jobs.py+新 adapter,"P0-12,P0-10",完整 job lifecycle、参数/文件验证,无引擎时准确报错，有引擎可获得日志
+P0-14,P0,外部工具发现与环境检查,引擎,新 engines/tool_registry.py,P0-09,Gaussian/xtb/Multiwfn/GROMACS/VMD 探测,不可用功能显示原因而非假数据
+P0-15,P0,VTK 原生单视图+关闭耐久测试,渲染,render3d_widget.py+tests/native,P0-05,界面主线程与资源释放,100 次实际窗口开关，无已知崩溃
+P0-16,P0,轨迹数据线程安全审查与限流,MD,mdanalysis_adapter.py,P0-10,独立读取器或单线程串行、局部时间检查,大轨迹 UI 可响应无竞争
+P0-17,P0,回归 P0 几何、片段事务与旧功能,回归,tests/*,P0-01,取消空测试/复查重要入口,原有编辑、片段、选取、存盘通过
+P0-18,P0,锁定与记录依赖,发布,requirements.txt+环境导出,P0-01,win_amd64+cp313 可复建锁定,干净环境安装结果记录
+P1-01,P1,2D 主窗口工具栏与文件流程齐全,UI,新 studio_2d_window.py,P0-05,独立编辑+环/基团+导入导出,不依赖旧主窗口可完成任务
+P1-02,P1,Split 双画布双向同步,UI,新 studio_split_window.py,P0-08,DocumentSession 共享、去回声,2D 编辑 3D 更新，Undo 一次
+P1-03,P1,3D 专业菜单与对话框驱动,UI,新 studio_3d_window.py,P0-09,九组菜单/底栏 Build 与 Select Placement,完整主流程无强制右侧大面板
+P1-04,P1,真正的 1/2/4 VTK viewport,渲染,vtk_multiview_widget.py+render3d_widget.py,P0-15,vtkRenderer 实际 SetViewport,四 pane 独立 Pick/Camera 可用
+P1-05,P1,多窗口管理器与相机保存,窗口,gmv_window_manager.py,P1-04,G/M/V 关闭、布局、恢复,编号唯一，状态一致
+P1-06,P1,Multiwfn adapter 与脚本模式,波函数,new engines/multiwfn_adapter.py,P0-14,锁定构建、脚本模板、隔离目录,固定 fchk 自动生成可检验产物
+P1-07,P1,ESP + BWR + 描述符闭环,波函数,results/esp.py+Dialog,P1-06,密度/ESP 网格 + 指标 parser,与 Multiwfn 基准样例数值一致
+P1-08,P1,HOMO/LUMO 能级+等值面,波函数,results/orbitals.py+Dialog,P1-06,能量/单位/轨道索引/密度映射,一张完整论文级图可导出
+P1-09,P1,OSC D/A 能级对比,OSC,results/osc.py,P1-08,多分子参考一致性校验,不混用不同参照直接比较
+P1-10,P1,ELF LOL Mayer Hirshfeld ADCH IRI NCI,波函数,results/multiwfn_plugins/*,P1-06,固定 fixture 的产物解析,每项有标准数据输出
+P1-11,P1,电子空穴/电荷密度与 Laplacian,波函数,results/excited_state.py,P1-06,激发态输入能力探测,缺乏跃迁密度时阻止执行
+P1-12,P1,平面性/偶极/SASA/logP/描述符,性质,results/properties/*,P0-11,纯算法与实验数据区分,单位、算法参数、数值回归
+P1-13,P1,H-bond π-π 范德华接触,相互作用,results/interactions/*,P1-12,阈值、分组、几何标签,toy complex 预期相互作用准确
+P1-14,P1,IR/Raman/UV-Vis/振动动画,光谱,results/spectra/*,P0-13,从合法计算输出解析谱线,可控展宽，源峰归属一致
+P1-15,P1,Gaussian 任务监控与结果导入,Gaussian,jobs.py+gaussian_engine.py+result_import.py,P0-13,STDOUT 日志、cancel/kill 及 stale,旧 revision 结果不得覆盖最新结构
+P1-16,P1,GROMACS setup/runner 原型,MD,engines/gromacs.py+MDSetupDialog,P0-14,本地可复现输入与执行日志,能完成小体系样例或导出脚本
+P1-17,P1,MDAnalysis/GROMACS 8 项常用分析,MD,results/md/*,P0-16,RMSD/RMSF/Rg/HBond/RDF/dihedral/energy/trajectory,对照 GROMACS 输出一致
+P1-18,P1,独立 Dialog 基类与结果可视组件,UI,results/dialogs/*,P0-09,输入、预览、后台任务、结果和导出,所有分析按统一交互逻辑呈现
+P1-19,P1,导出规范,数据,results/exports/*,P1-18,SVG/PNG/CSV/JSON+方法/单位/来源,同一图重新导出完全复现
+P1-20,P1,Windows 11 多窗口 UI 耐久,QA,tests/native/*,"P1-04,P1-05",2 GPU 类别+高 DPI+多屏,无 0xC0000409、无阻断缺陷
+P2-01,P2,QTAIM/NPA/密度差/自旋和 DOS,波函数,results/advanced_wfn/*,P1-06,每种能力显式校验源文件与引擎,基准计算可回归
+P2-02,P2,EDA 专用计算适配器,相互作用,results/eda.py,P0-14,按 SAPT/ALMO 输出分类,不把普通能量差伪装成 EDA
+P2-03,P2,NMR ECD ORD Vibronic,光谱,results/advanced_spectra/*,P1-14,真实输入解析、理论条件记录,与专业程序解析校验
+P2-04,P2,pKa、ADMET 及适用域,药物,results/prediction/*,P1-12,外部模型和不确定度,没有支持数据时清晰不可用
+P2-05,P2,受体-配体相互作用图,药物,results/complexes/*,P1-13,蛋白口袋选区、相互作用指纹,可对照可解释交互
+P2-06,P2,OSC 充电重组能与激子/CT,OSC,results/osc_advanced/*,P1-09,不同电荷态多任务组合校验,四点法完整 provenance
+P2-07,P2,MD PCA/聚类/接触/MSD,MD,results/md_advanced/*,P1-17,轨迹对齐与 PBC 均可追溯,测试体系统计可信
+P2-08,P2,MM/PBSA、WHAM、FEP/MBAR,自由能,engines/ambertools.py+results/free_energy/*,P1-16,能量单位与误差条、相空间重叠,缺乏收敛证据需警告
+P2-09,P2,PLUMED Metadynamics,增强采样,engines/plumed.py+results/md_bias/*,P1-16,CV 定义、bias 记录、reweight,完整复现自由能图
+P2-10,P2,批量分析与高通量工作流,平台,application/batch/*,P1-19,任务 DAG、缓存、重跑和失败重试,同一输入可重复产生相同报告
+P2-11,P2,模型受限的 AI 助手,AI,application/ai/*+Results,P2-10,只提出可核验操作，提交需确认,不存在虚构数值/自动危险执行
+P2-12,P2,远程 HPC/云端作业连接,平台,engines/remote/*,P2-10,凭据隔离/SLURM/SSH,模拟环境断网可恢复
+P2-13,P2,高分辨率 3D 论文图和视频,渲染,rendering/*,P1-19,抗锯齿、色标、4K 导出,一致性基准图通过
+P2-14,P2,工程文件、Results 资产关联和迁移,数据,io/mforge_storage.py,P0-10,向后兼容 v6.2 项目,老文件仍可读新数据可无损保存
+P2-15,P2,公开 API/插件系统,平台,application/plugins.py+api/*,P2-10,受限接口、插件签名和版本,插件异常不影响项目数据
+P2-16,P2,干净 Win11 发布与测试报告,发布,scripts/windows11_diagnostics.py+packaging,P1-20,离线安装、GPU 记录、诊断/回滚,两种硬件配置复现通过

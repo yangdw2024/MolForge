@@ -1,0 +1,61 @@
+{
+  "format": "molforge-fragment",
+  "version": 1,
+  "fragment": {
+    "id": "custom-87d6c33b6ae24195b2f46ac46d55643d",
+    "name_cn": "测试片段",
+    "name_en": "测试片段",
+    "formula": "",
+    "category": "Custom",
+    "smiles": "",
+    "attachment_bond_order": 1,
+    "atoms": [
+      {
+        "atomic_num": 7,
+        "symbol": "N",
+        "local_xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "formal_charge": 0,
+        "aromatic": true
+      },
+      {
+        "atomic_num": 6,
+        "symbol": "C",
+        "local_xyz": [
+          -1.315999984741211,
+          -0.628000020980835,
+          0.0010000000474974513
+        ],
+        "formal_charge": 0,
+        "aromatic": false
+      },
+      {
+        "atomic_num": 6,
+        "symbol": "C",
+        "local_xyz": [
+          0.26100003719329834,
+          1.34499990940094,
+          0.0
+        ],
+        "formal_charge": 0,
+        "aromatic": true
+      }
+    ],
+    "bonds": [
+      {
+        "begin_idx": 1,
+        "end_idx": 0,
+        "order": 1
+      },
+      {
+        "begin_idx": 0,
+        "end_idx": 2,
+        "order": 4
+      }
+    ],
+    "description": "选中子结构；入口为第一个原子。插入时需检查连接位点价态/离去氢，不自动补造氢。"
+  }
+}

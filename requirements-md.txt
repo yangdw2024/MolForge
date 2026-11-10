@@ -1,0 +1,2 @@
+# Optional trajectory-analysis support. Keep outside the base GUI environment.
+MDAnalysis>=2.6,<3

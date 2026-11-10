@@ -1,0 +1,210 @@
+{
+  "format": "molforge-fragment",
+  "version": 1,
+  "fragment": {
+    "id": "custom-54221f5f84784aad89a5d332f3e1918f",
+    "name_cn": "benzene",
+    "name_en": "benzene",
+    "formula": "",
+    "category": "Custom",
+    "smiles": "",
+    "attachment_bond_order": 1,
+    "atoms": [
+      {
+        "atomic_num": 6,
+        "symbol": "C",
+        "local_xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "formal_charge": 0,
+        "aromatic": true
+      },
+      {
+        "atomic_num": 6,
+        "symbol": "C",
+        "local_xyz": [
+          -0.39633607864379883,
+          -0.635486051440239,
+          1.176696538925171
+        ],
+        "formal_charge": 0,
+        "aromatic": true
+      },
+      {
+        "atomic_num": 6,
+        "symbol": "C",
+        "local_xyz": [
+          0.5573916435241699,
+          -1.2258771061897278,
+          2.0057809352874756
+        ],
+        "formal_charge": 0,
+        "aromatic": true
+      },
+      {
+        "atomic_num": 6,
+        "symbol": "C",
+        "local_xyz": [
+          1.907455325126648,
+          -1.1807813048362732,
+          1.6581692099571228
+        ],
+        "formal_charge": 0,
+        "aromatic": true
+      },
+      {
+        "atomic_num": 6,
+        "symbol": "C",
+        "local_xyz": [
+          2.3037924766540527,
+          -0.545285627245903,
+          0.4814782738685608
+        ],
+        "formal_charge": 0,
+        "aromatic": true
+      },
+      {
+        "atomic_num": 6,
+        "symbol": "C",
+        "local_xyz": [
+          1.350064605474472,
+          0.04510378837585449,
+          -0.3476070165634155
+        ],
+        "formal_charge": 0,
+        "aromatic": true
+      },
+      {
+        "atomic_num": 1,
+        "symbol": "H",
+        "local_xyz": [
+          -0.7430636882781982,
+          0.45997732877731323,
+          -0.6459560394287109
+        ],
+        "formal_charge": 0,
+        "aromatic": false
+      },
+      {
+        "atomic_num": 1,
+        "symbol": "H",
+        "local_xyz": [
+          -1.4481912851333618,
+          -0.6706211864948273,
+          1.4475257992744446
+        ],
+        "formal_charge": 0,
+        "aromatic": false
+      },
+      {
+        "atomic_num": 1,
+        "symbol": "H",
+        "local_xyz": [
+          0.2486003041267395,
+          -1.7209956049919128,
+          2.9225621223449707
+        ],
+        "formal_charge": 0,
+        "aromatic": false
+      },
+      {
+        "atomic_num": 1,
+        "symbol": "H",
+        "local_xyz": [
+          2.6505184173583984,
+          -1.640771210193634,
+          2.304117202758789
+        ],
+        "formal_charge": 0,
+        "aromatic": false
+      },
+      {
+        "atomic_num": 1,
+        "symbol": "H",
+        "local_xyz": [
+          3.355648636817932,
+          -0.5101443976163864,
+          0.21065276861190796
+        ],
+        "formal_charge": 0,
+        "aromatic": false
+      },
+      {
+        "atomic_num": 1,
+        "symbol": "H",
+        "local_xyz": [
+          1.6588563919067383,
+          0.5402254462242126,
+          -1.2643861770629883
+        ],
+        "formal_charge": 0,
+        "aromatic": false
+      }
+    ],
+    "bonds": [
+      {
+        "begin_idx": 0,
+        "end_idx": 1,
+        "order": 4
+      },
+      {
+        "begin_idx": 1,
+        "end_idx": 2,
+        "order": 4
+      },
+      {
+        "begin_idx": 2,
+        "end_idx": 3,
+        "order": 4
+      },
+      {
+        "begin_idx": 3,
+        "end_idx": 4,
+        "order": 4
+      },
+      {
+        "begin_idx": 4,
+        "end_idx": 5,
+        "order": 4
+      },
+      {
+        "begin_idx": 5,
+        "end_idx": 0,
+        "order": 4
+      },
+      {
+        "begin_idx": 0,
+        "end_idx": 6,
+        "order": 1
+      },
+      {
+        "begin_idx": 1,
+        "end_idx": 7,
+        "order": 1
+      },
+      {
+        "begin_idx": 2,
+        "end_idx": 8,
+        "order": 1
+      },
+      {
+        "begin_idx": 3,
+        "end_idx": 9,
+        "order": 1
+      },
+      {
+        "begin_idx": 4,
+        "end_idx": 10,
+        "order": 1
+      },
+      {
+        "begin_idx": 5,
+        "end_idx": 11,
+        "order": 1
+      }
+    ],
+    "description": "选中子结构；入口为第一个原子。插入时需检查连接位点价态/离去氢，不自动补造氢。"
+  }
+}

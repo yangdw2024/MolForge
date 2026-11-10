@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mol* Viewer - MolForge</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f0f2f5; overflow: hidden; font-family: sans-serif; }
+        #viewer { width: 100vw; height: 100vh; }
+        #status {
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(0,0,0,0.8); color: white;
+            padding: 10px 14px; border-radius: 6px;
+            font-size: 12px; max-width: 500px;
+            max-height: 80vh; overflow-y: auto;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="viewer"></div>
+    <div id="status"></div>
+
+    <script src="static/molstar.js"></script>
+    <link rel="stylesheet" href="static/molstar.css" />
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script>
+        // ========== 状态管理 ==========
+        let viewer = null;
+        let isInitialized = false;
+        let currentMvsData = null;
+
+        const statusDiv = document.getElementById('status');
+
+        function logStatus(msg, isError = false) {
+            console.log((isError ? '[ERROR] ' : '[INFO] ') + msg);
+            statusDiv.innerHTML = (isError ? '❌ ' : '✅ ') + msg + '<br>' + statusDiv.innerHTML;
+            if (window.pybridge) {
+                window.pybridge.onStatus(msg, isError);
+            }
+        }
+
+        // ========== 初始化 Mol* Viewer ==========
+        async function initViewer() {
+            logStatus('开始初始化 Mol* Viewer...');
+
+            try {
+                if (typeof molstar === 'undefined') {
+                    logStatus('molstar 全局对象未定义！', true);
+                    return;
+                }
+                logStatus('molstar.js 加载成功');
+
+                const element = document.getElementById('viewer');
+                viewer = await molstar.Viewer.create(element, {
+                    layoutIsExpanded: false, layoutShowControls: false,
+                    layoutShowRemoteState: false, layoutShowSequence: false,
+                    layoutShowLog: false, layoutShowLeftPanel: false,
+                });
+
+                isInitialized = true;
+                logStatus('Mol* Viewer 创建成功！');
+
+                new QWebChannel(qt.webChannelTransport, function(channel) {
+                    window.pybridge = channel.objects.pybridge;
+                    logStatus('WebChannel 连接成功');
+                });
+
+                // 点击事件
+                viewer.plugin.behaviors.interaction.click.subscribe((e) => {
+                    if (e.current && e.current.elements && e.current.elements.length > 0) {
+                        const elem = e.current.elements[0];
+                        if (elem && window.pybridge) {
+                            window.pybridge.onAtomClicked(elem.element?.label || '?', elem.index || 0);
+                            logStatus('点击原子: ' + (elem.element?.label || '?') + ' #' + (elem.index || 0));
+                        }
+                    }
+                });
+
+                logStatus('Mol* 初始化完成，等待加载分子');
+
+            } catch (e) {
+                logStatus('Mol* Viewer 创建失败: ' + e.message, true);
+                console.error(e);
+            }
+        }
+
+        // ========== 加载分子（SDF 字符串）==========
+        async function loadMoleculeSDF(sdfText) {
+            if (!isInitialized) {
+                logStatus('Viewer 未初始化，无法加载分子', true);
+                return;
+            }
+
+            logStatus('正在加载分子（SDF）...');
+
+            try {
+                // 把 SDF 字符串转成 Blob URL
+                const blob = new Blob([sdfText], { type: 'chemical/x-mdl-sdfile' });
+                const blobUrl = URL.createObjectURL(blob);
+                logStatus('Blob URL 创建成功');
+
+                // 用 MVS builder 构建结构
+                const builder = molstar.PluginExtensions.mvs.MVSData.createBuilder();
+
+                // 链式调用：download -> parse -> modelStructure
+                builder
+                    .download({ url: blobUrl })
+                    .parse({ format: 'sdf' })
+                    .modelStructure({})
+                    .component({ selector: 'all' })
+                    .representation({ type: 'ball_and_stick' })
+                    .color({ color: 'element-symbol' });
+
+                const mvsData = builder.getState();
+                logStatus('MVS 结构构建完成');
+
+                // 加载 MVS
+                await molstar.PluginExtensions.mvs.loadMVS(
+                    viewer.plugin,
+                    mvsData,
+                    { sourceUrl: undefined, sanityChecks: true, replaceExisting: true }
+                );
+
+                currentMvsData = mvsData;
+                logStatus('分子加载完成！');
+
+                if (window.pybridge) {
+                    window.pybridge.onMoleculeLoaded(0);
+                }
+
+                // 释放 Blob URL
+                URL.revokeObjectURL(blobUrl);
+
+            } catch (e) {
+                logStatus('分子加载失败: ' + e.message + '\n' + e.stack, true);
+                console.error(e);
+            }
+        }
+
+        // ========== 切换表示模式 ==========
+        async function setRepresentation(mode) {
+            if (!isInitialized || !currentMvsData) return;
+            logStatus('切换表示: ' + mode + '（待实现）');
+        }
+
+        // ========== 高亮指定原子 ==========
+        async function highlightAtom(atomIndex) {
+            if (!isInitialized) return;
+            logStatus('高亮原子 #' + atomIndex + '（待实现）');
+        }
+
+        // ========== 重置相机 ==========
+        function resetCamera() {
+            if (viewer) {
+                viewer.plugin.commands.canvas3dResetCamera({});
+                logStatus('相机重置');
+            }
+        }
+
+        // ========== 启动 ==========
+        logStatus('页面加载完成，准备初始化...');
+        setTimeout(initViewer, 500);
+    </script>
+</body>
+</html>

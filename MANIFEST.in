@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+include requirements.txt
+recursive-include molforge *.py *.json *.qss *.svg *.png *.ico
+prune user_data
+prune tests
+global-exclude *.py[cod] __pycache__ *.cube *.fchk *.molden

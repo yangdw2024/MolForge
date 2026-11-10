@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mol* 测试 - 加载 PDB</title>
+    <style>
+        body { margin: 0; padding: 0; background: #f0f0f5; }
+        #viewer { width: 100vw; height: 100vh; }
+        #status {
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(0,0,0,0.8); color: white;
+            padding: 10px; border-radius: 6px; font-size: 12px;
+            max-width: 400px; z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="viewer"></div>
+    <div id="status"></div>
+
+    <script src="static/molstar.js"></script>
+    <link rel="stylesheet" href="static/molstar.css" />
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script>
+        const statusDiv = document.getElementById('status');
+
+        function log(msg, isError = false) {
+            statusDiv.innerHTML = (isError ? '❌ ' : '✅ ') + msg + '<br>' + statusDiv.innerHTML;
+            console.log(msg);
+            if (window.pybridge) window.pybridge.onStatus(msg, isError);
+        }
+
+        async function init() {
+            log('创建 Viewer...');
+
+            const viewer = await molstar.Viewer.create('viewer', {
+                layoutIsExpanded: false, layoutShowControls: false,
+                layoutShowRemoteState: false, layoutShowSequence: false,
+                layoutShowLog: false, layoutShowLeftPanel: false,
+            });
+
+            log('Viewer 创建成功！');
+
+            // 连接 WebChannel
+            new QWebChannel(qt.webChannelTransport, function(channel) {
+                window.pybridge = channel.objects.pybridge;
+                log('WebChannel 连接成功');
+            });
+
+            log('开始加载 PDB 1cbs...');
+
+            // 用 MVS builder 加载已知 PDB
+            try {
+                const builder = molstar.PluginExtensions.mvs.MVSData.createBuilder();
+
+                builder
+                    .download({ url: 'https://www.ebi.ac.uk/pdbe/entry-files/1cbs.bcif' })
+                    .parse({ format: 'bcif' })
+                    .modelStructure({})
+                    .component({ selector: 'polymer' })
+                    .representation({ type: 'cartoon' })
+                    .color({ color: 'chain-id' });
+
+                const mvsData = builder.getState();
+                log('MVS 构建完成，开始加载...');
+
+                await molstar.PluginExtensions.mvs.loadMVS(viewer.plugin, mvsData, {
+                    sourceUrl: undefined,
+                    sanityChecks: true,
+                    replaceExisting: true
+                });
+
+                log('PDB 1cbs 加载成功！');
+
+            } catch (e) {
+                log('加载失败: ' + e.message, true);
+                log(e.stack);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

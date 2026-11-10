@@ -1,0 +1,8 @@
+分子: 1CRN  原子数: 327  键数: 337
+ensure_world_coords_2d              0.155 ms
+get_screen_coords                   0.288 ms
+find_ring_centroids                 0.557 ms
+sync_2d_coords_from_3d              0.121 ms
+full paintEvent (repaint)           6.412 ms
+apply_marquee(全选)                   0.000 ms
+基线测量完成

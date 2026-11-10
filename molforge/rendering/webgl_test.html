@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WebGL2 测试</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #fff; }
+        .ok { color: #4caf50; }
+        .err { color: #f44336; }
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+    <h1>WebGL2 可用性测试</h1>
+    <div id="result">测试中...</div>
+    <canvas id="canvas"></canvas>
+
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script>
+        const resultDiv = document.getElementById('result');
+        const canvas = document.getElementById('canvas');
+
+        function report(msg, isError = false) {
+            const cls = isError ? 'err' : 'ok';
+            resultDiv.innerHTML += `<div class="${cls}">${isError ? '❌' : '✅'} ${msg}</div>`;
+            console.log(msg);
+
+            // 传回 Python
+            if (window.pybridge) {
+                window.pybridge.onStatus(msg, isError);
+            }
+        }
+
+        // 测试 WebGL2
+        function testWebGL2() {
+            report('正在测试 WebGL2...');
+
+            const gl = canvas.getContext('webgl2');
+            if (!gl) {
+                report('WebGL2 不可用！', true);
+                return false;
+            }
+
+            report('WebGL2 上下文创建成功');
+
+            // 获取渲染器信息
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            if (debugInfo) {
+                const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+                report(`GPU Vendor: ${vendor}`);
+                report(`GPU Renderer: ${renderer}`);
+            }
+
+            // 测试基本功能
+            const version = gl.getParameter(gl.VERSION);
+            report(`WebGL 版本: ${version}`);
+
+            const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+            report(`最大纹理尺寸: ${maxTextureSize}`);
+
+            report('WebGL2 测试通过！');
+            return true;
+        }
+
+        // 连接 WebChannel
+        new QWebChannel(qt.webChannelTransport, function(channel) {
+            window.pybridge = channel.objects.pybridge;
+            report('WebChannel 连接成功');
+            testWebGL2();
+        });
+    </script>
+</body>
+</html>

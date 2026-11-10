@@ -1,0 +1,1 @@
+"""MolForge visual-only Qt Widgets demonstrator (no chemical editing or LLM)."""

@@ -1,0 +1,94 @@
+[
+  {
+    "check": "all Python syntax",
+    "pass": true
+  },
+  {
+    "check": "narrow toolbar scrolls",
+    "pass": true
+  },
+  {
+    "check": "buttons keep text width",
+    "pass": true
+  },
+  {
+    "check": "118 unique element cells",
+    "pass": true
+  },
+  {
+    "check": "periodic table scrolls in both directions",
+    "pass": true
+  },
+  {
+    "check": "actinide row remains available",
+    "pass": true
+  },
+  {
+    "check": "all 118 CPK radii equal reference angstroms",
+    "pass": true
+  },
+  {
+    "check": "halogen bond construction responds to elements",
+    "pass": true
+  },
+  {
+    "check": "multiple bond construction contracts",
+    "pass": true
+  },
+  {
+    "check": "initial atom command",
+    "pass": true
+  },
+  {
+    "check": "element-aware new bond",
+    "pass": true
+  },
+  {
+    "check": "new C-Cl coordinate distance matches estimate",
+    "pass": true
+  },
+  {
+    "check": "chronological history retains undo and redo",
+    "pass": true
+  },
+  {
+    "check": "workflow skill exports actual events",
+    "pass": true
+  },
+  {
+    "check": "24 actual projected label strings",
+    "pass": true
+  },
+  {
+    "check": "label overlay paints visible pixels",
+    "pass": true
+  },
+  {
+    "check": "caffeine label backgrounds do not overlap",
+    "pass": true
+  },
+  {
+    "check": "number positions follow camera rotation",
+    "pass": true
+  },
+  {
+    "check": "numbering respects hidden hydrogen option",
+    "pass": true
+  },
+  {
+    "check": "numbering persists after document refresh",
+    "pass": true
+  },
+  {
+    "check": "representation preserves imported coordinates exactly",
+    "pass": true
+  },
+  {
+    "check": "numbering off synchronizes button and timer",
+    "pass": true
+  },
+  {
+    "check": "open history page updates after command",
+    "pass": true
+  }
+]

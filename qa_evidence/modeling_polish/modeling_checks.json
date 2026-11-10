@@ -1,0 +1,186 @@
+[
+  {
+    "check": "syntax",
+    "pass": true
+  },
+  {
+    "check": "freeze executes",
+    "pass": true
+  },
+  {
+    "check": "frozen coordinate move rejected",
+    "pass": true
+  },
+  {
+    "check": "failed move leaves coordinates exact",
+    "pass": true
+  },
+  {
+    "check": "optimization accepts fixed points",
+    "pass": true
+  },
+  {
+    "check": "MMFF fixed point remains exact",
+    "pass": true
+  },
+  {
+    "check": "real force field ran with fixed point",
+    "pass": true
+  },
+  {
+    "check": "undo restores freeze state",
+    "pass": true
+  },
+  {
+    "check": "redo restores freeze state",
+    "pass": true
+  },
+  {
+    "check": "connected component selection",
+    "pass": true
+  },
+  {
+    "check": "bond-side fragment selection stops at chosen bond",
+    "pass": true
+  },
+  {
+    "check": "custom fragment JSON roundtrip",
+    "pass": true
+  },
+  {
+    "check": "clicked attachment root preserved",
+    "pass": true
+  },
+  {
+    "check": "custom fragment insertion",
+    "pass": true
+  },
+  {
+    "check": "fragment one undo removes entire insertion",
+    "pass": true
+  },
+  {
+    "check": "fragment redo stable IDs",
+    "pass": true
+  },
+  {
+    "check": "aromatic custom fragment append",
+    "pass": true
+  },
+  {
+    "check": "blank-context append creates no unwanted attachment bond",
+    "pass": true
+  },
+  {
+    "check": "custom fragment preserves aromatic atom flags",
+    "pass": true
+  },
+  {
+    "check": "aromatic custom fragment passes strict chemistry conversion",
+    "pass": true
+  },
+  {
+    "check": "effects command executes",
+    "pass": true
+  },
+  {
+    "check": "freeze opacity glow project roundtrip",
+    "pass": true
+  },
+  {
+    "check": "2D font follows zoom ratio",
+    "pass": true
+  },
+  {
+    "check": "2D context includes full periodic table",
+    "pass": true
+  },
+  {
+    "check": "shared modeling context actions exist",
+    "pass": true
+  },
+  {
+    "check": "compact complete periodic table",
+    "pass": true
+  },
+  {
+    "check": "natural labels default to heavy atoms",
+    "pass": true
+  },
+  {
+    "check": "all atom numbering remains available",
+    "pass": true
+  },
+  {
+    "check": "renderer uses RGBA atom colors",
+    "pass": true
+  },
+  {
+    "check": "selected atom alpha reaches VTK",
+    "pass": true
+  },
+  {
+    "check": "internal bond transparency uses RGBA",
+    "pass": true
+  },
+  {
+    "check": "shared Gaussian colored halo visible",
+    "pass": true
+  },
+  {
+    "check": "chosen glow RGB reaches VTK",
+    "pass": true
+  },
+  {
+    "check": "frozen atom excluded from drag preview",
+    "pass": true
+  },
+  {
+    "check": "engine path detection does not claim calculation ready",
+    "pass": true
+  },
+  {
+    "check": "DRUG-03 never returns mislabeled common estimate",
+    "pass": true
+  },
+  {
+    "check": "WFN-07 never returns mislabeled common estimate",
+    "pass": true
+  },
+  {
+    "check": "OSC-04 never returns mislabeled common estimate",
+    "pass": true
+  },
+  {
+    "check": "INTER-03 never returns mislabeled common estimate",
+    "pass": true
+  },
+  {
+    "check": "empty analysis is side-effect free",
+    "pass": true
+  },
+  {
+    "check": "xTB adapter runs off GUI thread",
+    "pass": true
+  },
+  {
+    "check": "xTB result applied through undoable command",
+    "pass": true
+  },
+  {
+    "check": "one undo restores pre-xTB geometry",
+    "pass": true
+  },
+  {
+    "check": "stale xTB output cannot overwrite later edits",
+    "pass": true
+  },
+  {
+    "check": "xTB engine failure is not converted to fallback success",
+    "pass": true
+  },
+  {
+    "check": "invalid valence cannot be presented as ready descriptors",
+    "pass": true
+  }
+]

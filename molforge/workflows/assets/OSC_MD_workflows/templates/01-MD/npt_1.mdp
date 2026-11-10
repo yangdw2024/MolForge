@@ -1,0 +1,46 @@
+title       = MD simulation 
+; Run parameters
+integrator  = md
+dt          = 0.001
+tinit       = 0
+nsteps     = 100000 ; 100ps 
+; Output parameters
+nstxout             = 1000
+nstvout             = 1000
+nstfout             = 1000
+nstxout-compressed  = 1000      
+nstenergy           = 1000
+; Bond parameters
+constraint_algorithm    = lincs
+continuation            = yes
+lincs_iter              = 2         ; accuracy of LINCS
+lincs_order             = 4         ; also related to accuracy
+; Single-range cutoff scheme
+cutoff-scheme   = Verlet
+nstlist         = 10 
+ns_type         = grid 
+rlist           = 1.0
+rcoulomb        = 1.0
+rvdw            = 1.0
+; PME electrostatics parameters
+coulombtype     = PME
+fourierspacing  = 0.25
+pme_order       = 4
+;
+Tcoupl  = V-rescale
+tau_t   = 0.2
+tc_grps = system
+ref_t   = 300
+; Pressure coupling is on
+Pcoupl     = Berendsen
+pcoupltype = isotropic
+tau_p = 0.5
+ref_p = 100
+compressibility = 4.5e-5
+refcoord_scaling = com
+; Generate velocities is off
+gen_vel     = no 
+; Periodic boundary conditions are on in all directions
+pbc     = xyz
+; Long-range dispersion correction
+DispCorr    = EnerPres

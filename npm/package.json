@@ -1,0 +1,46 @@
+{
+  "name": "@yangdw2024/molforge",
+  "version": "7.4.0",
+  "description": "Cross-platform CLI & Node.js wrapper for MolForge Studio: Unified molecular science workstation (2D sketcher, 3D modeler, quantum chemistry & MD, LLM assistant).",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "bin": {
+    "molforge": "bin/molforge.js"
+  },
+  "files": [
+    "bin/",
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "molforge",
+    "chemistry",
+    "chemdraw",
+    "chem3d",
+    "gaussview",
+    "vmd",
+    "multiwfn",
+    "molecular-editor",
+    "quantum-chemistry",
+    "computational-chemistry"
+  ],
+  "author": "yangdw2024",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yangdw2024/MolForge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yangdw2024/MolForge/issues"
+  },
+  "homepage": "https://github.com/yangdw2024/MolForge#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

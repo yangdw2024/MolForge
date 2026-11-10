@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mol* URL 参数加载测试</title>
+    <style>
+        body { margin: 0; padding: 0; background: #f0f0f5; }
+        #viewer { width: 100vw; height: 100vh; }
+        #status {
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(0,0,0,0.8); color: white;
+            padding: 10px; border-radius: 6px; font-size: 12px;
+            max-width: 400px; z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="viewer"></div>
+    <div id="status"></div>
+
+    <script src="static/molstar.js"></script>
+    <link rel="stylesheet" href="static/molstar.css" />
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script>
+        const statusDiv = document.getElementById('status');
+
+        function log(msg, isError = false) {
+            statusDiv.innerHTML = (isError ? '❌ ' : '✅ ') + msg + '<br>' + statusDiv.innerHTML;
+            console.log(msg);
+            if (window.pybridge) window.pybridge.onStatus(msg, isError);
+        }
+
+        async function init() {
+            log('创建 Viewer...');
+
+            const viewer = await molstar.Viewer.create('viewer', {
+                layoutIsExpanded: false, layoutShowControls: false,
+                layoutShowRemoteState: false, layoutShowSequence: false,
+                layoutShowLog: false, layoutShowLeftPanel: false,
+            });
+
+            log('Viewer 创建成功！');
+
+            // 连接 WebChannel
+            new QWebChannel(qt.webChannelTransport, function(channel) {
+                window.pybridge = channel.objects.pybridge;
+                log('WebChannel 连接成功');
+            });
+
+            log('尝试用 URL 参数加载 PDB 1cbs...');
+
+            // 方法：直接调用 viewer 的 loadMolecule 或类似方法
+            // 先看看 viewer 有什么方法
+            log('Viewer 方法列表:');
+            for (let key in viewer) {
+                log('  ' + key + ': ' + typeof viewer[key]);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

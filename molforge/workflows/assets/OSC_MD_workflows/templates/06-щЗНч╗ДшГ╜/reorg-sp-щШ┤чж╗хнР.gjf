@@ -1,0 +1,9 @@
+%chk={NAME}-sp12.chk
+%nprocshared=24
+%mem=24GB
+#p wb97xd/6-31g(d,p) sp scrf(smd,solvent=chloroform) SCF=conver=6
+
+{标题：阴离子单点，在中性优化结构上，用于 E(A-,RN)}
+
+-1 2
+{在此粘贴 OPT01 优化后的坐标（中性平衡结构）}

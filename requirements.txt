@@ -1,0 +1,6 @@
+# MolForge 依赖（conda base 已装大部分）
+rdkit>=2026.9
+PyQt6>=6.6
+pyvista>=0.44
+pyvistaqt>=0.11
+numpy

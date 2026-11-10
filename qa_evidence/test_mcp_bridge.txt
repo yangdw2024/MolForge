@@ -1,0 +1,14 @@
+PASS: 已注册读取/编辑/分析工具
+PASS: describe 读到原子数 24
+PASS: describe 读到键数
+PASS: describe 报告 3D 状态
+PASS: list_atoms 返回全部原子
+PASS: 原子序号 1-based
+PASS: LLM 加氧原子后文档原子数 25
+PASS: 撤销后原子数回退
+PASS: LLM 加键后键数变化（已存在则保持）
+PASS: LLM 删除刚加的原子后回到原数
+PASS: run_planarity 返回真实 RMSD 数值
+PASS: run_planarity 返回法向量
+PASS: 无文档时 chat 诚实拒绝
+MCP 桥接工具分发验收通过

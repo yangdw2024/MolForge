@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.bak*
+.pytest_cache/
+.venv/
+build/
+dist/
+*.egg-info/
+*.log
+user_data/
+*.cube
+*.fchk
+*.molden
+rest_results.json
+backup_*/
+*.tmp
+temp/
+user_settings/
+ user_data/
+用户数据/
+ user_presets/
+ user_runs/

@@ -1,0 +1,50 @@
+#!/bin/bash
+# Job submission script:
+# Usage: qsub <this_script>
+#
+#$ -cwd
+#$ -j y
+#$ -o npt_1.sge.o$JOB_ID
+#$ -S /bin/bash
+#$ -N npt_1
+#$ -pe smp 24
+#$ -l virtual_free=24.0G
+#$ -l h_rt=2018:04:00
+#$ -l h_vmem=3.5G
+#!#$ -V
+
+#############################################################################
+#  -cwd: to execute the job for the current working directory
+#    -j: merges stdout and stderr to the same file
+#    -o: further merges .o and .po file to a file
+#    -S: specifies the interpreting shell for this job to be
+#   -pe: parallel runtime environment and slots
+#    -l: resources required by the job: maximun job time length
+#    -V: export all environment variables to the slave jobs
+#############################################################################
+
+# go to work dir
+cd $SGE_O_WORKDIR
+
+# load the environment for gromacs
+source /opt/intel/compilers_and_libraries_2017.4.196/linux/pkg_bin/compilervars.sh intel64
+source /opt/intel/compilers_and_libraries_2017.4.196/linux/mkl/bin/mklvars.sh intel64
+source /opt/soft/gromacs2018/bin/GMXRC.bash
+#module load gromacs2018
+
+echo "Starting Gromacs run at" `date`
+loop=0
+while (($loop<100)) #Change loop times here
+do
+cp npt.gro npt.gro_"$loop"
+echo q | gmx_mpi make_ndx -f npt.gro -o index_com.ndx
+gmx_mpi grompp -f npt_1.mdp -c npt.gro -r npt.gro -p complex.top -o npt_1.tpr -n index_com.ndx -maxwarn 10
+gmx mdrun -nt $NSLOTS -deffnm npt_1
+cp npt_1.gro npt_1.gro_"$loop"
+mv npt_1.tpr npt_1.tpr_"$loop"
+mv index_com.ndx index_com.ndx_"$loop"
+mv npt_1.gro npt_input.gro
+python3 delete_solvent.py
+let "loop++"
+done
+echo "Finished Gromacs run at" `date`

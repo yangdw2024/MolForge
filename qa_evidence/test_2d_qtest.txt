@@ -1,0 +1,8 @@
+PASS: 找到屏幕内空白像素点
+PASS: QTest 点空白加原子 (现 25)
+PASS: QTest 点原子真实选中
+PASS: 找到一对无键原子
+PASS: QTest 拖拽两原子真实加键
+PASS: 键数 +1 (现 26)
+PASS: 撤销后回到初始状态
+2D QTest 端到端鼠标验收通过

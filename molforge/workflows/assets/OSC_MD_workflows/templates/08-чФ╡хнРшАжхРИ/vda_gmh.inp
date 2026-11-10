@@ -1,0 +1,22 @@
+$molecule
+ 0 1
+{在此粘贴 D + A 双片段坐标（顺序固定：先受体后给体，与 STS_ACCEPTOR/DONOR 一致）}
+$end
+
+$rem
+   EXCHANGE         wB97XD
+   BASIS            6-31G**
+   CIS_N_ROOTS      3
+   CIS_SINGLETS     true
+   CIS_TRIPLETS     false
+   STS_GMH          true
+   STS_ACCEPTOR     {A_FIRST}-{A_LAST}      ! 受体片段原子编号（按实际结构填）
+   STS_DONOR        {D_FIRST}-{D_LAST}      ! 给体片段原子编号（按实际结构填）
+   MEM_STATIC       3000
+   SOLVENT_METHOD   SMD
+   SCF_CONVERGENCE  8
+$end
+
+$smx
+   SOLVENT Trichloromethane
+$end

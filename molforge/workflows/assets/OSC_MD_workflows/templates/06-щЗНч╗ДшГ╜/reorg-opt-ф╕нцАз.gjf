@@ -1,0 +1,12 @@
+%chk={NAME}-OPT01.chk
+%nprocshared=24
+%mem=24GB
+#p wb97xd/6-31g(d,p) opt scrf(smd,solvent=chloroform) SCF=conver=6
+
+{标题：中性态几何优化，用于重组能 4 点法的 E(N,RN)}
+
+0 1
+{在此粘贴从 MD 提取的受体分子坐标（原样，不平移）
+ 格式：元素  x  y  z
+ 示例：C   90.420   80.010   49.180
+}

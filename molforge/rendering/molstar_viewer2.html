@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mol* - MolForge</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0f1a29; overflow:hidden; }
+#viewer { width:100vw; height:100vh; }
+</style>
+</head>
+<body>
+<div id="viewer"></div>
+<script src="static/molstar.js"></script>
+<script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+<script>
+let viewer = null;
+function log(m, err){
+  console.log((err?'[ERR] ':'[INFO] ')+m);
+  if (window.pybridge) window.pybridge.onStatus(String(m), !!err);
+}
+
+async function init(){
+  try {
+    viewer = await molstar.Viewer.create(document.getElementById('viewer'), {
+      layoutIsExpanded:false, layoutShowControls:false, layoutShowRemoteState:false,
+      layoutShowSequence:false, layoutShowLog:false, layoutShowLeftPanel:false,
+      viewportShowExpand:false, viewportShowSelectionMode:false,
+      pdbProvider:'', viewportShowResetCamera:false,
+    });
+    new QWebChannel(qt.webChannelTransport, function(ch){
+      window.pybridge = ch.objects.pybridge;
+      log('WebChannel 已连接');
+      if (window.pybridge && window.pybridge.jsReady) window.pybridge.jsReady();
+    });
+    // 点击 -> 回传链/残基/原子
+    viewer.plugin.behaviors.interaction.click.subscribe((e)=>{
+      try {
+        const loci = e.current && e.current.loci;
+        const loc = describeLoci(loci);
+        if (loc && window.pybridge) window.pybridge.onPicked(loc);
+      } catch(_){}
+    });
+    log('Mol* 就绪');
+  } catch(e){ log('初始化失败: '+e.message, true); }
+}
+
+function describeLoci(loci){
+  if (!loci || loci.kind !== 'element-loci' || !loci.elements.length) return '';
+  try {
+    const el = loci.elements[0];
+    const unit = el.unit;
+    // 兼容两种表示：单 location（含 element）或批量（含 indices）
+    let element;
+    if (typeof el.element === 'number'){
+      element = el.element;
+    } else {
+      const ids = el.indices;
+      const first = (typeof ids.start === 'number') ? ids.start : ids[0];
+      element = unit.elements[first];
+    }
+    const loc = {unit, element};
+    const SP = molstar.lib.structure.StructureProperties;
+    const chain = SP.chain.auth_asym_id(loc);
+    const seq = SP.residue.auth_seq_id(loc);
+    const res = SP.residue.auth_comp_id(loc);
+    const atom = SP.atom.auth_atom_id(loc);
+    return chain + '|' + seq + '|' + res + '|' + atom;
+  } catch(e){ return ''; }
+}
+
+// 加载 PDB/mmCIF 文本（手动逐步，最可靠）
+async function loadStructure(text, format, name){
+  try {
+    const plugin = viewer.plugin;
+    await plugin.initialized;
+    const raw = await plugin.builders.data.rawData({data:text, label:name});
+    const traj = await plugin.builders.structure.parseTrajectory(raw, format || 'pdb');
+    await plugin.builders.structure.hierarchy.applyPreset(traj, 'default');
+    log('已加载 '+name);
+    if (window.pybridge && window.pybridge.onLoaded) window.pybridge.onLoaded(name);
+  } catch(e){ log('加载失败: '+e.message, true); }
+}
+
+// 切换表示预设：cartoon / ball-and-stick / molecular-surface / all-models
+async function setPreset(preset){
+  try {
+    const state = viewer.plugin.managers.structure.hierarchy;
+    const structures = state.current.structures;
+    for (const ref of structures){
+      // 移除现有组件，再应用预设
+      for (const comp of ref.components){
+        await viewer.plugin.managers.structure.hierarchy.removeComponent(comp, true);
+      }
+      await viewer.plugin.builders.structure.hierarchy.applyPreset(
+        ref.cell.obj.data, preset);
+    }
+    log('表示预设: '+preset);
+  } catch(e){ log('预设失败: '+e.message, true); }
+}
+
+function resetCamera(){ viewer.plugin.commands.canvas3dResetCamera({}); }
+
+setTimeout(init, 300);
+</script>
+</body>
+</html>

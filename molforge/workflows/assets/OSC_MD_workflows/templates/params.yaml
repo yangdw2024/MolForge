@@ -1,0 +1,71 @@
+# params.yaml —— 工作流参数集中配置示例
+# 建议脚本读取本文件生成 .mdp/.top/.py 等输入，避免硬编码散落
+# 复制后按新体系修改，并把所有脚本改成从此文件读参
+
+project:
+  name: "Ternary"              # 项目名
+  note: "PM6:HDO:BTx 三元体系"
+
+system:
+  donor:  "PM6"
+  acceptor1: "HDO-4Cl"
+  acceptor2: "BT1"             # 新体系替换
+  additive: "DIO"
+  solvent: "CF"
+  n_donor: 60
+  n_a1:    168
+  n_a2:    38
+  n_dio:   94
+  n_solvent_initial: 50000
+
+md:
+  gromacs_version: "2018.4"    # 二元体系为 2025.4
+  integrator: "md"
+  dt_ps: 0.001
+  cutoff_nm: 1.0               # 二元体系为 1.5
+  coulomb: "PME"
+  fourierspacing: 0.16
+  temp_K: 300
+  ref_p_bar: 1.0
+  em_steps: 50000
+  npt_ns: 1
+  md80_ns: 80
+  ta_steps: 1100000
+  production_ns: 70
+  nstxout_compressed: 2000
+
+evaporation:
+  script: "delete_solvent.py"
+  solvent_name: "CF"
+  delete_per_cycle: 200
+  max_cycles: 100
+  cycle_ps: 100
+  top_line_solvent: 55        # complex.top 中 CF 分子数所在行号
+
+fragments:
+  donor_units: ["BDT", "BDD"]        # 给体重复单元片段
+  acceptor_frags: ["IC1", "BTP", "IC2"]
+  pm6_fragment_atoms: "见拆分规则"     # 具体原子区间
+  hdo_fragment_atoms: "见拆分规则"
+
+quantum:
+  dft: "wb97xd"
+  basis: "6-31g(d,p)"
+  solvent_smd: "chloroform"
+  nproc: 24
+  mem: "24GB"
+  td_nstates: 20
+  vda_basis: "6-31G**"
+  vda_solvent: "Trichloromethane"
+
+kinetics:
+  T_K: 300
+  marcus_formula: "k=(2pi/hbar)V^2/sqrt(4pi*l*kT)*exp(-(dG+l)^2/(4l*kT))"
+
+analysis:
+  ie_window_ps: [65000, 70000]   # IE 取末段窗口
+  rdf_levels: ["backbone", "fragment"]
+  densmap_bin_nm: 0.08
+  rms_sigma_nm: 0.16
+  igmh_isovalue: 0.004
+  freevolume_window_ps: [69000, 70000]

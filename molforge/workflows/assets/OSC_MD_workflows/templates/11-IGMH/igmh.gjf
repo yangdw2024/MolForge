@@ -1,0 +1,10 @@
+%chk={NAME}-igmh.chk
+%nprocshared=24
+%mem=24GB
+#p wb97xd/6-31g(d,p) sp IOp(7/33=1) scrf(smd,solvent=chloroform) pop=full
+
+{标题：D-A 二聚体单点能，生成波函数供 Multiwfn IGMH 分析}
+
+0 1
+{在此粘贴 D-A 二聚体坐标（来自 MD，两个片段分子）
+ 建议用 .mol2 转 .gjf，保留键连信息}

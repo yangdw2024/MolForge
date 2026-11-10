@@ -1,0 +1,11 @@
+%chk={NAME}-OPT12.chk
+%nprocshared=24
+%mem=24GB
+#p wb97xd/6-31g(d,p) opt scrf(smd,solvent=chloroform) SCF=conver=6
+
+{标题：阴离子态几何优化，用于重组能 4 点法的 E(A-,RA-)}
+
+-1 2
+{在此粘贴从 MD 提取的受体分子坐标（与 OPT01 相同坐标起算）
+ 格式：元素  x  y  z
+}

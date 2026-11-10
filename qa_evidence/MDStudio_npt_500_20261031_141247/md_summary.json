@@ -1,0 +1,23 @@
+{
+  "topology": "E:\\YDW\\Calculation\\Gromacs_simulation\\ClFFCl\\SA\\Results\\npt_500.gro",
+  "trajectory": "E:\\YDW\\Calculation\\Gromacs_simulation\\ClFFCl\\SA\\Results\\npt_500.xtc",
+  "selection": "not name H*",
+  "total_frames": 101,
+  "frames_analyzed": 26,
+  "frame_step": 4,
+  "atoms_in_universe": 71554,
+  "atoms_in_selection": 36890,
+  "rmsd_mean_angstrom": 10.7692,
+  "rmsd_max_angstrom": 11.8746,
+  "rg_mean_angstrom": 47.6664,
+  "rmsf_mean_angstrom": 2.1525,
+  "rmsf_max_angstrom": 65.8316,
+  "rdf_first_peak_r_angstrom": 1.41,
+  "rdf_first_peak_g": 6.4439,
+  "hydrogen_bonds": {
+    "status": "ok",
+    "unique_count": 0,
+    "occupancy": []
+  },
+  "honesty": "全部数值由 MDAnalysis 对真实轨迹计算；RMSD 已 Kabsch 对齐，RDF 走距离分箱（内存安全），RMSF 为对齐后逐原子波动；周期边界依赖 MDAnalysis 处理，未做自由能聚类，氢键占有率按采样帧统计。"
+}

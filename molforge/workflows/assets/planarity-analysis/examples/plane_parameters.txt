@@ -1,0 +1,129 @@
+Plane equation: A=   0.00851  B=   0.00000  C=   0.99996  D=  -0.00000
+
+ Deviation of atom    1(C ) to the plane:  -1.22376 Angstrom
+ Deviation of atom    2(C ) to the plane:  -1.12097 Angstrom
+ Deviation of atom    3(C ) to the plane:  -1.04467 Angstrom
+ Deviation of atom    4(C ) to the plane:  -1.07375 Angstrom
+ Deviation of atom    5(C ) to the plane:  -1.17338 Angstrom
+ Deviation of atom    6(C ) to the plane:  -1.25024 Angstrom
+ Deviation of atom    7(C ) to the plane:  -1.01310 Angstrom
+ Deviation of atom    8(C ) to the plane:  -1.09381 Angstrom
+ Deviation of atom    9(C ) to the plane:  -1.17098 Angstrom
+ Deviation of atom   10(C ) to the plane:  -1.12469 Angstrom
+ Deviation of atom   11(C ) to the plane:  -1.04677 Angstrom
+ Deviation of atom   12(S ) to the plane:  -0.83468 Angstrom
+ Deviation of atom   13(C ) to the plane:  -0.78440 Angstrom
+ Deviation of atom   14(C ) to the plane:  -0.94465 Angstrom
+ Deviation of atom   15(C ) to the plane:  -1.09147 Angstrom
+ Deviation of atom   16(C ) to the plane:  -0.59863 Angstrom
+ Deviation of atom   17(C ) to the plane:  -0.62770 Angstrom
+ Deviation of atom   18(S ) to the plane:  -0.88799 Angstrom
+ Deviation of atom   19(N ) to the plane:  -0.32700 Angstrom
+ Deviation of atom   20(C ) to the plane:  -1.21206 Angstrom
+ Deviation of atom   21(O ) to the plane:  -0.92400 Angstrom
+ Deviation of atom   22(C ) to the plane:  -1.28767 Angstrom
+ Deviation of atom   23(N ) to the plane:  -1.34986 Angstrom
+ Deviation of atom   24(C ) to the plane:  -1.17366 Angstrom
+ Deviation of atom   25(N ) to the plane:  -1.14335 Angstrom
+ Deviation of atom   26(C ) to the plane:   4.20113 Angstrom
+ Deviation of atom   27(C ) to the plane:   4.22849 Angstrom
+ Deviation of atom   28(C ) to the plane:   2.86934 Angstrom
+ Deviation of atom   29(C ) to the plane:   2.88670 Angstrom
+ Deviation of atom   30(C ) to the plane:   1.52687 Angstrom
+ Deviation of atom   31(C ) to the plane:   1.54763 Angstrom
+ Deviation of atom   32(C ) to the plane:   0.18362 Angstrom
+ Deviation of atom   33(C ) to the plane:   0.22300 Angstrom
+ Deviation of atom   34(C ) to the plane:  -1.16740 Angstrom
+ Deviation of atom   35(C ) to the plane:   0.10578 Angstrom
+ Deviation of atom   36(C ) to the plane:   1.62421 Angstrom
+ Deviation of atom   37(C ) to the plane:   2.37820 Angstrom
+ Deviation of atom   38(C ) to the plane:   1.90843 Angstrom
+ Deviation of atom   39(C ) to the plane:   3.27339 Angstrom
+ Deviation of atom   40(C ) to the plane:   2.72343 Angstrom
+ Deviation of atom   41(C ) to the plane:   3.55674 Angstrom
+ Deviation of atom   42(C ) to the plane:   4.90911 Angstrom
+ Deviation of atom   43(C ) to the plane:   1.22364 Angstrom
+ Deviation of atom   44(C ) to the plane:   1.12074 Angstrom
+ Deviation of atom   45(C ) to the plane:   1.04442 Angstrom
+ Deviation of atom   46(C ) to the plane:   1.07361 Angstrom
+ Deviation of atom   47(C ) to the plane:   1.17334 Angstrom
+ Deviation of atom   48(C ) to the plane:   1.25022 Angstrom
+ Deviation of atom   49(C ) to the plane:   1.01296 Angstrom
+ Deviation of atom   50(C ) to the plane:   1.09379 Angstrom
+ Deviation of atom   51(C ) to the plane:   1.17104 Angstrom
+ Deviation of atom   52(C ) to the plane:   1.12471 Angstrom
+ Deviation of atom   53(C ) to the plane:   1.04675 Angstrom
+ Deviation of atom   54(S ) to the plane:   0.83461 Angstrom
+ Deviation of atom   55(C ) to the plane:   0.78438 Angstrom
+ Deviation of atom   56(C ) to the plane:   0.94469 Angstrom
+ Deviation of atom   57(C ) to the plane:   1.09150 Angstrom
+ Deviation of atom   58(C ) to the plane:   0.59862 Angstrom
+ Deviation of atom   59(C ) to the plane:   0.62777 Angstrom
+ Deviation of atom   60(S ) to the plane:   0.88809 Angstrom
+ Deviation of atom   61(N ) to the plane:   0.32696 Angstrom
+ Deviation of atom   62(C ) to the plane:   0.16498 Angstrom
+ Deviation of atom   63(C ) to the plane:   0.35466 Angstrom
+ Deviation of atom   64(C ) to the plane:   1.21225 Angstrom
+ Deviation of atom   65(O ) to the plane:   0.92377 Angstrom
+ Deviation of atom   66(C ) to the plane:   1.28793 Angstrom
+ Deviation of atom   67(N ) to the plane:   1.35018 Angstrom
+ Deviation of atom   68(C ) to the plane:   1.17396 Angstrom
+ Deviation of atom   69(N ) to the plane:   1.14376 Angstrom
+ Deviation of atom   70(C ) to the plane:  -4.20089 Angstrom
+ Deviation of atom   71(C ) to the plane:  -4.22828 Angstrom
+ Deviation of atom   72(C ) to the plane:  -2.86913 Angstrom
+ Deviation of atom   73(C ) to the plane:  -2.88652 Angstrom
+ Deviation of atom   74(C ) to the plane:  -1.52671 Angstrom
+ Deviation of atom   75(C ) to the plane:  -1.54750 Angstrom
+ Deviation of atom   76(C ) to the plane:  -0.18350 Angstrom
+ Deviation of atom   77(C ) to the plane:  -0.22292 Angstrom
+ Deviation of atom   78(C ) to the plane:   1.16747 Angstrom
+ Deviation of atom   79(C ) to the plane:  -0.10589 Angstrom
+ Deviation of atom   80(C ) to the plane:  -1.62432 Angstrom
+ Deviation of atom   81(C ) to the plane:  -2.37840 Angstrom
+ Deviation of atom   82(C ) to the plane:  -1.90862 Angstrom
+ Deviation of atom   83(C ) to the plane:  -3.27354 Angstrom
+ Deviation of atom   84(C ) to the plane:  -2.72346 Angstrom
+ Deviation of atom   85(C ) to the plane:  -3.55699 Angstrom
+ Deviation of atom   86(C ) to the plane:  -4.90932 Angstrom
+ Deviation of atom   87(C ) to the plane:  -0.16496 Angstrom
+ Deviation of atom   88(C ) to the plane:  -0.35458 Angstrom
+ Deviation of atom   89(C ) to the plane:  -0.19265 Angstrom
+ Deviation of atom   90(C ) to the plane:   0.19280 Angstrom
+ Deviation of atom   91(N ) to the plane:   0.33363 Angstrom
+ Deviation of atom   92(S ) to the plane:   0.00013 Angstrom
+ Deviation of atom   93(N ) to the plane:  -0.33343 Angstrom
+ Deviation of atom   94(C ) to the plane:   2.90731 Angstrom
+ Deviation of atom   95(C ) to the plane:   3.16796 Angstrom
+ Deviation of atom   96(C ) to the plane:  -2.90749 Angstrom
+ Deviation of atom   97(C ) to the plane:  -3.16795 Angstrom
+ Deviation of atom   98(C ) to the plane:   5.19448 Angstrom
+ Deviation of atom   99(C ) to the plane:   6.54789 Angstrom
+ Deviation of atom  100(C ) to the plane:  -5.19478 Angstrom
+ Deviation of atom  101(C ) to the plane:  -6.54815 Angstrom
+ Deviation of atom  196(F ) to the plane:   1.09701 Angstrom
+ Deviation of atom  197(F ) to the plane:  -1.09734 Angstrom
+ Deviation of atom  198(Cl) to the plane:   1.31900 Angstrom
+ Deviation of atom  199(Cl) to the plane:  -1.31911 Angstrom
+ Maximal positive deviation to the fitted plane is   99(C ):   6.54789 Angstrom
+ Maximal negative deviation to the fitted plane is  101(C ):  -6.54815 Angstrom
+
+ Molecular planarity parameter (MPP) is    2.156353 Angstrom
+ Span of deviation from plane (SDP) is   13.096046 Angstrom
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

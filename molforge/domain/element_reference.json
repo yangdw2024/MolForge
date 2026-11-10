@@ -1,0 +1,598 @@
+{
+  "source": "RDKit PeriodicTable",
+  "version": "2026.09.1",
+  "units": "angstrom",
+  "note": "Reference values, not universal measured radii; heavy elements may use estimates/defaults.",
+  "elements": {
+    "1": {
+      "vdw": 1.2,
+      "covalent": 0.31,
+      "weight": 1.008
+    },
+    "2": {
+      "vdw": 1.4,
+      "covalent": 0.28,
+      "weight": 4.003
+    },
+    "3": {
+      "vdw": 2.2,
+      "covalent": 1.28,
+      "weight": 6.941
+    },
+    "4": {
+      "vdw": 1.9,
+      "covalent": 0.96,
+      "weight": 9.012
+    },
+    "5": {
+      "vdw": 1.8,
+      "covalent": 0.84,
+      "weight": 10.812
+    },
+    "6": {
+      "vdw": 1.7,
+      "covalent": 0.76,
+      "weight": 12.011
+    },
+    "7": {
+      "vdw": 1.6,
+      "covalent": 0.71,
+      "weight": 14.007
+    },
+    "8": {
+      "vdw": 1.55,
+      "covalent": 0.66,
+      "weight": 15.999
+    },
+    "9": {
+      "vdw": 1.5,
+      "covalent": 0.57,
+      "weight": 18.998
+    },
+    "10": {
+      "vdw": 1.54,
+      "covalent": 0.58,
+      "weight": 20.18
+    },
+    "11": {
+      "vdw": 2.4,
+      "covalent": 1.66,
+      "weight": 22.99
+    },
+    "12": {
+      "vdw": 2.2,
+      "covalent": 1.41,
+      "weight": 24.305
+    },
+    "13": {
+      "vdw": 2.1,
+      "covalent": 1.21,
+      "weight": 26.982
+    },
+    "14": {
+      "vdw": 2.1,
+      "covalent": 1.11,
+      "weight": 28.086
+    },
+    "15": {
+      "vdw": 1.95,
+      "covalent": 1.07,
+      "weight": 30.974
+    },
+    "16": {
+      "vdw": 1.8,
+      "covalent": 1.05,
+      "weight": 32.067
+    },
+    "17": {
+      "vdw": 1.8,
+      "covalent": 1.02,
+      "weight": 35.453
+    },
+    "18": {
+      "vdw": 1.88,
+      "covalent": 1.06,
+      "weight": 39.948
+    },
+    "19": {
+      "vdw": 2.8,
+      "covalent": 2.03,
+      "weight": 39.098
+    },
+    "20": {
+      "vdw": 2.4,
+      "covalent": 1.76,
+      "weight": 40.078
+    },
+    "21": {
+      "vdw": 2.3,
+      "covalent": 1.7,
+      "weight": 44.956
+    },
+    "22": {
+      "vdw": 2.15,
+      "covalent": 1.6,
+      "weight": 47.867
+    },
+    "23": {
+      "vdw": 2.05,
+      "covalent": 1.52,
+      "weight": 50.944
+    },
+    "24": {
+      "vdw": 2.05,
+      "covalent": 1.39,
+      "weight": 51.996
+    },
+    "25": {
+      "vdw": 2.05,
+      "covalent": 1.39,
+      "weight": 54.938
+    },
+    "26": {
+      "vdw": 2.05,
+      "covalent": 1.32,
+      "weight": 55.845
+    },
+    "27": {
+      "vdw": 2.0,
+      "covalent": 1.26,
+      "weight": 58.933
+    },
+    "28": {
+      "vdw": 2.0,
+      "covalent": 1.24,
+      "weight": 58.693
+    },
+    "29": {
+      "vdw": 2.0,
+      "covalent": 1.32,
+      "weight": 63.546
+    },
+    "30": {
+      "vdw": 2.1,
+      "covalent": 1.22,
+      "weight": 65.39
+    },
+    "31": {
+      "vdw": 2.1,
+      "covalent": 1.22,
+      "weight": 69.723
+    },
+    "32": {
+      "vdw": 2.1,
+      "covalent": 1.2,
+      "weight": 72.61
+    },
+    "33": {
+      "vdw": 2.05,
+      "covalent": 1.19,
+      "weight": 74.922
+    },
+    "34": {
+      "vdw": 1.9,
+      "covalent": 1.2,
+      "weight": 78.96
+    },
+    "35": {
+      "vdw": 1.9,
+      "covalent": 1.2,
+      "weight": 79.904
+    },
+    "36": {
+      "vdw": 2.02,
+      "covalent": 1.16,
+      "weight": 83.8
+    },
+    "37": {
+      "vdw": 2.9,
+      "covalent": 2.2,
+      "weight": 85.468
+    },
+    "38": {
+      "vdw": 2.55,
+      "covalent": 1.95,
+      "weight": 87.62
+    },
+    "39": {
+      "vdw": 2.4,
+      "covalent": 1.9,
+      "weight": 88.906
+    },
+    "40": {
+      "vdw": 2.3,
+      "covalent": 1.75,
+      "weight": 91.224
+    },
+    "41": {
+      "vdw": 2.15,
+      "covalent": 1.64,
+      "weight": 92.906
+    },
+    "42": {
+      "vdw": 2.1,
+      "covalent": 1.54,
+      "weight": 95.94
+    },
+    "43": {
+      "vdw": 2.05,
+      "covalent": 1.47,
+      "weight": 98.0
+    },
+    "44": {
+      "vdw": 2.05,
+      "covalent": 1.46,
+      "weight": 101.07
+    },
+    "45": {
+      "vdw": 2.0,
+      "covalent": 1.42,
+      "weight": 102.906
+    },
+    "46": {
+      "vdw": 2.05,
+      "covalent": 1.39,
+      "weight": 106.42
+    },
+    "47": {
+      "vdw": 2.1,
+      "covalent": 1.45,
+      "weight": 107.868
+    },
+    "48": {
+      "vdw": 2.2,
+      "covalent": 1.44,
+      "weight": 112.412
+    },
+    "49": {
+      "vdw": 2.2,
+      "covalent": 1.42,
+      "weight": 114.818
+    },
+    "50": {
+      "vdw": 2.25,
+      "covalent": 1.39,
+      "weight": 118.711
+    },
+    "51": {
+      "vdw": 2.2,
+      "covalent": 1.39,
+      "weight": 121.76
+    },
+    "52": {
+      "vdw": 2.1,
+      "covalent": 1.38,
+      "weight": 127.6
+    },
+    "53": {
+      "vdw": 2.1,
+      "covalent": 1.39,
+      "weight": 126.904
+    },
+    "54": {
+      "vdw": 2.16,
+      "covalent": 1.4,
+      "weight": 131.29
+    },
+    "55": {
+      "vdw": 3.0,
+      "covalent": 2.44,
+      "weight": 132.905
+    },
+    "56": {
+      "vdw": 2.7,
+      "covalent": 2.15,
+      "weight": 137.328
+    },
+    "57": {
+      "vdw": 2.5,
+      "covalent": 2.07,
+      "weight": 138.906
+    },
+    "58": {
+      "vdw": 2.48,
+      "covalent": 2.04,
+      "weight": 140.116
+    },
+    "59": {
+      "vdw": 2.47,
+      "covalent": 2.03,
+      "weight": 140.908
+    },
+    "60": {
+      "vdw": 2.45,
+      "covalent": 2.01,
+      "weight": 144.24
+    },
+    "61": {
+      "vdw": 2.43,
+      "covalent": 1.99,
+      "weight": 145.0
+    },
+    "62": {
+      "vdw": 2.42,
+      "covalent": 1.98,
+      "weight": 150.36
+    },
+    "63": {
+      "vdw": 2.4,
+      "covalent": 1.98,
+      "weight": 151.964
+    },
+    "64": {
+      "vdw": 2.38,
+      "covalent": 1.96,
+      "weight": 157.25
+    },
+    "65": {
+      "vdw": 2.37,
+      "covalent": 1.94,
+      "weight": 158.925
+    },
+    "66": {
+      "vdw": 2.35,
+      "covalent": 1.92,
+      "weight": 162.5
+    },
+    "67": {
+      "vdw": 2.33,
+      "covalent": 1.92,
+      "weight": 164.93
+    },
+    "68": {
+      "vdw": 2.32,
+      "covalent": 1.89,
+      "weight": 167.26
+    },
+    "69": {
+      "vdw": 2.3,
+      "covalent": 1.9,
+      "weight": 168.934
+    },
+    "70": {
+      "vdw": 2.28,
+      "covalent": 1.87,
+      "weight": 173.04
+    },
+    "71": {
+      "vdw": 2.27,
+      "covalent": 1.87,
+      "weight": 174.967
+    },
+    "72": {
+      "vdw": 2.25,
+      "covalent": 1.75,
+      "weight": 178.49
+    },
+    "73": {
+      "vdw": 2.2,
+      "covalent": 1.7,
+      "weight": 180.948
+    },
+    "74": {
+      "vdw": 2.1,
+      "covalent": 1.62,
+      "weight": 183.84
+    },
+    "75": {
+      "vdw": 2.05,
+      "covalent": 1.51,
+      "weight": 186.207
+    },
+    "76": {
+      "vdw": 2.0,
+      "covalent": 1.44,
+      "weight": 190.23
+    },
+    "77": {
+      "vdw": 2.0,
+      "covalent": 1.41,
+      "weight": 192.217
+    },
+    "78": {
+      "vdw": 2.05,
+      "covalent": 1.36,
+      "weight": 195.078
+    },
+    "79": {
+      "vdw": 2.1,
+      "covalent": 1.36,
+      "weight": 196.967
+    },
+    "80": {
+      "vdw": 2.05,
+      "covalent": 1.32,
+      "weight": 200.59
+    },
+    "81": {
+      "vdw": 2.2,
+      "covalent": 1.45,
+      "weight": 204.383
+    },
+    "82": {
+      "vdw": 2.3,
+      "covalent": 1.46,
+      "weight": 207.2
+    },
+    "83": {
+      "vdw": 2.3,
+      "covalent": 1.48,
+      "weight": 208.98
+    },
+    "84": {
+      "vdw": 2.0,
+      "covalent": 1.4,
+      "weight": 209.0
+    },
+    "85": {
+      "vdw": 2.0,
+      "covalent": 1.5,
+      "weight": 210.0
+    },
+    "86": {
+      "vdw": 2.0,
+      "covalent": 1.5,
+      "weight": 222.0
+    },
+    "87": {
+      "vdw": 2.0,
+      "covalent": 2.6,
+      "weight": 223.0
+    },
+    "88": {
+      "vdw": 2.0,
+      "covalent": 2.2,
+      "weight": 226.0
+    },
+    "89": {
+      "vdw": 2.0,
+      "covalent": 2.15,
+      "weight": 227.0
+    },
+    "90": {
+      "vdw": 2.4,
+      "covalent": 2.06,
+      "weight": 232.038
+    },
+    "91": {
+      "vdw": 2.0,
+      "covalent": 2.0,
+      "weight": 231.036
+    },
+    "92": {
+      "vdw": 2.3,
+      "covalent": 1.96,
+      "weight": 238.029
+    },
+    "93": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 237.0
+    },
+    "94": {
+      "vdw": 2.0,
+      "covalent": 1.87,
+      "weight": 244.0
+    },
+    "95": {
+      "vdw": 2.0,
+      "covalent": 1.8,
+      "weight": 243.0
+    },
+    "96": {
+      "vdw": 2.0,
+      "covalent": 1.69,
+      "weight": 247.0
+    },
+    "97": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 247.0
+    },
+    "98": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 251.0
+    },
+    "99": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 252.0
+    },
+    "100": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 257.0
+    },
+    "101": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 258.0
+    },
+    "102": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 259.0
+    },
+    "103": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 262.0
+    },
+    "104": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 267.0
+    },
+    "105": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 268.0
+    },
+    "106": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 269.0
+    },
+    "107": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 270.0
+    },
+    "108": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 269.0
+    },
+    "109": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 278.0
+    },
+    "110": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 281.0
+    },
+    "111": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 281.0
+    },
+    "112": {
+      "vdw": 2.0,
+      "covalent": 1.9,
+      "weight": 285.0
+    },
+    "113": {
+      "vdw": 2.0,
+      "covalent": 1.36,
+      "weight": 284.0
+    },
+    "114": {
+      "vdw": 2.0,
+      "covalent": 1.43,
+      "weight": 289.0
+    },
+    "115": {
+      "vdw": 2.0,
+      "covalent": 1.62,
+      "weight": 288.0
+    },
+    "116": {
+      "vdw": 2.0,
+      "covalent": 1.75,
+      "weight": 293.0
+    },
+    "117": {
+      "vdw": 2.0,
+      "covalent": 1.65,
+      "weight": 292.0
+    },
+    "118": {
+      "vdw": 2.0,
+      "covalent": 1.57,
+      "weight": 294.0
+    }
+  }
+}

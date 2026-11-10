@@ -1,0 +1,9 @@
+%chk={NAME}-uvvis.chk
+%nprocshared=24
+%mem=24GB
+#p wb97xd/6-31g(d,p) td(direct,nstates=20) scrf(smd,solvent=chloroform)
+
+{标题：TD-DFT 紫外-可见吸收光谱计算}
+
+0 1
+{在此粘贴单体坐标}
