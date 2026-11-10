@@ -1,6 +1,6 @@
 {
   "name": "@yangdw2024/molforge",
-  "version": "7.4.0",
+  "version": "7.4.1",
   "description": "Cross-platform CLI & Node.js wrapper for MolForge Studio: Unified molecular science workstation (2D sketcher, 3D modeler, quantum chemistry & MD, LLM assistant).",
   "type": "module",
   "main": "index.js",
