@@ -1,4 +1,4 @@
-﻿"""
+"""
 MolForge - 分子编辑器包
 =====================
 一个给计算化学研究生用的轻量分子编辑器，基于 PyQt6 + RDKit。
@@ -14,5 +14,5 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-__version__ = "7.4.0"
+__version__ = "7.4.1"
 __app_name__ = "MolForge"

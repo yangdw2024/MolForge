@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "molforge-studio"
-version = "7.4.0"
+version = "7.4.1"
 description = "MolForge Studio: Unified molecular science workstation (2D sketcher, 3D modeler, quantum chemistry & MD, LLM assistant)"
 readme = "README.md"
 license = { text = "Apache-2.0" }
