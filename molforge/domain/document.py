@@ -386,6 +386,11 @@ class MoleculeDocument:
 
     def sync_2d_coords_from_3d(self) -> None:
         """当存在新原子尚无 2D 世界坐标时，按化学键或 3D 投影补齐其 2D 坐标（单位 Å）。"""
+        # 对 > 1500 原子的宏观体系或动力学盒子，严格禁止计算 2D 坐标，防止系统内存耗尽与 CPU 卡死
+        if self.topology.num_atoms > 1500 or self.properties.get("is_massive_system"):
+            self.coords_2d = {}
+            return
+
         idx_to_id, id_to_idx = self.topology.atom_index_map()
         # 清理已删除原子的残留 2D 坐标
         for k in list(self.coords_2d.keys()):

@@ -78,7 +78,7 @@ class Workspace(QFrame):
         self.on_ring_insert = on_ring_insert
         self.on_fg_insert = on_fg_insert
         self._current_element = 6
-        self.setMinimumWidth(480)
+        self.setMinimumWidth(320)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(10, 7, 10, 8)
@@ -283,6 +283,10 @@ class Workspace(QFrame):
         self.view_splitter.setSizes([500, 500])
         root.addWidget(self.view_splitter, 1)
 
+        # 超大宏观体系 / 动力学盒子自动默认切换为「仅 3D 视口」模式
+        if self.document is not None and self.document.topology.num_atoms > 1500:
+            QTimer.singleShot(0, lambda: self.set_mode(1))
+
     def _show_ring_menu(self):
         refresh_button_visual(self.ring_menu_btn, active=True)
         pos = self.ring_menu_btn.mapToGlobal(self.ring_menu_btn.rect().bottomLeft())
@@ -408,7 +412,7 @@ class MolForgeWindow(QMainWindow):
         self.document = initial_document if initial_document is not None else create_instant_caffeine_document()
         self.setWindowTitle(f"[{self.group_tag}] {self.document.name} — MolForge {__version__} · AI-Native Molecular & OSC Workbench")
         self.resize(1620, 930)
-        self.setMinimumSize(1040, 660)
+        self.setMinimumSize(960, 580)
         self.setAcceptDrops(True)
         self._saved_revisions = {self.document.document_id: self.document.revision}
         self._autosave_timer = QTimer(self)
@@ -2503,6 +2507,8 @@ class MolForgeWindow(QMainWindow):
         page.view3d_real.on_delete_selected_3d = self._delete_selected
         i = self.document_tabs.addTab(page, session.document.name)
         self.document_tabs.setCurrentIndex(i)
+        if session.document.topology.num_atoms > 1500:
+            page.set_mode(1)
         QTimer.singleShot(20, lambda: page.view3d_real.set_document(session.document))
         return page
 
@@ -2533,8 +2539,12 @@ class MolForgeWindow(QMainWindow):
         self.document = self.session.document
         self.command_bus = self.session.command_bus
         self.selection = self.session.selection
+        if hasattr(self, "sidebar") and hasattr(self.sidebar, "set_document"):
+            self.sidebar.set_document(self.document)
         self._on_document_changed(self.document)
         self._on_selection_changed()
+        if hasattr(self, "right") and self.right.stack.currentIndex() == 3:
+            self.right._refresh_history()
 
     def _close_document_tab(self, index):
         page = self.document_tabs.widget(index)

@@ -300,6 +300,9 @@ class Editor2DWidget(QWidget):
         """确保 doc.coords_2d 中存储的是以 (0,0) 为中心、键长 ~1.50 Å 的世界坐标。"""
         if self._document is None or self._document.topology.num_atoms == 0:
             return {}
+        # 对 > 1500 原子的动力学盒子与超大体系，严格禁止生成 2D 坐标以防止内存暴涨和卡死
+        if self._document.topology.num_atoms > 1500:
+            return {}
 
         doc = self._document
         atom_ids = list(doc.topology.atom_ids)
@@ -681,6 +684,37 @@ class Editor2DWidget(QWidget):
             return
 
         doc = self._document
+        if doc.topology.num_atoms > 1500:
+            # 严格禁止在 2D 画布中渲染超大体系/动力学盒子，免除内存暴涨与卡死！
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QColor(18, 28, 38, 235) if not self._paper_mode else QColor(245, 247, 250, 240))
+            card_w = max(360, min(620, self.width() - 40))
+            card_h = 210
+            cx = (self.width() - card_w) / 2
+            cy = (self.height() - card_h) / 2 + self.HEADER_HEIGHT / 2
+            p.drawRoundedRect(int(cx), int(cy), int(card_w), int(card_h), 12, 12)
+
+            p.setPen(QPen(QColor("#00E5FF" if not self._paper_mode else "#0052CC"), 1.8))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRoundedRect(int(cx), int(cy), int(card_w), int(card_h), 12, 12)
+
+            p.setPen(QColor("#00E5FF" if not self._paper_mode else "#0052CC"))
+            p.setFont(QFont("Segoe UI", 13, QFont.Weight.Bold))
+            p.drawText(int(cx + 24), int(cy + 40), f"📦 宏观体系 / 动力学盒子 ({doc.num_atoms:,} 原子 · {doc.num_bonds:,} 键)")
+
+            p.setPen(QColor("#E2E8F0" if not self._paper_mode else "#172B4D"))
+            p.setFont(QFont("Segoe UI", 10))
+            desc_text = (
+                "为保障极速流畅度并彻底防止系统内存耗尽，>1,500 原子的宏观体系已自动转入\n"
+                "【3D GPU 高性能视口】进行 3D 渲染与漫游交互。\n\n"
+                "💡 2D 结构草图画布针对经典化学分子设计，已安全休眠以保护内存。\n"
+                "您可以在右侧 3D 视口中以 60 FPS 自由旋转、平移和缩放观察该体系。"
+            )
+            from PyQt6.QtCore import QRect
+            p.drawText(QRect(int(cx + 24), int(cy + 62), int(card_w - 48), 135), Qt.TextFlag.TextWordWrap, desc_text)
+            self._draw_header(p)
+            p.end()
+            return
         # 一次性计算隐藏氢集合，避免每帧对每个原子/键反复查拓扑
         hidden_h = {aid for aid in doc.topology.atom_ids if self._is_hidden_hydrogen(aid)}
         coords_2d = self._get_screen_coords()
@@ -1035,6 +1069,11 @@ class Editor2DWidget(QWidget):
         self.setFocus()
         if self._document is None:
             return
+        if self._document.topology.num_atoms > 1500:
+            if event.button() in (Qt.MouseButton.MiddleButton, Qt.MouseButton.LeftButton):
+                self._panning = True
+                self._pan_start = event.position()
+            return
         pos = event.position()
         if pos.y() <= self.HEADER_HEIGHT:
             super().mousePressEvent(event)
@@ -1135,6 +1174,9 @@ class Editor2DWidget(QWidget):
             self._pan_y += delta.y()
             self._pan_start = pos
             self.update()
+            return
+
+        if self._document is not None and self._document.topology.num_atoms > 1500:
             return
 
         if self._marquee_start is not None:

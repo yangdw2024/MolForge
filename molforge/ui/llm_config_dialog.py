@@ -24,9 +24,9 @@ class LlmConfigDialog(QDialog):
 
         lay = QVBoxLayout(self)
         tip = QLabel(
-            "填写任意 OpenAI 兼容端点地址。MolForge 会以 function calling 方式让大模型读取当前结构、"
-            "通过命令总线编辑原子/键（可撤销）、并调用平面性等分析工具。"
+            "💡 说明：当前已自动加载主面板中的大模型端点与密钥。在此处调整并保存后将全局同步生效。"
         )
+        tip.setStyleSheet("color: #66DEC9; font-weight: 600; padding: 4px 0;")
         tip.setWordWrap(True)
         lay.addWidget(tip)
 

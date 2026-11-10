@@ -47,7 +47,6 @@ def ic(name: str) -> QIcon:
 def section(text: str) -> QLabel:
     q = QLabel(text.upper())
     q.setProperty("role", "section")
-    q.setStyleSheet("color:#688094; font-size:11px; font-weight:700; letter-spacing:0.5px; margin-top:4px;")
     return q
 
 
@@ -55,7 +54,6 @@ def muted(text: str) -> QLabel:
     q = QLabel(text)
     q.setWordWrap(True)
     q.setProperty("role", "muted")
-    q.setStyleSheet("color:#9AB0C2; font-size:12px;")
     return q
 
 
@@ -207,7 +205,7 @@ class LeftPanel(QFrame):
     def __init__(self, on_molecule_selected=None, on_ring_insert=None, on_fg_insert=None, parent=None):
         super().__init__(parent)
         self.setObjectName("Sidebar")
-        self.setMinimumWidth(260)
+        self.setMinimumWidth(210)
         self.setMaximumWidth(380)
 
         self.on_molecule_selected = on_molecule_selected
@@ -222,6 +220,7 @@ class LeftPanel(QFrame):
         self.on_center = None
         self.on_atom_selected = None
         self.on_bond_selected = None
+        self._current_document = None
 
         self._wheel_guard = WheelGuardFilter(self)
 
@@ -259,11 +258,18 @@ class LeftPanel(QFrame):
 
         self.stack.setCurrentIndex(0)
 
+    def set_document(self, document):
+        self._current_document = document
+        if self.stack.currentIndex() == 2:
+            self.refresh_structure_tree(document)
+
     def switch_tab(self, index: int):
         if 0 <= index < self.stack.count():
             self.stack.setCurrentIndex(index)
             for i, b in enumerate(self.tab_buttons):
                 refresh_button_visual(b, active=(i == index))
+            if index == 2 and self._current_document is not None:
+                self.refresh_structure_tree(self._current_document)
 
     # ---------- Tab 0: 结构砌块库 ----------
     def _build_fragments_page(self) -> QWidget:
@@ -890,7 +896,7 @@ class RightPanel(QFrame):
         self._chat_worker = None
         self._chat_bridge = None
         self._wheel_guard = WheelGuardFilter(self)
-        self.setMinimumWidth(330)
+        self.setMinimumWidth(260)
         self.setMaximumWidth(600)
 
         from ..application.ai.deepseek_client import DeepSeekChemistryAssistant
@@ -1705,6 +1711,10 @@ class RightPanel(QFrame):
         row_save.addWidget(self.save_feedback_lbl, 1)
         cfg_lay.addLayout(row_save)
 
+        lbl_sync = QLabel("✓ 此处配置已全局持久化，独立对话窗口与 MCP 工具链自动实时继承。")
+        lbl_sync.setStyleSheet("color: #5EEAD4; font-size: 11px; padding: 2px 0;")
+        cfg_lay.addWidget(lbl_sync)
+
         box.addWidget(cfg_card)
 
         tools_card = CollapsibleCard("一键量化与结构分析 (QUICK TOOLS)", expanded=True)
@@ -2035,30 +2045,63 @@ class RightPanel(QFrame):
         box.addStretch(1)
 
     def _refresh_history(self):
+        bus = self._command_bus_provider() if self._command_bus_provider else None
+        can_undo = bool(bus and bus.history.can_undo)
+        can_redo = bool(bus and bus.history.can_redo)
+        undo_cmds = list(bus.history._undo_stack) if bus else []
+        redo_cmds = list(reversed(bus.history._redo_stack)) if bus else []
+
+        # 若历史面板控件已存在，原地平滑刷新列表内容，绝不销毁重构，防止事件循环重入假死！
+        if hasattr(self, "btn_undo") and hasattr(self, "history_list"):
+            self.btn_undo.setEnabled(can_undo)
+            self.btn_redo.setEnabled(can_redo)
+            self.history_list.blockSignals(True)
+            self.history_list.clear()
+
+            item0 = QListWidgetItem("🏁 0. 初始结构 (起点)")
+            self.history_list.addItem(item0)
+            for idx, cmd in enumerate(undo_cmds, 1):
+                desc = getattr(cmd, "description", type(cmd).__name__)
+                it = QListWidgetItem(f"✓ {idx}. {desc}")
+                self.history_list.addItem(it)
+
+            active_row = len(undo_cmds)
+            self.history_list.setCurrentRow(active_row)
+            cur_item = self.history_list.item(active_row)
+            if cur_item:
+                cur_item.setText(cur_item.text() + "  ◀ [当前状态]")
+                cur_item.setForeground(QColor("#5EEAD4"))
+
+            for idx, cmd in enumerate(redo_cmds, len(undo_cmds) + 1):
+                desc = getattr(cmd, "description", type(cmd).__name__)
+                it = QListWidgetItem(f"↷ {idx}. {desc}  (可重做)")
+                it.setForeground(QColor("#688094"))
+                self.history_list.addItem(it)
+
+            self.history_list.blockSignals(False)
+            if hasattr(self, "history_export_btn"):
+                self.history_export_btn.setEnabled(bool(undo_cmds or (bus and bus.history.audit_events)))
+            return
+
         self._clear_box(self.history_box)
         box = self.history_box
         h_card = CollapsibleCard("操作历史与时间线跳转 (HISTORY TIMELINE)", expanded=True)
         h_lay = h_card.body_layout
-        bus = self._command_bus_provider() if self._command_bus_provider else None
 
-        # 顶部操作按键：撤销、重做、清空
         row_act = QHBoxLayout()
-        can_undo = bool(bus and bus.history.can_undo)
-        can_redo = bool(bus and bus.history.can_redo)
+        self.btn_undo = QPushButton("⏪ 撤销 (Ctrl+Z)")
+        self.btn_undo.setEnabled(can_undo)
+        self.btn_undo.setMinimumHeight(30)
+        self.btn_undo.setStyleSheet("QPushButton { font-weight:700; font-size:12px; }")
+        self.btn_undo.clicked.connect(self._history_do_undo)
+        row_act.addWidget(self.btn_undo)
 
-        btn_undo = QPushButton("⏪ 撤销 (Ctrl+Z)")
-        btn_undo.setEnabled(can_undo)
-        btn_undo.setMinimumHeight(30)
-        btn_undo.setStyleSheet("QPushButton { font-weight:700; font-size:12px; }")
-        btn_undo.clicked.connect(self._history_do_undo)
-        row_act.addWidget(btn_undo)
-
-        btn_redo = QPushButton("⏩ 重做 (Ctrl+Y)")
-        btn_redo.setEnabled(can_redo)
-        btn_redo.setMinimumHeight(30)
-        btn_redo.setStyleSheet("QPushButton { font-weight:700; font-size:12px; }")
-        btn_redo.clicked.connect(self._history_do_redo)
-        row_act.addWidget(btn_redo)
+        self.btn_redo = QPushButton("⏩ 重做 (Ctrl+Y)")
+        self.btn_redo.setEnabled(can_redo)
+        self.btn_redo.setMinimumHeight(30)
+        self.btn_redo.setStyleSheet("QPushButton { font-weight:700; font-size:12px; }")
+        self.btn_redo.clicked.connect(self._history_do_redo)
+        row_act.addWidget(self.btn_redo)
 
         btn_clear = QPushButton("🗑️ 清空")
         btn_clear.setToolTip("清空当前撤销与重做历史栈")
@@ -2078,20 +2121,13 @@ class RightPanel(QFrame):
             "QListWidget::item:selected { background:#0D9488; color:#FFFFFF; font-weight:bold; }"
         )
 
-        undo_cmds = list(bus.history._undo_stack) if bus else []
-        redo_cmds = list(reversed(bus.history._redo_stack)) if bus else []
-
-        # Step 0: 初始起点
         item0 = QListWidgetItem("🏁 0. 初始结构 (起点)")
         self.history_list.addItem(item0)
-
-        # Undo stack items (已执行的历史操作)
         for idx, cmd in enumerate(undo_cmds, 1):
             desc = getattr(cmd, "description", type(cmd).__name__)
             it = QListWidgetItem(f"✓ {idx}. {desc}")
             self.history_list.addItem(it)
 
-        # 高亮标记当前活跃所在步
         active_row = len(undo_cmds)
         self.history_list.setCurrentRow(active_row)
         cur_item = self.history_list.item(active_row)
@@ -2099,7 +2135,6 @@ class RightPanel(QFrame):
             cur_item.setText(cur_item.text() + "  ◀ [当前状态]")
             cur_item.setForeground(QColor("#5EEAD4"))
 
-        # Redo stack items (未来可重做的操作)
         for idx, cmd in enumerate(redo_cmds, len(undo_cmds) + 1):
             desc = getattr(cmd, "description", type(cmd).__name__)
             it = QListWidgetItem(f"↷ {idx}. {desc}  (可重做)")
@@ -2109,14 +2144,15 @@ class RightPanel(QFrame):
         self.history_list.itemClicked.connect(self._on_history_item_clicked)
         h_lay.addWidget(self.history_list)
 
-        export = QPushButton("📦 导出本次操作为技能 (Export Skill)...")
-        export.setEnabled(bool(undo_cmds or (bus and bus.history.audit_events)))
-        export.setMinimumHeight(32)
-        export.clicked.connect(self._export_history_skill)
-        h_lay.addWidget(export)
+        self.history_export_btn = QPushButton("📦 导出本次操作为技能 (Export Skill)...")
+        self.history_export_btn.setEnabled(bool(undo_cmds or (bus and bus.history.audit_events)))
+        self.history_export_btn.setMinimumHeight(32)
+        self.history_export_btn.clicked.connect(self._export_history_skill)
+        h_lay.addWidget(self.history_export_btn)
 
         h_lay.addWidget(muted("快捷键提示：Ctrl+Z 撤销，Ctrl+Y 重做。点击列表行可直接回退或前进。"))
         box.addWidget(h_card)
+        box.addStretch(1)
         box.addStretch(1)
 
     def _history_do_undo(self):

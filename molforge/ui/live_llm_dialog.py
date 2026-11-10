@@ -41,8 +41,8 @@ class LiveLlmDialog(QDialog):
         lay = QVBoxLayout(self)
 
         cfg = get_llm_config()
-        self.info_lbl = QLabel(f"接入端点: {cfg['base_url']}  |  模型: {cfg['model']}")
-        self.info_lbl.setStyleSheet("color: #66DEC9; font-size: 11px; padding: 2px 0;")
+        self.info_lbl = QLabel(f"✓ 已自动同步主界面大模型配置 — 端点: {cfg['base_url']}  |  模型: {cfg['model']}")
+        self.info_lbl.setStyleSheet("color: #66DEC9; font-size: 11px; font-weight: 600; padding: 2px 0;")
         lay.addWidget(self.info_lbl)
 
         lay.addWidget(QLabel("网络请求在后台运行；修改结构先显示确认，经命令总线执行，可撤销。"))
@@ -54,7 +54,8 @@ class LiveLlmDialog(QDialog):
         self.input = QLineEdit()
         self.input.setPlaceholderText("读取当前分子、列出原子、运行平面性或提出修改指令...")
         self.send = QPushButton("发送")
-        self.config = QPushButton("端点配置")
+        self.config = QPushButton("调整独立端点...")
+        self.config.setToolTip("此窗口已自动继承右侧面板配置。如需临时为该对话更换其他大模型端点请点击此按钮。")
         row.addWidget(self.input, 1)
         row.addWidget(self.send)
         row.addWidget(self.config)

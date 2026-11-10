@@ -114,10 +114,11 @@ def dihedral(coords: np.ndarray, i: int, j: int, k: int, l: int) -> tuple[float,
     n1_norm = n1 / norm_n1
     n2_norm = n2 / norm_n2
 
-    # 二面角
-    m1 = np.cross(n1_norm, b2 / norm_b2)
-    x = np.dot(n1_norm, n2_norm)
-    y = np.dot(m1, n2_norm)
+    # 二面角（严格对齐 Gaussian / Multiwfn / RDKit / IUPAC 标准定义：
+    # 视线沿 b2 (j->k) 方向看去，顺时针旋转为正，逆时针旋转为负）
+    u2 = b2 / norm_b2
+    x = float(np.dot(n1_norm, n2_norm))
+    y = float(np.dot(np.cross(n1_norm, n2_norm), u2))
 
     angle_rad = math.atan2(y, x)
     angle_deg = math.degrees(angle_rad)

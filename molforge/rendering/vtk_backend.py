@@ -260,6 +260,7 @@ class VtkRendererBackend(Renderer3D):
         self._scene_initialized = False
 
         # 1. 逐原子 Glyph 常驻管线
+        self._atom_sphere = None
         self._atom_points = None
         self._atom_radii = None
         self._atom_colors = None
@@ -424,8 +425,9 @@ class VtkRendererBackend(Renderer3D):
 
         atom_sphere = vtk.vtkSphereSource()
         atom_sphere.SetRadius(1.0)
-        atom_sphere.SetThetaResolution(32)
-        atom_sphere.SetPhiResolution(32)
+        atom_sphere.SetThetaResolution(24)
+        atom_sphere.SetPhiResolution(24)
+        self._atom_sphere = atom_sphere
 
         self._atom_glyph_mapper = vtk.vtkGlyph3DMapper()
         self._atom_glyph_mapper.SetSourceConnection(atom_sphere.GetOutputPort())
@@ -695,6 +697,20 @@ class VtkRendererBackend(Renderer3D):
             return
 
         n = min(self._n_atoms, len(self._coordinates), len(self._atomic_numbers))
+        is_massive = (n > 2000 or len(self._bonds) > 2000)
+
+        # 动态调节原子球多边形细分精度（小分子高保真 24x24；超大体系/动力学盒子 8x8 或 6x6，减少 96.5% 多边形开销与显存压力！）
+        if self._atom_sphere is not None:
+            if n > 50000:
+                self._atom_sphere.SetThetaResolution(6)
+                self._atom_sphere.SetPhiResolution(6)
+            elif n > 2000:
+                self._atom_sphere.SetThetaResolution(8)
+                self._atom_sphere.SetPhiResolution(8)
+            else:
+                self._atom_sphere.SetThetaResolution(24)
+                self._atom_sphere.SetPhiResolution(24)
+
         atom_rgb_cache: list[tuple[int, int, int]] = []
 
         # 1. 写入全部原子球顶点、逐原子半径、逐原子 RGB
@@ -726,80 +742,111 @@ class VtkRendererBackend(Renderer3D):
         show_b = self.show_bonds and (self._mode not in (RepresentationMode.CPK, RepresentationMode.SPACE_FILL))
         if show_b and self._bonds:
             pt_cursor = 0
+            if is_massive:
+                # 宏观超大体系 / 动力学盒子：断开 CPU TubeFilter 管道，直连 GPU 硬件管线渲染线条！
+                # 显存直接执行硬件着色，免除 1000 万个 CPU 多边形与数 GB 内存暴涨！
+                if self._bond_mapper.GetInputConnection(0, 0) is not None:
+                    self._bond_mapper.SetInputConnection(None)
+                self._bond_mapper.SetInputData(self._bond_polydata)
+                self._bond_actor.GetProperty().SetLineWidth(1.8)
 
-            def _add_tube_segment(p_start: np.ndarray, p_end: np.ndarray, rad: float, rgb_tuple: tuple[int, int, int]):
-                nonlocal pt_cursor
-                self._bond_points.InsertNextPoint(float(p_start[0]), float(p_start[1]), float(p_start[2]))
-                self._bond_points.InsertNextPoint(float(p_end[0]), float(p_end[1]), float(p_end[2]))
-                self._bond_radii.InsertNextValue(float(rad))
-                self._bond_radii.InsertNextValue(float(rad))
-                self._bond_colors.InsertNextTuple4(*rgb_tuple)
-                self._bond_colors.InsertNextTuple4(*rgb_tuple)
-                self._bond_lines.InsertNextCell(2)
-                self._bond_lines.InsertCellPoint(pt_cursor)
-                self._bond_lines.InsertCellPoint(pt_cursor + 1)
-                pt_cursor += 2
+                for b_idx, (i, j, order) in enumerate(self._bonds):
+                    if not (0 <= i < n and 0 <= j < n) or i == j:
+                        continue
+                    if not self.show_hydrogens and (int(self._atomic_numbers[i]) == 1 or int(self._atomic_numbers[j]) == 1):
+                        continue
+                    p1 = self._coordinates[i]
+                    p2 = self._coordinates[j]
+                    c1 = atom_rgb_cache[i]
+                    c2 = atom_rgb_cache[j]
+                    self._bond_points.InsertNextPoint(float(p1[0]), float(p1[1]), float(p1[2]))
+                    self._bond_points.InsertNextPoint(float(p2[0]), float(p2[1]), float(p2[2]))
+                    self._bond_radii.InsertNextValue(0.05)
+                    self._bond_radii.InsertNextValue(0.05)
+                    self._bond_colors.InsertNextTuple4(c1[0], c1[1], c1[2], 255)
+                    self._bond_colors.InsertNextTuple4(c2[0], c2[1], c2[2], 255)
+                    self._bond_lines.InsertNextCell(2)
+                    self._bond_lines.InsertCellPoint(pt_cursor)
+                    self._bond_lines.InsertCellPoint(pt_cursor + 1)
+                    pt_cursor += 2
+            else:
+                # 经典小分子：连接高品质 18 面圆柱 TubeFilter
+                if self._bond_mapper.GetInputConnection(0, 0) is None:
+                    self._bond_mapper.SetInputConnection(self._bond_tube_filter.GetOutputPort())
 
-            for b_idx, (i, j, order) in enumerate(self._bonds):
-                if not (0 <= i < n and 0 <= j < n) or i == j:
-                    continue
-                if not self.show_hydrogens and (int(self._atomic_numbers[i]) == 1 or int(self._atomic_numbers[j]) == 1):
-                    continue
+                def _add_tube_segment(p_start: np.ndarray, p_end: np.ndarray, rad: float, rgb_tuple: tuple[int, int, int]):
+                    nonlocal pt_cursor
+                    self._bond_points.InsertNextPoint(float(p_start[0]), float(p_start[1]), float(p_start[2]))
+                    self._bond_points.InsertNextPoint(float(p_end[0]), float(p_end[1]), float(p_end[2]))
+                    self._bond_radii.InsertNextValue(float(rad))
+                    self._bond_radii.InsertNextValue(float(rad))
+                    self._bond_colors.InsertNextTuple4(*rgb_tuple)
+                    self._bond_colors.InsertNextTuple4(*rgb_tuple)
+                    self._bond_lines.InsertNextCell(2)
+                    self._bond_lines.InsertCellPoint(pt_cursor)
+                    self._bond_lines.InsertCellPoint(pt_cursor + 1)
+                    pt_cursor += 2
 
-                p1 = self._coordinates[i].astype(np.float64)
-                p2 = self._coordinates[j].astype(np.float64)
-                vec = p2 - p1
-                length = float(np.linalg.norm(vec))
-                if length < 1e-4:
-                    continue
+                for b_idx, (i, j, order) in enumerate(self._bonds):
+                    if not (0 <= i < n and 0 <= j < n) or i == j:
+                        continue
+                    if not self.show_hydrogens and (int(self._atomic_numbers[i]) == 1 or int(self._atomic_numbers[j]) == 1):
+                        continue
 
-                r_bond = self.get_effective_bond_radius(b_idx)
-                if b_idx in self._per_bond_colors and self._per_bond_colors[b_idx] is not None:
-                    bc = self._per_bond_colors[b_idx]
-                    c1_u8 = (
-                        max(0, min(255, int(round(bc[0] * 255.0)))),
-                        max(0, min(255, int(round(bc[1] * 255.0)))),
-                        max(0, min(255, int(round(bc[2] * 255.0)))),
-                    )
-                    c2_u8 = c1_u8
-                else:
-                    c1_u8 = atom_rgb_cache[i]
-                    c2_u8 = atom_rgb_cache[j]
+                    p1 = self._coordinates[i].astype(np.float64)
+                    p2 = self._coordinates[j].astype(np.float64)
+                    vec = p2 - p1
+                    length = float(np.linalg.norm(vec))
+                    if length < 1e-4:
+                        continue
 
-                # A bond fades with the less transparent endpoint, keeping boundary bonds legible.
-                alpha = int(round(255 * max(self._atom_opacities[i], self._atom_opacities[j])))
-                c1_u8 = tuple(c1_u8) + (alpha,)
-                c2_u8 = tuple(c2_u8) + (alpha,)
-                vis_order = 2 if int(order) == 4 else max(1, min(3, int(order)))
-                if vis_order == 1 or self._mode == RepresentationMode.LINE:
-                    mid = 0.5 * (p1 + p2)
-                    _add_tube_segment(p1, mid, r_bond, c1_u8)
-                    _add_tube_segment(mid, p2, r_bond, c2_u8)
-                else:
-                    # 计算垂直于键方向的偏移向量（用于双键/三键平行多圆柱）
-                    u = vec / length
-                    ref = np.array([0.0, 0.0, 1.0]) if abs(u[2]) < 0.85 else np.array([0.0, 1.0, 0.0])
-                    perp = np.cross(u, ref)
-                    perp /= (float(np.linalg.norm(perp)) + 1e-12)
-
-                    if vis_order == 2:
-                        sub_r = r_bond * 0.62
-                        sep = r_bond * 1.15
-                        for sign in (-1.0, 1.0):
-                            off = perp * (sign * sep)
-                            pa, pb = p1 + off, p2 + off
-                            mid = 0.5 * (pa + pb)
-                            _add_tube_segment(pa, mid, sub_r, c1_u8)
-                            _add_tube_segment(mid, pb, sub_r, c2_u8)
+                    r_bond = self.get_effective_bond_radius(b_idx)
+                    if b_idx in self._per_bond_colors and self._per_bond_colors[b_idx] is not None:
+                        bc = self._per_bond_colors[b_idx]
+                        c1_u8 = (
+                            max(0, min(255, int(round(bc[0] * 255.0)))),
+                            max(0, min(255, int(round(bc[1] * 255.0)))),
+                            max(0, min(255, int(round(bc[2] * 255.0)))),
+                        )
+                        c2_u8 = c1_u8
                     else:
-                        sub_r = r_bond * 0.52
-                        sep = r_bond * 1.35
-                        for mult in (-1.0, 0.0, 1.0):
-                            off = perp * (mult * sep)
-                            pa, pb = p1 + off, p2 + off
-                            mid = 0.5 * (pa + pb)
-                            _add_tube_segment(pa, mid, sub_r, c1_u8)
-                            _add_tube_segment(mid, pb, sub_r, c2_u8)
+                        c1_u8 = atom_rgb_cache[i]
+                        c2_u8 = atom_rgb_cache[j]
+
+                    # A bond fades with the less transparent endpoint, keeping boundary bonds legible.
+                    alpha = int(round(255 * max(self._atom_opacities[i], self._atom_opacities[j])))
+                    c1_u8 = tuple(c1_u8) + (alpha,)
+                    c2_u8 = tuple(c2_u8) + (alpha,)
+                    vis_order = 2 if int(order) == 4 else max(1, min(3, int(order)))
+                    if vis_order == 1 or self._mode == RepresentationMode.LINE:
+                        mid = 0.5 * (p1 + p2)
+                        _add_tube_segment(p1, mid, r_bond, c1_u8)
+                        _add_tube_segment(mid, p2, r_bond, c2_u8)
+                    else:
+                        # 计算垂直于键方向的偏移向量（用于双键/三键平行多圆柱）
+                        u = vec / length
+                        ref = np.array([0.0, 0.0, 1.0]) if abs(u[2]) < 0.85 else np.array([0.0, 1.0, 0.0])
+                        perp = np.cross(u, ref)
+                        perp /= (float(np.linalg.norm(perp)) + 1e-12)
+
+                        if vis_order == 2:
+                            sub_r = r_bond * 0.62
+                            sep = r_bond * 1.15
+                            for sign in (-1.0, 1.0):
+                                off = perp * (sign * sep)
+                                pa, pb = p1 + off, p2 + off
+                                mid = 0.5 * (pa + pb)
+                                _add_tube_segment(pa, mid, sub_r, c1_u8)
+                                _add_tube_segment(mid, pb, sub_r, c2_u8)
+                        else:
+                            sub_r = r_bond * 0.52
+                            sep = r_bond * 1.35
+                            for mult in (-1.0, 0.0, 1.0):
+                                off = perp * (mult * sep)
+                                pa, pb = p1 + off, p2 + off
+                                mid = 0.5 * (pa + pb)
+                                _add_tube_segment(pa, mid, sub_r, c1_u8)
+                                _add_tube_segment(mid, pb, sub_r, c2_u8)
 
             self._bond_points.Modified()
             self._bond_lines.Modified()
@@ -818,6 +865,10 @@ class VtkRendererBackend(Renderer3D):
         self._update_labels_in_place()
 
     def _update_glow_layers(self):
+        if self._n_atoms > 2000:
+            for poly, radii, colors, actor, factor, alpha_factor in self._glow_layers:
+                actor.SetVisibility(False)
+            return
         for poly, radii, colors, actor, factor, alpha_factor in self._glow_layers:
             radii.Reset(); colors.Reset(); colors.SetNumberOfComponents(4)
             visible = False
@@ -832,6 +883,10 @@ class VtkRendererBackend(Renderer3D):
             radii.Modified(); colors.Modified(); poly.Modified(); actor.SetVisibility(visible)
 
     def _update_labels_in_place(self) -> None:
+        if self._n_atoms > 2000 and self.label_scope != "selected":
+            if self._native_labels is not None:
+                self._native_labels.actor.VisibilityOff()
+            return
         if self._native_labels is not None:
             self._native_labels.update()
 

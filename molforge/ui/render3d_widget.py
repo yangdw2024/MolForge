@@ -462,22 +462,33 @@ class Render3DWidget(QWidget):
                 doc.relax_3d_geometry(max_iters=80)
                 coords = doc.coordinates.current.coords.copy() if doc.coordinates.current is not None else np.zeros((n, 3), dtype=np.float32)
 
-        # 提取每个原子的独立 scale 与独立 color，以及每条键的独立 width_scale 与独立 color (P0 核心要求！)
-        atom_scales = [float(getattr(doc.topology.get_atom(aid), "scale", 1.0)) for aid in atom_ids]
-        atom_colors = {}
-        for i, aid in enumerate(atom_ids):
-            c = getattr(doc.topology.get_atom(aid), "color", None)
-            if c is not None:
-                atom_colors[i] = tuple(float(x) for x in c)
+        is_massive = (n > 1500)
+        if is_massive:
+            atom_scales = np.ones(n, dtype=np.float32)
+            atom_colors = {}
+            bond_scales = np.ones(len(self._bond_ids), dtype=np.float32)
+            bond_colors = {}
+            atom_opacities = None
+            atom_glows = {}
+        else:
+            # 提取每个原子的独立 scale 与独立 color，以及每条键的独立 width_scale 与独立 color (P0 核心要求！)
+            atom_scales = [float(getattr(doc.topology.get_atom(aid), "scale", 1.0)) for aid in atom_ids]
+            atom_colors = {}
+            for i, aid in enumerate(atom_ids):
+                c = getattr(doc.topology.get_atom(aid), "color", None)
+                if c is not None:
+                    atom_colors[i] = tuple(float(x) for x in c)
 
-        bond_scales = []
-        bond_colors = {}
-        for b_idx, bid in enumerate(self._bond_ids):
-            b_obj = doc.topology.get_bond(bid)
-            bond_scales.append(float(getattr(b_obj, "width_scale", 1.0)))
-            bc = getattr(b_obj, "color", None)
-            if bc is not None:
-                bond_colors[b_idx] = tuple(float(x) for x in bc)
+            bond_scales = []
+            bond_colors = {}
+            for b_idx, bid in enumerate(self._bond_ids):
+                b_obj = doc.topology.get_bond(bid)
+                bond_scales.append(float(getattr(b_obj, "width_scale", 1.0)))
+                bc = getattr(b_obj, "color", None)
+                if bc is not None:
+                    bond_colors[b_idx] = tuple(float(x) for x in bc)
+            atom_opacities = [float(doc.topology.get_atom(a).properties.get("opacity", 1.0)) for a in atom_ids]
+            atom_glows = {i: tuple(doc.topology.get_atom(a).properties.get("glow_color", (0.3, 0.8, 1.0))) + (float(doc.topology.get_atom(a).properties.get("glow", 0.0)),) for i, a in enumerate(atom_ids)}
 
         selected = self._selection.selected_atoms if self._selection is not None else set()
         selected_bonds = self._selection.selected_bonds if self._selection is not None else set()
@@ -507,8 +518,8 @@ class Render3DWidget(QWidget):
             bond_ids=list(self._bond_ids),
             atom_scales=np.array(atom_scales, dtype=np.float32),
             atom_colors=atom_colors,
-            atom_opacities=[float(doc.topology.get_atom(a).properties.get("opacity",1.)) for a in atom_ids],
-            atom_glows={i: tuple(doc.topology.get_atom(a).properties.get("glow_color",(0.3,0.8,1.))) + (float(doc.topology.get_atom(a).properties.get("glow",0.)),) for i,a in enumerate(atom_ids)},
+            atom_opacities=atom_opacities,
+            atom_glows=atom_glows,
             bond_scales=np.array(bond_scales, dtype=np.float32),
             bond_colors=bond_colors,
             show_hydrogens=self.renderer.show_hydrogens,

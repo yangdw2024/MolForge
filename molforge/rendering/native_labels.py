@@ -76,7 +76,7 @@ class NativeAtomLabels:
 
     def update(self):
         b=self.backend
-        if not (b.show_labels or b.show_symbols) or b._coordinates is None:
+        if not (b.show_labels or b.show_symbols) or b._coordinates is None or (b._n_atoms > 2000 and b.label_scope != 'selected'):
             self.actor.VisibilityOff()
             for *_,actor in self._views:actor.VisibilityOff()
             return

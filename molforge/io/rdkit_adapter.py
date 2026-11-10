@@ -426,8 +426,12 @@ def build_document_from_3d_atoms(
     else:
         doc.coordinates.add_frame(coords_centered, energy=(properties or {}).get("energy_ev"), source=source_format)
 
-    # 生成零阻塞 2D 世界坐标
-    doc.coords_2d = compute_2d_coords_from_3d_svd(atom_ids, coords_centered, bonds_for_2d)
+    # 生成 2D 世界坐标（对 <= 1500 原子的经典化学分子生成高品质 SVD 投影；对 > 1500 原子的超大动力学体系严格免除 2D 投影以节约数 GB 内存）
+    if n <= 1500:
+        doc.coords_2d = compute_2d_coords_from_3d_svd(atom_ids, coords_centered, bonds_for_2d)
+    else:
+        doc.coords_2d = {}
+        doc.properties["is_massive_system"] = True
     doc.validate()
     return doc
 
@@ -977,17 +981,17 @@ def parse_pdb_to_document(path: Union[Path, str]) -> MoleculeDocument:
             break
 
     if not z_list:
-        raise ValueError(f"PDB 文件 {path.name} 中未找到有效 ATOM/HETATM 坐标记录")
+        raise ValueError(f"PDB 文件 {p.name} 中未找到有效 ATOM/HETATM 坐标记录")
 
     explicit_bonds = [(i, j, 1, False) for i, j in conect_pairs] if conect_pairs else None
 
     return build_document_from_3d_atoms(
-        name=path.stem,
+        name=p.stem,
         atomic_nums=z_list,
         coords=np.array(xyz_list, dtype=np.float32),
         explicit_bonds=explicit_bonds,
         source_format="pdb",
-        source_path=str(path),
+        source_path=str(p),
     )
 
 

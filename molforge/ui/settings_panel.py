@@ -273,6 +273,10 @@ class SettingsPanel(QWidget):
             app.setStyleSheet(new_css)
             # 遍历所有顶级窗口强制刷新布局与样式重绘
             for top_widget in app.topLevelWidgets():
+                top_widget.setFont(font)
+                from PyQt6.QtWidgets import QWidget
+                for child in top_widget.findChildren(QWidget):
+                    child.setFont(font)
                 top_widget.style().unpolish(top_widget)
                 top_widget.style().polish(top_widget)
                 top_widget.update()
