@@ -727,29 +727,47 @@ class QcResultDialog(QDialog):
 
     def _populate_result_data(self, result):
         self.result = result
+        from ..domain.elements import get_element
+
         if isinstance(result, dict):
             software = result.get("software", "REST")
             method = result.get("method", "DFT")
             basis = result.get("basis", "def2-SVP")
             energy = result.get("energy", result.get("final_energy_ev", 0.0)) or 0.0
+            energy_hartree = result.get("energy_hartree", (energy / 27.211386 if energy else 0.0))
             converged = result.get("converged", True)
             homo = result.get("homo", result.get("homo_ev", 0.0)) or 0.0
             lumo = result.get("lumo", result.get("lumo_ev", 0.0)) or 0.0
             gap = result.get("gap", result.get("gap_ev", 0.0)) or 0.0
+            dipole_debye = result.get("dipole_debye", 0.0)
+            dipole_vec = result.get("dipole_vector", (0.0, 0.0, 0.0))
+            zpe_hartree = result.get("zpe_hartree", 0.0)
+            gibbs_hartree = result.get("gibbs_free_energy_hartree", 0.0)
+            freqs = result.get("frequencies", [])
+            imag_freqs = result.get("imaginary_frequencies", [])
             steps = result.get("optimization_steps", [])
             mulliken = result.get("mulliken_charges", {})
+            at_nos = result.get("atomic_numbers", [])
             s1_txt = ""
         else:
             software = getattr(result, "software", "Gaussian")
             method = getattr(result, "method", "B3LYP")
             basis = getattr(result, "basis", "6-31G(d)")
             energy = getattr(result, "energy", 0.0)
+            energy_hartree = getattr(result, "energy_hartree", (energy / 27.211386 if energy else 0.0))
             converged = getattr(result, "converged", True)
             homo = getattr(result, "homo", 0.0)
             lumo = getattr(result, "lumo", 0.0)
             gap = getattr(result, "gap", 0.0)
+            dipole_debye = getattr(result, "dipole_debye", 0.0)
+            dipole_vec = getattr(result, "dipole_vector", (0.0, 0.0, 0.0))
+            zpe_hartree = getattr(result, "zpe_hartree", 0.0)
+            gibbs_hartree = getattr(result, "gibbs_free_energy_hartree", 0.0)
+            freqs = getattr(result, "frequencies", [])
+            imag_freqs = getattr(result, "imaginary_frequencies", [])
             steps = getattr(result, "optimization_steps", [])
             mulliken = getattr(result, "mulliken_charges", {})
+            at_nos = getattr(result, "atomic_numbers", [])
             s1_txt = ""
             if getattr(result, "s1_energy_ev", 0.0) > 0:
                 s1_txt = (
@@ -757,12 +775,37 @@ class QcResultDialog(QDialog):
                     f"({result.s1_wavelength_nm:.1f} nm, <i>f</i> = {result.s1_oscillator_f:.4f})"
                 )
 
+        # 偶极矩文本
+        dip_txt = ""
+        if dipole_debye > 0.0:
+            dip_txt = f"<br><b>偶极矩：</b>|μ| = {dipole_debye:.3f} Debye (X: {dipole_vec[0]:.2f}, Y: {dipole_vec[1]:.2f}, Z: {dipole_vec[2]:.2f})"
+
+        # 简正振动分析与虚频判定
+        freq_txt = ""
+        if freqs:
+            n_freq = len(freqs)
+            n_imag = len(imag_freqs)
+            if n_imag == 0:
+                freq_txt = f"<br><b>简正振动分析：</b>共 {n_freq} 个振动基频 · <span style='color:#66DEC9; font-weight:700;'>✓ 无虚频（真实能量极小点稳定构型）</span>"
+            else:
+                imag_str = ", ".join(f"{x:.1f}" for x in imag_freqs[:3])
+                freq_txt = f"<br><b>简正振动分析：</b>共 {n_freq} 个基频 · <span style='color:#F87171; font-weight:700;'>⚠️ 存在 {n_imag} 个虚频 ({imag_str} cm⁻¹，为过渡态/鞍点)</span>"
+
+        # 热力学修正
+        thermo_txt = ""
+        if zpe_hartree != 0.0 or gibbs_hartree != 0.0:
+            thermo_txt = f"<br><b>热力学性质：</b>零点能 ZPE = {zpe_hartree:.5f} a.u."
+            if gibbs_hartree != 0.0:
+                thermo_txt += f"　吉布斯自由能 G = {gibbs_hartree:.6f} a.u."
+
+        energy_str = f"{energy_hartree:.6f} a.u. ({energy:.4f} eV)" if energy_hartree != 0.0 else f"{energy:.4f} eV"
+
         self.summary_label.setText(
             f"<b>计算引擎：</b>{software}　<b>理论方法：</b>{method} / {basis}<br>"
-            f"<b>总能量：</b>{energy:.4f} eV　<b>收敛状态：</b>{'是 ✓ 已收敛' if converged else '否 ✗ 未收敛'}<br>"
+            f"<b>SCF 基态能量：</b>{energy_str}　<b>收敛状态：</b>{'是 ✓ 已收敛' if converged else '否 ✗ 未收敛'}<br>"
             f"<b>前线轨道 HOMO：</b>{homo:.3f} eV　<b>LUMO：</b>{lumo:.3f} eV　"
             f"<b>能隙 E<sub>g</sub>：</b>{gap:.3f} eV"
-            + s1_txt
+            + s1_txt + dip_txt + freq_txt + thermo_txt
         )
         if homo != 0.0 and lumo != 0.0:
             self.cur_homo_spin.setValue(homo)
@@ -774,17 +817,20 @@ class QcResultDialog(QDialog):
             tag = " ✓收敛" if s.get("converged") else ""
             self.listw.addItem(QListWidgetItem(f"第 {s['step']+1} 步　{en}{tag}"))
 
-        # 填充 Mulliken 电荷表格
+        # 填充真实 Mulliken 电荷表格
         self._current_mulliken_charges = mulliken
         self.mulliken_table.setRowCount(0)
+        has_data = bool(mulliken) or bool(steps)
         if hasattr(self, "mull_empty_label"):
-            has_data = bool(mulliken) or bool(steps)
             self.mull_empty_label.setVisible(not has_data)
-            self.mulliken_table.setVisible(bool(mulliken))
-            self.listw.setVisible(bool(steps))
-            self.backfill_btn.setEnabled(bool(mulliken))
-        if mulliken and self.document:
-            idx_to_id, _ = self.document.topology.atom_index_map()
+        self.mulliken_table.setVisible(bool(mulliken))
+        self.listw.setVisible(bool(steps))
+        self.backfill_btn.setEnabled(bool(mulliken))
+
+        if mulliken:
+            idx_to_id = []
+            if self.document:
+                idx_to_id, _ = self.document.topology.atom_index_map()
             for idx, chg in sorted(mulliken.items()):
                 row = self.mulliken_table.rowCount()
                 self.mulliken_table.insertRow(row)
@@ -792,6 +838,11 @@ class QcResultDialog(QDialog):
                 if 0 <= idx < len(idx_to_id):
                     atom = self.document.topology.get_atom(idx_to_id[idx])
                     sym = atom.symbol
+                elif 0 <= idx < len(at_nos):
+                    elem = get_element(at_nos[idx])
+                    if elem:
+                        sym = elem.symbol
+
                 tip = "🔴 亲核/负电荷" if chg < -0.05 else ("🔵 亲电/正电荷" if chg > 0.05 else "⚪ 近中性")
                 self.mulliken_table.setItem(row, 0, QTableWidgetItem(f"#{idx + 1}"))
                 self.mulliken_table.setItem(row, 1, QTableWidgetItem(sym))
@@ -869,6 +920,16 @@ class QcResultDialog(QDialog):
         if not path:
             return
         res = CCLibAdapter().parse(path)
+        if res.coordinates is not None and len(res.coordinates) > 0:
+            if not self.document or self.document.num_atoms == 0:
+                try:
+                    from ..io.rdkit_adapter import build_document_from_3d_atoms
+                    self.document = build_document_from_3d_atoms(
+                        Path(path).stem, res.atomic_numbers, res.coordinates,
+                        source_format="gaussian_log", source_path=path
+                    )
+                except Exception:
+                    pass
         self._populate_result_data(res)
         self.tabs.setCurrentIndex(2)
 

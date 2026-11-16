@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "results": {
+    "unittest": {
+      "returncode": 0,
+      "seconds": 39.239205500001844,
+      "tests": 135,
+      "passed": true,
+      "output_tail": [
+        "test_32bit_rejected (test_windows10_contract.Win10SupportTests.test_32bit_rejected) ... ok",
+        "test_launcher_no_personal_hardcoded_python_path (test_windows10_contract.Win10SupportTests.test_launcher_no_personal_hardcoded_python_path) ... ok",
+        "test_non_windows_cannot_claim_win10_pass (test_windows10_contract.Win10SupportTests.test_non_windows_cannot_claim_win10_pass) ... ok",
+        "test_older_windows_10_rejected (test_windows10_contract.Win10SupportTests.test_older_windows_10_rejected) ... ok",
+        "test_windows_10_1809_supported (test_windows10_contract.Win10SupportTests.test_windows_10_1809_supported) ... ok",
+        "test_windows_10_22h2_supported (test_windows10_contract.Win10SupportTests.test_windows_10_22h2_supported) ... ok",
+        "test_windows_11_rejected_even_if_nt_version_10 (test_windows10_contract.Win10SupportTests.test_windows_11_rejected_even_if_nt_version_10) ... ok",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 135 tests in 37.713s",
+        "",
+        "OK"
+      ]
+    },
+    "pytest": {
+      "returncode": 0,
+      "seconds": 43.31524119999813,
+      "tests": 157,
+      "failed": 0,
+      "passed": true,
+      "output_tail": [
+        "........................................................................ [ 45%]",
+        "............................................................ [ 84%]",
+        ".........................                                                [100%]",
+        "157 passed, 12 subtests passed in 42.56s"
+      ]
+    }
+  }
+}

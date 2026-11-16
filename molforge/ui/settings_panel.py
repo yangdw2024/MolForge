@@ -249,38 +249,50 @@ class SettingsPanel(QWidget):
         layout.addWidget(font_card)
         layout.addStretch(1)
 
+        # 启动时回显已持久化的主题、强调色与字体排版配置
+        self._load_persisted_preferences()
+
+    def _load_persisted_preferences(self):
+        from .theme import load_saved_typography, load_saved_theme
+        saved_theme, saved_accent = load_saved_theme()
+        self._current_accent = saved_accent
+        self.theme_combo.blockSignals(True)
+        idx_t = self.theme_combo.findText(saved_theme)
+        if idx_t >= 0:
+            self.theme_combo.setCurrentIndex(idx_t)
+        self.theme_combo.blockSignals(False)
+        if saved_accent:
+            self.accent_btn.setText(f"强调色: {saved_accent}")
+
+        family, size = load_saved_typography()
+        self.font_family_combo.blockSignals(True)
+        idx_f = self.font_family_combo.findText(family)
+        if idx_f >= 0:
+            self.font_family_combo.setCurrentIndex(idx_f)
+        self.font_family_combo.blockSignals(False)
+
+        self.font_size_combo.blockSignals(True)
+        idx_s = self.font_size_combo.findData(int(size))
+        if idx_s >= 0:
+            self.font_size_combo.setCurrentIndex(idx_s)
+        self.font_size_combo.blockSignals(False)
+
     def _apply_and_save_fonts(self):
-        from PyQt6.QtWidgets import QApplication, QMessageBox
-        from PyQt6.QtGui import QFont
+        from PyQt6.QtWidgets import QMessageBox
         from PyQt6.QtCore import QSettings
-        from .theme import build_style
+        from .theme import apply_global_typography
         store = QSettings("MolForge", "Typography")
         family = self.font_family_combo.currentText()
         if family == "System Default":
             family = "Microsoft YaHei UI"
-        size = self.font_size_combo.currentData() or 14
+        size = int(self.font_size_combo.currentData() or 14)
 
         store.setValue("font_family", family)
         store.setValue("font_size", size)
 
-        app = QApplication.instance()
-        if app:
-            font = QFont(family)
-            font.setPixelSize(int(size))
-            font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
-            app.setFont(font)
-            new_css = build_style("Dark Professional", font_family=family, font_size=size)
-            app.setStyleSheet(new_css)
-            # 遍历所有顶级窗口强制刷新布局与样式重绘
-            for top_widget in app.topLevelWidgets():
-                top_widget.setFont(font)
-                from PyQt6.QtWidgets import QWidget
-                for child in top_widget.findChildren(QWidget):
-                    child.setFont(font)
-                top_widget.style().unpolish(top_widget)
-                top_widget.style().polish(top_widget)
-                top_widget.update()
-            app.processEvents()
+        cur_theme = self.theme_combo.currentText() or None
+        cur_accent = getattr(self, "_current_accent", None)
+        apply_global_typography(family, size, theme_name=cur_theme, accent=cur_accent)
         QMessageBox.information(self, "字体已更新", f"界面字体已更新为：{family}，基准字号：{size}px！全界面及左右侧边栏已即时同步生效。")
 
     def _on_atom_slider(self, v: int):
@@ -303,6 +315,7 @@ class SettingsPanel(QWidget):
         c = QColorDialog.getColor(QColor("#66DEC9"), self, "选择主题强调色")
         if c.isValid():
             hexc = c.name()
+            self._current_accent = hexc
             self.accent_btn.setText(f"强调色: {hexc}")
             self.accent_picked.emit(hexc)
 

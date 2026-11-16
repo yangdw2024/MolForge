@@ -1183,6 +1183,32 @@ class MoveAtomsBatch3DCommand(Command):
         )
 
 
+class MoveMultiAtoms3DCommand(MoveAtomsBatch3DCommand):
+    """兼容 (old_positions, new_positions) 接口的多原子 3D 批量平移命令。"""
+
+    def __init__(
+        self,
+        old_positions: dict[AtomId, np.ndarray | tuple[float, float, float] | None],
+        new_positions: dict[AtomId, np.ndarray | tuple[float, float, float]],
+        description: str = "批量平移选中原子",
+        old_coords_2d: dict[AtomId, tuple[float, float]] | None = None,
+    ):
+        atom_moves: dict[AtomId, tuple[np.ndarray, np.ndarray]] = {}
+        for aid, new_p in new_positions.items():
+            if new_p is None:
+                continue
+            old_p = old_positions.get(aid)
+            if old_p is None:
+                old_p = new_p
+            atom_moves[aid] = (
+                np.asarray(old_p, dtype=np.float32),
+                np.asarray(new_p, dtype=np.float32),
+            )
+        super().__init__(atom_moves=atom_moves, description=description)
+        if old_coords_2d is not None:
+            self._old_coords_2d = dict(old_coords_2d)
+
+
 class AppendMoleculeCommand(Command):
     """
     将另一个 MoleculeDocument（来自 Ctrl+V 粘贴的 SMILES / XYZ / 片段）追加合并到当前文档中，

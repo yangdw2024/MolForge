@@ -58,6 +58,9 @@ class RepairTests(unittest.TestCase):
         (self.root/'molecule.itp').write_text('; test\n')
         job=build_gromacs_job(self.root/'job',self.root/'input.gro',self.root/'topol.top',gmx_path=str(g))
         self.assertTrue((self.root/'job'/'molecule.itp').is_file())
-        p=subprocess.run(['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',job['wrapper']],capture_output=True)
+        # Conda/Python subprocess PATH does not necessarily include System32.
+        ps = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32' / 'WindowsPowerShell' / 'v1.0' / 'powershell.exe'
+        self.assertTrue(ps.is_file(), f'Windows PowerShell not found: {ps}')
+        p=subprocess.run([str(ps),'-NoProfile','-ExecutionPolicy','Bypass','-File',job['wrapper']],capture_output=True)
         self.assertEqual(p.returncode,7);self.assertNotIn(b'finished',p.stdout)
 if __name__=='__main__':unittest.main()

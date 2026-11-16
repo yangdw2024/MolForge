@@ -1,0 +1,19 @@
+{
+  "status": "failed",
+  "serial_execution": true,
+  "xtb": {
+    "returncode": 0,
+    "seconds": 0.07268249999833643,
+    "log": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\external_engines\\xtb\\xtb.log",
+    "normal_termination": true,
+    "optimized_xyz": true
+  },
+  "orca": {
+    "returncode": 0,
+    "seconds": 27.786821400000917,
+    "log": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\external_engines\\orca\\water.out",
+    "normal_termination": true,
+    "optimized_xyz": true
+  },
+  "error": "RuntimeError: D:\\YDW\\Trae_Gromacs\\release_package\\GROMACS_GUI_v4.3.0_AVX2_CPU\\gromacs\\gromacs-2026.1-AVX2-CPU\\bin\\gmx.exe failed (1); see E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\external_engines\\gromacs\\pdb2gmx.log"
+}

@@ -828,9 +828,15 @@ class Editor2DWidget(QWidget):
         p.setPen(QColor("#788998" if self._paper_mode else "#627788"))
         p.setFont(QFont("Segoe UI", 9))
         vis_count = sum(1 for a in doc.topology.atom_ids if a not in hidden_h)
+        h_folded = max(0, doc.num_atoms - vis_count)
+        atom_stat = (
+            f"共 {doc.num_atoms} 原子 ({vis_count} 骨架 · {h_folded} 隐式 H)"
+            if h_folded > 0
+            else f"共 {doc.num_atoms} 原子 (全原子显式)"
+        )
         p.drawText(
             14, self.height() - 10,
-            f"缩放 {self._format_zoom_str()} · 显示 {vis_count}/{doc.num_atoms} 原子"
+            f"缩放 {self._format_zoom_str()} · {atom_stat}"
         )
         p.end()
 
@@ -1266,7 +1272,14 @@ class Editor2DWidget(QWidget):
                         old_3d_map[aid] = p3 if p3 is not None else np.array([ox, oy, cz], dtype=np.float32)
                         new_3d_map[aid] = np.array([nx, ny, cz], dtype=np.float32)
                 if old_3d_map:
-                    self._command_bus.execute(MoveMultiAtoms3DCommand(old_3d_map, new_3d_map, description="批量平移选中原子"))
+                    self._command_bus.execute(
+                        MoveMultiAtoms3DCommand(
+                            old_3d_map,
+                            new_3d_map,
+                            description="批量平移选中原子",
+                            old_coords_2d=self._batch_drag_start_world,
+                        )
+                    )
             self.update()
             return
 

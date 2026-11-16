@@ -92,3 +92,8 @@ class TestInternalCoordinateCommands(unittest.TestCase):
         res = bus.execute(cmd)
         self.assertFalse(res.success)
         self.assertIn("环系", res.message)
+
+
+if __name__ == "__main__":
+    unittest.main()
+

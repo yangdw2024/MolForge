@@ -24,10 +24,11 @@ class TestLlmConfigSync(unittest.TestCase):
         # 恢复真实配置
         if hasattr(self, "_orig_cfg") and self._orig_cfg:
             set_llm_config(
-                self._orig_cfg.get("base_url", "http://127.0.0.1:8000/v1"),
+                self._orig_cfg.get("base_url", "http://127.0.0.1:8045/v1"),
                 self._orig_cfg.get("api_key", "EMPTY"),
-                self._orig_cfg.get("model", "default-model"),
+                self._orig_cfg.get("model", "gemini-3.8-flash"),
             )
+
 
     def test_set_and_get_config_unification(self):
         # 1. 模拟用户配置自定义端点与自定义模型名

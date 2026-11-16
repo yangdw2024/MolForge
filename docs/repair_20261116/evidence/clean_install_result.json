@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "python": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Scripts\\python.exe",
+  "installed": {
+    "version": "7.4.2",
+    "package": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Lib\\site-packages\\molforge\\__init__.py",
+    "main": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Lib\\site-packages\\main.py",
+    "entry_point_callable": true
+  },
+  "offscreen_window": {
+    "atoms": 24,
+    "bonds": 25,
+    "title": "[G1:M1:V1] 咖啡因 — MolForge 7.4.2 · AI-Native Molecular & OSC Workbench"
+  },
+  "console_entry_point": {
+    "path": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Scripts\\molforge.exe",
+    "running_after_8_seconds": true,
+    "seconds": 8.025050999996893
+  }
+}

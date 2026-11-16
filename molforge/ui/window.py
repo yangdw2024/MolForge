@@ -23,7 +23,7 @@ import numpy as np
 from pathlib import Path
 from molforge import __version__
 from PyQt6.QtCore import Qt, QSettings, QTimer, QSize
-from PyQt6.QtGui import QAction, QDragEnterEvent, QDropEvent, QGuiApplication
+from PyQt6.QtGui import QAction, QDragEnterEvent, QDropEvent, QGuiApplication, QShortcut, QKeySequence
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QSplitter, QButtonGroup, QMenu, QSizePolicy, QComboBox,
@@ -40,6 +40,8 @@ from .views import (
     ModifyInternalCoordDialog
 )
 from ..domain.document import MoleculeDocument
+from ..domain.chemical_summary import analyze_geometry_shape, count_non_ring_single_bonds, resolve_spin_state
+from ..domain.periodic import cell_from_document
 from ..domain.ids import AtomId, BondId
 from ..domain.elements import get_element
 from ..application.command_bus import CommandBus
@@ -88,12 +90,12 @@ class Workspace(QFrame):
         header.setSpacing(8)
         texts = QVBoxLayout()
         texts.setSpacing(1)
-        eyebrow = QLabel("MOLECULAR STUDIO WORKSPACE")
-        eyebrow.setProperty("role", "section")
+        self.eyebrow_label = QLabel("MOLECULAR STUDIO WORKSPACE")
+        self.eyebrow_label.setProperty("role", "section")
         self.title_label = QLabel(f"{document.name}  ·  2D/3D 实时联动工作台")
         self.title_label.setProperty("role", "title")
         self.title_label.setWordWrap(True)
-        texts.addWidget(eyebrow)
+        texts.addWidget(self.eyebrow_label)
         texts.addWidget(self.title_label)
         header.addLayout(texts, 1)
 
@@ -241,6 +243,15 @@ class Workspace(QFrame):
 
         from ..rendering.contracts import RepresentationMode
         self.mode_buttons: dict[RepresentationMode, QPushButton] = {}
+        self.compact_mode_btn = QPushButton("3D样式 ▾")
+        self.compact_mode_menu = QMenu(self)
+        for mode, label in ((RepresentationMode.BALL_AND_STICK, "球棍"), (RepresentationMode.CPK, "CPK"), (RepresentationMode.LINE, "线框"), (RepresentationMode.SURFACE, "表面")):
+            action = QAction(label, self)
+            action.triggered.connect(lambda checked=False, m=mode: self._on_mode_changed(m))
+            self.compact_mode_menu.addAction(action)
+        self.compact_mode_btn.clicked.connect(lambda: self.compact_mode_menu.exec(self.compact_mode_btn.mapToGlobal(self.compact_mode_btn.rect().bottomLeft())))
+        self.compact_mode_btn.setVisible(False)
+        toolbar.addWidget(self.compact_mode_btn)
         for i, (mode, name) in enumerate((
             (RepresentationMode.BALL_AND_STICK, "球棍"),
             (RepresentationMode.CPK, "CPK"),
@@ -256,7 +267,8 @@ class Workspace(QFrame):
             self.mode_buttons[mode] = b
             refresh_button_visual(b, active=(i == 0))
 
-        tf_lay.addWidget(HorizontalWheelScrollArea(strip, height=40))
+        self.toolbar_scroll = HorizontalWheelScrollArea(strip, height=40)
+        tf_lay.addWidget(self.toolbar_scroll)
         root.addWidget(toolbar_frame)
 
         self.view_splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -283,9 +295,43 @@ class Workspace(QFrame):
         self.view_splitter.setSizes([500, 500])
         root.addWidget(self.view_splitter, 1)
 
-        # 超大宏观体系 / 动力学盒子自动默认切换为「仅 3D 视口」模式
+        # 超大宏观体系 / 动力学盒子自动立即切换为「仅 3D 视口」模式，避免 2D 画布首帧冗余计算
         if self.document is not None and self.document.topology.num_atoms > 1500:
-            QTimer.singleShot(0, lambda: self.set_mode(1))
+            self.set_mode(1)
+
+    def set_compact(self, compact: bool):
+        self._compact = bool(compact)
+        self.eyebrow_label.setVisible(not compact)
+        for button, full, short in zip(
+            self.view_mode_buttons,
+            ("仅 2D 画布", "仅 3D 视口", "2D + 3D 分屏"),
+            ("2D", "3D", "2D+3D"),
+        ):
+            button.setText(short if compact else full)
+            button.setMinimumWidth(58 if compact else 94)
+        for name, full, short in (("选择", "选择 (V)", "选择"), ("原子", "原子 (A)", "原子"), ("键", "建键 (B)", "建键"), ("擦除", "擦除 (E)", "擦除")):
+            self.tool_buttons[name].setText(short if compact else full)
+        self.ring_menu_btn.setText("环 ▾" if compact else "⬡ 环模板 ▾")
+        self.fg_menu_btn.setText("基团 ▾" if compact else "🧪 官能团 ▾")
+        self.more_elem_btn.setText("元素 ▾" if compact else "更多元素 ▾")
+        self.compact_mode_btn.setVisible(compact)
+        for button in self.mode_buttons.values():
+            button.setVisible(not compact)
+        self._size_toolbar_buttons()
+
+    def _size_toolbar_buttons(self):
+        buttons = list(self.tool_buttons.values()) + list(self.element_buttons.values()) + [self.more_elem_btn, self.compact_mode_btn] + list(self.mode_buttons.values())
+        for button in buttons:
+            if not button.isVisible():
+                continue
+            icon_width = button.iconSize().width() + 8 if not button.icon().isNull() else 0
+            required = button.fontMetrics().horizontalAdvance(button.text()) + icon_width + 24
+            button.setMinimumWidth(max(38, required))
+
+    def apply_typography(self, family: str, base_size: int):
+        size = max(10, int(base_size))
+        self.toolbar_scroll.setFixedHeight(max(40, size + 20))
+        self._size_toolbar_buttons()
 
     def _show_ring_menu(self):
         refresh_button_visual(self.ring_menu_btn, active=True)
@@ -294,7 +340,8 @@ class Workspace(QFrame):
 
     def _on_ring_menu_picked(self, label: str, size: int, aromatic: bool, hetero: dict):
         short = label.split()[1] if len(label.split()) > 1 else "环"
-        self.ring_menu_btn.setText(f"⬡ {short} ▾")
+        self.ring_menu_btn.setText(f"{short} ▾" if getattr(self, "_compact", False) else f"⬡ {short} ▾")
+        self._size_toolbar_buttons()
         for name, btn in self.tool_buttons.items():
             refresh_button_visual(btn, active=(name == "环"))
         refresh_button_visual(self.fg_menu_btn, active=False)
@@ -308,7 +355,8 @@ class Workspace(QFrame):
         self.fg_menu.exec(pos)
 
     def _on_fg_menu_picked(self, fg_code: str):
-        self.fg_menu_btn.setText(f"🧪 {fg_code} ▾")
+        self.fg_menu_btn.setText(f"{fg_code} ▾" if getattr(self, "_compact", False) else f"🧪 {fg_code} ▾")
+        self._size_toolbar_buttons()
         refresh_button_visual(self.fg_menu_btn, active=True)
         if self.on_fg_insert is not None:
             self.on_fg_insert(fg_code)
@@ -325,12 +373,13 @@ class Workspace(QFrame):
         elem = get_element(self._current_element)
         sym = elem.symbol if elem else "C"
         if self._current_element not in self.element_buttons:
-            self.more_elem_btn.setText(f"🧪 元素: {sym} ▾")
+            self.more_elem_btn.setText(f"{sym} ▾" if getattr(self, "_compact", False) else f"🧪 元素: {sym} ▾")
             refresh_button_visual(self.more_elem_btn, active=True)
         else:
-            self.more_elem_btn.setText("更多元素 ▾")
+            self.more_elem_btn.setText("元素 ▾" if getattr(self, "_compact", False) else "更多元素 ▾")
             refresh_button_visual(self.more_elem_btn, active=False)
 
+        self._size_toolbar_buttons()
         self.view2d.set_current_element(self._current_element)
         self.view3d_real.set_current_element(self._current_element)
         if self.view2d._current_tool == "选择":
@@ -420,6 +469,11 @@ class MolForgeWindow(QMainWindow):
         self._autosave_timer.timeout.connect(self._run_project_autosave)
         self._autosave_timer.start()
         self.settings = QSettings("MolForge", "VisualPreview-v4")
+        self._responsive_left_compact = None
+        self._responsive_right_compact = None
+        self._responsive_top_compact = None
+        self._left_user_hidden = False
+        self._right_user_hidden = False
 
         from ..application.workspace_registry import WorkspaceRegistry
         self.session, self.view_session = WorkspaceRegistry.instance().register_explicit_tag(
@@ -435,6 +489,8 @@ class MolForgeWindow(QMainWindow):
         self._cartesian_dock: CartesianTableDock | None = None
         self._measurement_dock: MeasurementTableDock | None = None
         self._property_dock: AtomBondPropertyDock | None = None
+        self.mcp_service = None
+        self.mcp_action = None
 
         center = QWidget()
         center.setObjectName("CentralShell")
@@ -450,7 +506,7 @@ class MolForgeWindow(QMainWindow):
         root.addWidget(self.top_bar)
 
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
-        self.main_splitter.setChildrenCollapsible(False)
+        self.main_splitter.setChildrenCollapsible(True)
         self.main_splitter.setHandleWidth(5)
 
         self.left_panel = QWidget()
@@ -473,7 +529,7 @@ class MolForgeWindow(QMainWindow):
             on_ring_insert=self._on_ring_insert,
             on_fg_insert=self._on_fg_insert,
         )
-        self.workspace.view3d_real.status_callback = lambda msg: self.status_left.setText(f"[{self.group_tag}]  {msg}")
+        self.workspace.view3d_real.status_callback = lambda msg: self._set_status_bar(msg)
         self.right = RightPanel()
         self.right._window_ref = self
         self.nav_rail.rail_selected.connect(self.right.switch_tab)
@@ -493,6 +549,7 @@ class MolForgeWindow(QMainWindow):
         self.sidebar.on_atom_selected = self._on_tree_atom_selected
         self.sidebar.on_bond_selected = self._on_tree_bond_selected
         self.sidebar.on_custom_fragment_insert = self._on_paste_custom_fragment
+        self.sidebar.set_document(self.document)
 
         self._build_menubar()
 
@@ -518,6 +575,7 @@ class MolForgeWindow(QMainWindow):
 
         # 底部增强状态栏（含 Build/Select 放置切换、颜色方案下拉、原子数/电荷/自旋实时显示）
         status = QFrame()
+        self.status_frame = status
         status.setFixedHeight(32)
         status.setStyleSheet("QFrame {background:#09111B; border-top:1px solid #22384E}")
         status_lay = QHBoxLayout(status)
@@ -530,27 +588,40 @@ class MolForgeWindow(QMainWindow):
 
         status_lay.addStretch()
 
-        # 折叠/展开侧边栏按钮
+        # 独立收起/展开左右侧边栏按钮 (P1)
         self.sidebar_collapsed = False
         self._pre_collapse_sizes = None
-        self.toggle_sidebar_btn = QPushButton("📐 折叠侧边栏")
-        self.toggle_sidebar_btn.setCheckable(True)
-        self.toggle_sidebar_btn.setToolTip("一键收起左右侧边栏，中间画布占满全屏")
-        self.toggle_sidebar_btn.clicked.connect(self._toggle_sidebar_collapse)
-        status_lay.addWidget(self.toggle_sidebar_btn)
+        self.toggle_left_btn = QPushButton("◧ 左栏")
+        self.toggle_left_btn.setCheckable(True)
+        self.toggle_left_btn.setToolTip("独立收起/展开左侧结构砌块与树形面板 (快捷键: Ctrl+[)")
+        self.toggle_left_btn.clicked.connect(self._toggle_left_sidebar)
+        status_lay.addWidget(self.toggle_left_btn)
+
+        self.toggle_right_btn = QPushButton("◨ 右栏")
+        self.toggle_right_btn.setCheckable(True)
+        self.toggle_right_btn.setToolTip("独立收起/展开右侧属性与 AI 助手面板 (快捷键: Ctrl+])")
+        self.toggle_right_btn.clicked.connect(self._toggle_right_sidebar)
+        status_lay.addWidget(self.toggle_right_btn)
+
+        # 兼容性别名
+        self.toggle_sidebar_btn = self.toggle_left_btn
+
+        # 绑定快捷键
+        QShortcut(QKeySequence("Ctrl+["), self, self._toggle_left_sidebar)
+        QShortcut(QKeySequence("Ctrl+]"), self, self._toggle_right_sidebar)
 
         # Build / Select Placement 快捷切换按钮 (P4)
-        self.placement_mode_btn = QPushButton("🎯 放置模式: 选择/移动 (Select)")
+        self.placement_mode_btn = QPushButton("🎯 选择模式")
         self.placement_mode_btn.setCheckable(True)
-        self.placement_mode_btn.setMinimumWidth(165)
-        self.placement_mode_btn.setToolTip("在 [Select 选择/移动] 与 [Build 点击画布直接放置原子/构件] 之间切换")
+        self.placement_mode_btn.setToolTip("放置模式切换：在「选择/移动」与「点击画布放置构建」之间切换")
         self.placement_mode_btn.clicked.connect(self._toggle_placement_mode)
         status_lay.addWidget(self.placement_mode_btn)
 
+
         # Color Scheme 配色方案下拉 (P4)
-        scheme_lbl = QLabel("配色:")
-        scheme_lbl.setProperty("role", "muted")
-        status_lay.addWidget(scheme_lbl)
+        self.scheme_label = QLabel("配色:")
+        self.scheme_label.setProperty("role", "muted")
+        status_lay.addWidget(self.scheme_label)
         self.scheme_combo = QComboBox()
         for sc_name in ("Default Scheme", "Studio CPK", "GaussView Classic", "Jmol Standard", "Carbon Cyan (PyMOL)"):
             self.scheme_combo.addItem(sc_name)
@@ -558,7 +629,7 @@ class MolForgeWindow(QMainWindow):
         self.scheme_combo.currentTextChanged.connect(self._on_color_scheme_changed)
         status_lay.addWidget(self.scheme_combo)
 
-        self.status_right = QLabel("原子: 24  ·  键: 25  ·  Charge: 0  ·  Spin: 1 (Singlet)")
+        self.status_right = QLabel("原子: 24  ·  键: 25  ·  Charge: 0  ·  Spin: 未指定(默认1)")
         self.status_right.setProperty("role", "value")
         status_lay.addWidget(self.status_right)
         root.addWidget(status)
@@ -591,62 +662,166 @@ class MolForgeWindow(QMainWindow):
         if initial_view_mode in (0, 1, 2):
             self.workspace.set_mode(initial_view_mode)
 
+        try:
+            from .theme import load_saved_typography, load_saved_theme, apply_global_typography
+            saved_theme, saved_accent = load_saved_theme()
+            self._current_theme = saved_theme
+            self._current_accent = saved_accent
+            family, size = load_saved_typography()
+            apply_global_typography(family, size, theme_name=saved_theme, accent=saved_accent)
+        except Exception:
+            pass
+
         QTimer.singleShot(0, self._finish_layout)
+
+    def apply_typography(self, family: str, base_size: int):
+        """更新主窗口状态栏与子面板局部样式字号。"""
+        sz = max(10, int(base_size))
+        self._font_family = family
+        self._font_size = sz
+        sz_sm = max(10, sz - 2)
+        if hasattr(self, "status_left"):
+            self.status_left.setStyleSheet(f"color:#66DEC9; font-size:{sz_sm}px; font-weight:600;")
+        if hasattr(self, "status_frame"):
+            self.status_frame.setFixedHeight(max(32, sz + 14))
 
     # ---------- 底部放置模式与配色方案切换 ----------
 
-    def _toggle_left_panel(self):
-        sizes = self.main_splitter.sizes()
-        if sizes[0] > 0:
-            self._last_left_width = sizes[0]
-            sizes[0] = 0
+    def _set_menu_compact(self, compact: bool):
+        bar = self.menuBar()
+        if not hasattr(self, "_menu_entries"):
+            self._menu_entries = [(action, action.text()) for action in bar.actions() if action.menu() is not None]
+            self._more_menu = QMenu("更多(&M)", self)
+            self._menu_compact = False
+        if compact == self._menu_compact:
+            return
+        self._menu_compact = compact
+        if compact:
+            for action, text in self._menu_entries:
+                if not text.startswith(("文件", "编辑", "视图")):
+                    bar.removeAction(action)
+                    if action not in self._more_menu.actions():
+                        self._more_menu.addAction(action)
+            if self._more_menu.menuAction() not in bar.actions():
+                bar.addAction(self._more_menu.menuAction())
         else:
-            sizes[0] = getattr(self, "_last_left_width", 250) or 250
-        self.main_splitter.setSizes(sizes)
-        if hasattr(self.workspace, "view2d"):
-            from PyQt6.QtCore import QTimer
-            QTimer.singleShot(60, self.workspace.view2d.fit_view)
+            bar.removeAction(self._more_menu.menuAction())
+            for action, _text in self._menu_entries:
+                if action not in bar.actions():
+                    bar.addAction(action)
+
+    def _apply_responsive_layout(self):
+        """Release splitter space at narrow widths without losing menu access."""
+        left_compact = self.width() < 1320
+        right_compact = self.width() < 1100
+        top_compact = self.width() < 1200
+        if left_compact != self._responsive_left_compact:
+            self._responsive_left_compact = left_compact
+            self.left_panel.setVisible(not left_compact and not self._left_user_hidden)
+        if right_compact != self._responsive_right_compact:
+            self._responsive_right_compact = right_compact
+            self.right.setVisible(not right_compact and not self._right_user_hidden)
+            self.scheme_label.setVisible(not right_compact)
+            self.scheme_combo.setVisible(not right_compact)
+            self.status_left.setVisible(not right_compact)
+            self._refresh_current_molecule_info()
+        if top_compact != self._responsive_top_compact:
+            self._responsive_top_compact = top_compact
+            self.top_bar.set_compact(top_compact)
+            for page in getattr(self, "_document_pages", {self.workspace: None}):
+                page.set_compact(top_compact)
+            self._set_menu_compact(top_compact)
+        self.toggle_left_btn.setChecked(not self.left_panel.isVisible())
+        self.toggle_left_btn.setText("◧ 展开左栏" if not self.left_panel.isVisible() else "◧ 左栏")
+        self.toggle_right_btn.setChecked(not self.right.isVisible())
+        self.toggle_right_btn.setText("◨ 展开右栏" if not self.right.isVisible() else "◨ 右栏")
+
+    def _toggle_left_panel(self):
+        self._toggle_left_sidebar()
 
     def _toggle_right_panel(self):
-        sizes = self.main_splitter.sizes()
-        if sizes[2] > 0:
-            self._last_right_width = sizes[2]
-            sizes[2] = 0
-        else:
-            sizes[2] = getattr(self, "_last_right_width", 330) or 330
-        self.main_splitter.setSizes(sizes)
-        if hasattr(self.workspace, "view2d"):
-            from PyQt6.QtCore import QTimer
-            QTimer.singleShot(60, self.workspace.view2d.fit_view)
+        self._toggle_right_sidebar()
+
+    def _toggle_left_sidebar(self, checked: bool = False):
+        vis = not self.left_panel.isVisible()
+        self.left_panel.setVisible(vis)
+        self._left_user_hidden = not vis
+        self.toggle_left_btn.setChecked(not vis)
+        self.toggle_left_btn.setText("◧ 展开左栏" if not vis else "◧ 左栏")
+        refresh_button_visual(self.toggle_left_btn, active=not vis)
+        QTimer.singleShot(60, self.workspace.view2d.fit_view)
+
+    def _toggle_right_sidebar(self, checked: bool = False):
+        vis = not self.right.isVisible()
+        self.right.setVisible(vis)
+        self._right_user_hidden = not vis
+        self.toggle_right_btn.setChecked(not vis)
+        self.toggle_right_btn.setText("◨ 展开右栏" if not vis else "◨ 右栏")
+        refresh_button_visual(self.toggle_right_btn, active=not vis)
+        QTimer.singleShot(60, self.workspace.view2d.fit_view)
 
     def _toggle_sidebar_collapse(self, checked: bool):
         """一键收起/展开左右侧边栏，中间画布占满全屏（真正完全隐藏）"""
         if checked:
-            # 折叠：直接隐藏左右栏
             self.left_panel.setVisible(False)
             self.right.setVisible(False)
-            self.toggle_sidebar_btn.setText("📐 展开侧边栏")
+            self.toggle_left_btn.setChecked(True)
+            self.toggle_left_btn.setText("◧ 展开左栏")
+            self.toggle_right_btn.setChecked(True)
+            self.toggle_right_btn.setText("◨ 展开右栏")
             self.sidebar_collapsed = True
+            self._left_user_hidden = True
+            self._right_user_hidden = True
         else:
-            # 展开：重新显示左右栏
             self.left_panel.setVisible(True)
             self.right.setVisible(True)
-            self.toggle_sidebar_btn.setText("📐 折叠侧边栏")
+            self.toggle_left_btn.setChecked(False)
+            self.toggle_left_btn.setText("◧ 左栏")
+            self.toggle_right_btn.setChecked(False)
+            self.toggle_right_btn.setText("◨ 右栏")
             self.sidebar_collapsed = False
+            self._left_user_hidden = False
+            self._right_user_hidden = False
+            self._apply_responsive_layout()
 
     def _toggle_placement_mode(self, checked: bool):
         if checked:
-            self.placement_mode_btn.setText("🔨 放置模式: 点放构建 (Build)")
+            self.placement_mode_btn.setText("🔨 构建模式")
             refresh_button_visual(self.placement_mode_btn, active=True)
             self.workspace._on_tool_selected("原子")
         else:
-            self.placement_mode_btn.setText("🎯 放置模式: 选择/移动 (Select)")
+            self.placement_mode_btn.setText("🎯 选择模式")
             refresh_button_visual(self.placement_mode_btn, active=False)
+
             self.workspace._on_tool_selected("选择")
+
+    def _set_status_bar(self, msg: str, tooltip: str | None = None):
+        if not hasattr(self, "status_left"):
+            return
+        msg_str = str(msg).strip()
+        if tooltip is None:
+            if "  |  " in msg_str:
+                parts = msg_str.split("  |  ", 1)
+                short_text = parts[0].strip()
+                tooltip = msg_str
+            elif " | " in msg_str:
+                parts = msg_str.split(" | ", 1)
+                short_text = parts[0].strip()
+                tooltip = msg_str
+            elif len(msg_str) > 36:
+                short_text = msg_str[:33] + "..."
+                tooltip = msg_str
+            else:
+                short_text = msg_str
+                tooltip = msg_str
+        else:
+            short_text = msg_str
+        self.status_left.setText(f"[{self.group_tag}] {short_text}")
+        self.status_left.setToolTip(tooltip)
 
     def _on_color_scheme_changed(self, scheme_name: str):
         self.workspace.view3d_real.set_color_scheme(scheme_name)
-        self.status_left.setText(f"[{self.group_tag}] 已切换 3D 颜色方案为：{scheme_name}")
+        self._set_status_bar(f"已切换 3D 颜色方案为：{scheme_name}")
 
     # ---------- 拖拽文件进入窗口直接打开 (P3) ----------
 
@@ -934,6 +1109,13 @@ class MolForgeWindow(QMainWindow):
         custom_bond_act = QAction("自定义共价成键参数 (Custom Bonding Parameters)...", self)
         custom_bond_act.triggered.connect(self._on_rebond_3d)
         tools_menu.addAction(custom_bond_act)
+
+        tools_menu.addSeparator()
+        self.mcp_action = QAction("启动桌面 MCP 服务 (本机)", self)
+        self.mcp_action.setCheckable(True)
+        self.mcp_action.setToolTip("通过 127.0.0.1 与随机令牌让独立 MCP stdio 客户端编辑当前标签页；不会监听局域网")
+        self.mcp_action.triggered.connect(self._toggle_desktop_mcp)
+        tools_menu.addAction(self.mcp_action)
 
         # -------------------- 4. Builder (构建器) --------------------
         builder_menu = menubar.addMenu("构建器(&B)")
@@ -1615,11 +1797,17 @@ class MolForgeWindow(QMainWindow):
         from ..application.internal_coordinates import ModifyAngle3DCommand
         target = MeasurementTargetResolver.resolve(self.document, self.selection)
         if target.kind not in ("angle", "ambiguous") or len(target.atoms) != 3:
-            self.status_left.setText("请先选中 3 个相连原子或 2 条相邻化学键以修改键角")
+            msg = "【化学规则审计】请先选中 3 个相连原子（中心原子在中间）以修改键角"
+            self.status_left.setText(f"[{self.group_tag}] ⚠️ {msg}")
+            QMessageBox.warning(self, "缺少操作目标", msg)
             return
         cmd = ModifyAngle3DCommand(target.atoms[0], target.atoms[1], target.atoms[2], float(target_deg))
         res = self.session.execute(cmd, origin=self.group_tag)
-        self.status_left.setText(res.message)
+        if res.success:
+            self.status_left.setText(f"[{self.group_tag}] {res.message}")
+        else:
+            self.status_left.setText(f"[{self.group_tag}] ⚠️ {res.message}")
+            QMessageBox.warning(self, "修改键角失败", f"化学规则审计未通过：\n{res.message}")
 
     def _set_selected_dihedral_angle(self, target_deg: float):
         from ..application.measurement_targets import MeasurementTargetResolver
@@ -1629,13 +1817,19 @@ class MolForgeWindow(QMainWindow):
         if dih_atoms is None and target.center_bond is not None:
             dih_atoms = MeasurementTargetResolver.find_canonical_dihedral_for_bond(self.document, target.center_bond)
         if dih_atoms is None or len(dih_atoms) != 4:
-            self.status_left.setText("请先选中 4 个相连原子或 1 条可旋转化学键以修改二面角")
+            msg = "【化学规则审计】请先选中 4 个相连原子或 1 条可旋转化学键以修改二面角"
+            self.status_left.setText(f"[{self.group_tag}] ⚠️ {msg}")
+            QMessageBox.warning(self, "缺少操作目标", msg)
             return
         cmd = ModifyDihedral3DCommand(
             dih_atoms[0], dih_atoms[1], dih_atoms[2], dih_atoms[3], float(target_deg)
         )
         res = self.session.execute(cmd, origin=self.group_tag)
-        self.status_left.setText(res.message)
+        if res.success:
+            self.status_left.setText(f"[{self.group_tag}] {res.message}")
+        else:
+            self.status_left.setText(f"[{self.group_tag}] ⚠️ {res.message}")
+            QMessageBox.warning(self, "修改二面角失败", f"化学规则审计未通过：\n{res.message}")
 
     def _on_select_by_element_dialog(self):
         sym, ok = QInputDialog.getText(self, "按元素批量选择原子", "输入元素符号 (如 C, N, O, S, F, H):")
@@ -1651,15 +1845,60 @@ class MolForgeWindow(QMainWindow):
                 self.selection.select_atom(aid, add=True, origin="select_elem")
 
     def _on_show_point_group(self):
+        shape = None
+        if getattr(self.document, "has_3d", False) and self.document.coordinates.current is not None:
+            shape = analyze_geometry_shape(self.document.coordinates.current.coords)
+        shape_text = shape.label if shape is not None else "无可用 3D 坐标"
         QMessageBox.information(
-            self, "分子点群对称性分析 (Point Group)",
-            f"分子：{self.document.name}\n原子数：{self.document.num_atoms}\n估计点群对称性：C₁ / Cₛ (近平面共轭体系)"
+            self, "分子几何形态与点群",
+            f"分子：{self.document.name}\n原子数：{self.document.num_atoms}\n"
+            f"几何形态：{shape_text}\n点群：未计算\n\n"
+            "说明：SVD 仅用于旋转不变的线性/平面性估计，不能替代完整分子对称性算法。"
         )
 
+    def _toggle_desktop_mcp(self, checked: bool = False):
+        try:
+            if checked:
+                if self.mcp_service is None:
+                    from ..ai.mcp.desktop_service import DesktopMCPService
+                    self.mcp_service = DesktopMCPService(
+                        lambda: self.document,
+                        lambda: self.command_bus,
+                        parent=self,
+                    )
+                info = self.mcp_service.start()
+                self.mcp_action.setText("停止桌面 MCP 服务 (本机)")
+                self.top_bar.set_status(f"桌面 MCP 已启动 · 127.0.0.1:{info['port']} · 仅本机")
+            else:
+                if self.mcp_service is not None:
+                    self.mcp_service.stop()
+                self.mcp_action.setText("启动桌面 MCP 服务 (本机)")
+                self.top_bar.set_status("桌面 MCP 已停止")
+        except Exception as exc:
+            if self.mcp_action is not None:
+                self.mcp_action.setChecked(False)
+            QMessageBox.warning(self, "桌面 MCP", str(exc))
+
     def _on_show_pbc_info(self):
+        try:
+            cell = cell_from_document(self.document)
+        except ValueError as exc:
+            QMessageBox.warning(self, "周期性边界条件 (PBC)", str(exc))
+            return
+        if cell is None:
+            error = self.document.properties.get("cryst1_error")
+            detail = f"\nCRYST1 解析问题：{error}" if error else ""
+            QMessageBox.information(
+                self, "周期性边界条件 (PBC)",
+                "当前文档没有有效晶胞，按气相/孤立分子模式处理。" + detail
+            )
+            return
         QMessageBox.information(
             self, "周期性边界条件 (PBC)",
-            "当前文档处于气相/孤立分子模式 (Non-Periodic)。\n如需导入晶体晶胞，请通过 [文件 -> 打开] 导入 .cif 或 .pdb 晶体结构文件。"
+            f"晶胞边长 (Å)：a={cell.a:.4f}, b={cell.b:.4f}, c={cell.c:.4f}\n"
+            f"晶胞角度 (°)：α={cell.alpha:.3f}, β={cell.beta:.3f}, γ={cell.gamma:.3f}\n"
+            f"空间群：{cell.space_group or '未指定'}\n体积：{cell.volume:.4f} Å³\n\n"
+            "距离、键角和二面角测量采用最小镜像/逐链段展开；PDB 导出保留 CRYST1。"
         )
 
     def _show_spectrum_summary(self, title: str):
@@ -1995,9 +2234,12 @@ class MolForgeWindow(QMainWindow):
             if res.success:
                 self.status_left.setText(f"[{self.group_tag}] {res.message}")
             else:
-                self.status_left.setText(f"[{self.group_tag}] {res.message}")
+                self.status_left.setText(f"[{self.group_tag}] ⚠️ {res.message}")
+                QMessageBox.warning(self, "修改键长失败", f"化学规则审计未通过：\n{res.message}")
         else:
-            self.status_left.setText("请选中 1 条化学键或 2 个成键原子以修改键长")
+            msg = "【化学规则审计】请选中 1 条化学键或 2 个成键原子以修改键长"
+            self.status_left.setText(f"[{self.group_tag}] ⚠️ {msg}")
+            QMessageBox.warning(self, "缺少操作目标", msg)
         self._on_selection_changed()
 
     def _on_open_modify_bond_length(self):
@@ -2024,6 +2266,11 @@ class MolForgeWindow(QMainWindow):
 
     def _on_save_mforge_project(self):
         return self.save_project(self.document)
+
+    def _on_save_as_file(self):
+        """兼容性别名，保存工程到 .mforge 文件。"""
+        return self.save_project(self.document)
+
 
     def save_project(self, doc=None):
         from .shells.document_tabs import StudioTabs
@@ -2359,6 +2606,7 @@ class MolForgeWindow(QMainWindow):
         self._refresh_current_molecule_info()
         self.top_bar.set_project(f"{self.group_tag}  /  {self.document.name}")
         self.top_bar.set_status("就绪")
+        self._apply_responsive_layout()
 
     def select_active_element(self, atomic_num: int):
         if hasattr(self, "workspace") and hasattr(self.workspace, "select_active_element"):
@@ -2379,72 +2627,91 @@ class MolForgeWindow(QMainWindow):
         self._on_document_changed(self.document)
         self.status_left.setText(f"[{self.group_tag}] 已移除 {len(h_aids)} 个显式氢原子")
 
-    def _on_tree_atom_selected(self, aid: int):
-        from ..domain.models import AtomId
-        atom_id = AtomId(aid)
+    def _on_tree_atom_selected(self, aid):
+        from ..domain.ids import AtomId
+        from ..domain.elements import get_element
+        atom_id = aid if isinstance(aid, AtomId) else AtomId(int(aid))
+        if atom_id not in self.document.topology._atoms:
+            return
         self.selection.set_selection(atoms=[atom_id])
         self.workspace.view2d.update()
-        self.workspace.view3d_real.update()
         atom = self.document.topology.get_atom(atom_id)
         if atom:
-            from ..domain.elements import get_element
             elem = get_element(atom.atomic_num)
-            coords = self.document.coordinates.current.coords[aid] if aid < len(self.document.coordinates.current.coords) else None
-            self.right.update_selected_atom(elem, atom_id=atom_id, xyz=coords)
+            pos = self.document.get_atom_3d_pos(atom_id)
+            xyz = (float(pos[0]), float(pos[1]), float(pos[2])) if pos is not None else None
+            deg = len(self.document.topology._adjacency.get(atom_id, ()))
+            hyb = "sp³" if deg >= 4 else ("sp²" if (atom.aromatic or deg == 3) else ("sp" if deg == 2 else "单配位"))
+            self.right.update_selected_atom(
+                elem,
+                getattr(atom, "formal_charge", 0),
+                atom_scale=float(getattr(atom, "scale", 1.0)),
+                atom_id=atom_id,
+                xyz=xyz,
+                hybridization=f"{deg}配位 · {hyb}",
+                frozen=bool(atom.properties.get("frozen")),
+            )
 
-    def _on_tree_bond_selected(self, bid: int):
-        from ..domain.models import BondId
-        bond_id = BondId(bid)
+    def _on_tree_bond_selected(self, bid):
+        from ..domain.ids import BondId
+        bond_id = bid if isinstance(bid, BondId) else BondId(int(bid))
+        if bond_id not in self.document.topology._bonds:
+            return
         self.selection.set_selection(bonds=[bond_id])
         self.workspace.view2d.update()
-        self.workspace.view3d_real.update()
         bond = self.document.topology.get_bond(bond_id)
         if bond:
             self.right.update_selected_bond(bond)
 
     def _compute_charge_and_spin(self) -> tuple[int, int, str]:
-        """实时计算当前分子的总形式电荷 (Charge) 与自旋多重度 (Spin Multiplicity = 2S+1)。"""
-        total_charge = 0
-        total_electrons = 0
-        for aid in self.document.topology.atom_ids:
-            atom = self.document.topology.get_atom(aid)
-            ch = int(getattr(atom, "formal_charge", 0))
-            total_charge += ch
-            total_electrons += int(atom.atomic_num) - ch
-        spin_mult = 2 if (total_electrons % 2 == 1) else 1
-        spin_label = "Doublet" if spin_mult == 2 else "Singlet"
-        return total_charge, spin_mult, spin_label
+        """返回形式电荷及明确区分显式值/默认假设的自旋信息。"""
+        total_charge = sum(int(getattr(atom, "formal_charge", 0)) for atom in self.document.topology._atoms.values())
+        state = resolve_spin_state(self.document)
+        return total_charge, state.multiplicity, state.label
 
     def _refresh_current_molecule_info(self):
+        top = self.document.topology
         formula, mw = compute_formula_and_weight_fast(self.document)
-        total_q, spin_m, spin_lbl = self._compute_charge_and_spin()
-        heavy = sum(1 for aid in self.document.topology.atom_ids if self.document.topology.get_atom(aid).atomic_num > 1)
-        hydrogens = sum(1 for aid in self.document.topology.atom_ids if self.document.topology.get_atom(aid).atomic_num == 1)
-        n_b = self.document.num_bonds
-        if hasattr(self, "sidebar") and hasattr(self.sidebar, "refresh_structure_tree"):
-            self.sidebar.refresh_structure_tree(self.document)
-        n_a = self.document.num_atoms
-        cyclomatic = max(0, n_b - n_a + 1) if n_a > 0 else 0
-        rotatable = 0
-        for bid in self.document.topology.bond_ids:
-            b = self.document.topology.get_bond(bid)
-            if b.order == 1:
-                za = self.document.topology.get_atom(b.begin).atomic_num
-                zb = self.document.topology.get_atom(b.end).atomic_num
-                if za > 1 and zb > 1:
-                    deg_a = len(list(self.document.topology.neighbors_of(b.begin)))
-                    deg_b = len(list(self.document.topology.neighbors_of(b.end)))
-                    if deg_a > 1 and deg_b > 1:
-                        rotatable += 1
+        total_charge = 0
+        total_electrons = 0
+        heavy = 0
+        hydrogens = 0
+        for atom in top._atoms.values():
+            z = int(atom.atomic_num)
+            ch = int(getattr(atom, "formal_charge", 0))
+            total_charge += ch
+            total_electrons += z - ch
+            if z > 1:
+                heavy += 1
+            else:
+                hydrogens += 1
+        total_q = total_charge
+        spin_state = resolve_spin_state(self.document)
+        spin_m = spin_state.multiplicity
+        spin_lbl = spin_state.label
+        spin_explicit = spin_state.explicit
+
+        n_a = top.num_atoms
+        n_b = top.num_bonds
+        if hasattr(self, "sidebar"):
+            if hasattr(self.sidebar, "set_document"):
+                self.sidebar.set_document(self.document)
+            elif hasattr(self.sidebar, "refresh_structure_tree"):
+                self.sidebar.refresh_structure_tree(self.document)
+        cyclomatic = top.rings_count()
+        rotatable = count_non_ring_single_bonds(top) if n_b <= 25000 else 0
 
         centroid_str = "(0.00, 0.00, 0.00)"
-        point_group = "C1 (非对称)"
-        if getattr(self.document, "has_3d", False) and self.document.coordinates.current is not None:
-            c = self.document.coordinates.current.coords.mean(axis=0)
+        point_group = "未计算"
+        if getattr(self.document, "has_3d", False) and self.document.coordinates.current is not None and len(self.document.coordinates.current.coords) > 0:
+            coords_cur = self.document.coordinates.current.coords
+            c = coords_cur.mean(axis=0)
             centroid_str = f"({c[0]:.2f}, {c[1]:.2f}, {c[2]:.2f})"
-            # 对称性粗判
-            if abs(c[2]) < 0.08 and np.all(np.abs(self.document.coordinates.current.coords[:, 2] - c[2]) < 0.12):
-                point_group = "Cs (近平面镜像)"
+            if n_a <= 5000:
+                shape = analyze_geometry_shape(coords_cur)
+                point_group = f"未计算 · {shape.label}"
+            else:
+                point_group = "未计算 · 大体系跳过形状分析"
 
         self.right.update_molecule_info(
             name=self.document.name,
@@ -2469,15 +2736,23 @@ class MolForgeWindow(QMainWindow):
             num_bonds=self.document.num_bonds,
             molecular_weight=mw,
         )
-        self.status_right.setText(
+        spin_status = f"{spin_m} ({spin_lbl})" if spin_explicit else f"未指定(默认{spin_m})"
+        full_status = (
             f"原子: {self.document.num_atoms}  ·  键: {self.document.num_bonds}  ·  "
-            f"Charge: {total_q:+d}  ·  Spin: {spin_m} ({spin_lbl})"
+            f"Charge: {total_q:+d}  ·  Spin: {spin_status}"
         )
+        if self.width() < 1100:
+            compact_spin = f"S{spin_m}" if spin_explicit else f"S默认{spin_m}"
+            self.status_right.setText(f"{self.document.num_atoms}原子·{self.document.num_bonds}键·Q{total_q:+d}·{compact_spin}")
+            self.status_right.setToolTip(full_status + ("（自旋为默认假设）" if not spin_explicit else ""))
+        else:
+            self.status_right.setText(full_status)
+            self.status_right.setToolTip(full_status)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
         if hasattr(self, "sidebar"):
-            self.sidebar.setVisible(self.width() >= 1320)
+            self._apply_responsive_layout()
 
     def closeEvent(self, event):
         for session, _view, _tag in self._document_pages.values():
@@ -2488,6 +2763,8 @@ class MolForgeWindow(QMainWindow):
         self.settings.setValue("geometry", self.saveGeometry())
         if self in MolForgeWindow._open_windows:
             MolForgeWindow._open_windows.remove(self)
+        if self.mcp_service is not None:
+            self.mcp_service.stop()
         super().closeEvent(event)
 
     def _add_document_page(self, doc, session=None):
@@ -2500,16 +2777,16 @@ class MolForgeWindow(QMainWindow):
         self._saved_revisions.setdefault(session.document.document_id, session.document.revision)
         page = Workspace(session.document, session.selection, session.command_bus,
                          on_ring_insert=self._on_ring_insert, on_fg_insert=self._on_fg_insert)
+        page.apply_typography(getattr(self, "_font_family", "Microsoft YaHei UI"), getattr(self, "_font_size", 14))
+        page.set_compact(self.width() < 1200)
         self._document_pages[page] = (session, view, view.gmv_tag)
         session.command_bus.add_listener(lambda _result, p=page: self._refresh_document_page(p))
         session.selection.add_listener(lambda _origin, p=page: self._refresh_selection_page(p))
         page.view3d_real.on_add_atom_at_3d = self._add_atom_at_3d
         page.view3d_real.on_delete_selected_3d = self._delete_selected
+        page.view3d_real.status_callback = lambda msg: self._set_status_bar(msg)
         i = self.document_tabs.addTab(page, session.document.name)
         self.document_tabs.setCurrentIndex(i)
-        if session.document.topology.num_atoms > 1500:
-            page.set_mode(1)
-        QTimer.singleShot(20, lambda: page.view3d_real.set_document(session.document))
         return page
 
     def _refresh_selection_page(self, page):
@@ -2682,15 +2959,17 @@ class MolForgeWindow(QMainWindow):
         if not all(a in order and order[a] < len(coords) for a in atoms):
             return
         idx = [order[a] for a in atoms]
+        cell = cell_from_document(self.document)
+        pbc_suffix = " · PBC" if cell is not None else ""
         if target.kind == "distance" and len(idx) == 2:
-            d = mm.distance(coords, idx[0], idx[1])
-            self.right.update_measurement(f"距离 ({target.label})：{d:.3f} Å")
+            d = mm.distance(coords, idx[0], idx[1], cell)
+            self.right.update_measurement(f"距离 ({target.label})：{d:.3f} Å{pbc_suffix}")
         elif target.kind == "angle" and len(idx) == 3:
-            val, ok, diag = mm.angle(coords, idx[0], idx[1], idx[2])
-            self.right.update_measurement(f"键角 ({target.label})：{val:.2f}°" if ok else diag)
+            val, ok, diag = mm.angle(coords, idx[0], idx[1], idx[2], cell)
+            self.right.update_measurement(f"键角 ({target.label})：{val:.2f}°{pbc_suffix}" if ok else diag)
         elif target.kind == "dihedral" and len(idx) == 4:
-            val, ok, diag = mm.dihedral(coords, idx[0], idx[1], idx[2], idx[3])
-            self.right.update_measurement(f"二面角 ({target.label})：{val:.2f}°" if ok else diag)
+            val, ok, diag = mm.dihedral(coords, idx[0], idx[1], idx[2], idx[3], cell)
+            self.right.update_measurement(f"二面角 ({target.label})：{val:.2f}°{pbc_suffix}" if ok else diag)
 
     def _on_background_3d_changed(self, color):
         self.workspace.view3d_real.set_background_color(

@@ -243,6 +243,8 @@ class InsertFragmentCommand(Command):
             doc.topology._bonds = {bid: Bond(**vars(b)) for bid, b in self._snapshot_bonds.items()}
         if self._snapshot_adj is not None:
             doc.topology._adjacency = {aid: list(bids) for aid, bids in self._snapshot_adj.items()}
+        if hasattr(doc.topology, "invalidate_index_caches"):
+            doc.topology.invalidate_index_caches()
         if self._snapshot_coords_3d is None:
             doc._coordinates = None
         else:

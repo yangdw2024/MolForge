@@ -226,7 +226,7 @@ class GlyphMoleculeScene:
         cylinder.CappingOn()
         transform=vtk.vtkTransform()
         transform.RotateZ(-90.0)  # cylinder intrinsic +Y becomes +X
-        apply=vtk.vtkTransformPolyDataFilter()
+        apply=vtk.vtkTransformFilter()
         apply.SetTransform(transform)
         apply.SetInputConnection(cylinder.GetOutputPort())
         self.bond_source=cylinder

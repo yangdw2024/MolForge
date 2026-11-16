@@ -54,3 +54,8 @@ class TestDocumentSessionMultiView(unittest.TestCase):
         m2.close_shell()
         m3 = v1.spawn_group_molecule(MoleculeDocument("mol3"))
         self.assertEqual(m3.gmv_tag, "G1:M3:V1")
+
+
+if __name__ == "__main__":
+    unittest.main()
+

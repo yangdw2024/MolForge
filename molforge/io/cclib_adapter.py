@@ -2,9 +2,12 @@
 io/cclib_adapter.py - 量化计算日志解析（支持 Gaussian / ORCA / Psi4 / 复旦 REST）
 ================================================================================
 特性：
-  - 支持 cclib 解析 + 纯 Python 正则兜底解析（无需安装 cclib 也能解析 Gaussian 与 REST 日志！）
-  - 提取基态能量、HOMO / LUMO / 能隙 (eV)、偶极矩、TD-DFT 激发态 (S1 波长 nm / 激发能 eV / 振子强度 f)
-  - 完整支持复旦大学 REST (Rust-based Electronic Structure Toolkit) 输出日志解析
+  - 支持 cclib 解析 + 纯 Python 正则深度兜底解析（无需安装 cclib 也能完整解析 Gaussian 与 REST 日志！）
+  - 提取基态 SCF 能量 (Hartree 与 eV)、HOMO / LUMO / 能隙 (eV)、偶极矩 (Debye 与三维矢量)
+  - 提取零点能 (ZPE)、吉布斯自由能 (Gibbs Free Energy)、热力学焓 (Enthalpy)
+  - 提取简正振动频率与虚频判定（虚频数量、虚频列表，区分过渡态与稳定极小点）
+  - 提取 Mulliken 原子净电荷分布明细表 (用于 3D 视口电荷渲染与亲核/亲电位点分析)
+  - 提取 TD-DFT 激发态 (S1 波长 nm / 激发能 eV / 振子强度 f) 与几何优化步轨迹
 """
 
 from __future__ import annotations
@@ -26,17 +29,25 @@ class QuantumResult:
     basis: str = ""
     charge: int = 0
     multiplicity: int = 1
-    energy: float = 0.0          # eV
-    homo: float = 0.0            # eV
-    lumo: float = 0.0            # eV
-    gap: float = 0.0             # eV
-    s1_energy_ev: float = 0.0    # TD-DFT S1 光学带隙 (eV)
+    energy: float = 0.0                  # eV
+    energy_hartree: float = 0.0          # a.u. (Hartree)
+    homo: float = 0.0                    # eV
+    lumo: float = 0.0                    # eV
+    gap: float = 0.0                     # eV
+    dipole_debye: float = 0.0            # Debye
+    dipole_vector: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    zpe_hartree: float = 0.0             # Zero-point energy (Hartree)
+    gibbs_free_energy_hartree: float = 0.0 # G (Hartree)
+    enthalpy_hartree: float = 0.0        # H (Hartree)
+    s1_energy_ev: float = 0.0            # TD-DFT S1 光学带隙 (eV)
     s1_wavelength_nm: float = 0.0
     s1_oscillator_f: float = 0.0
     excited_states: list[dict] = field(default_factory=list)
     converged: bool = True
     optimization_steps: list[dict] = field(default_factory=list)
-    frequencies: list[float] = field(default_factory=list)  # cm^-1
+    frequencies: list[float] = field(default_factory=list)              # cm^-1
+    imaginary_frequencies: list[float] = field(default_factory=list)    # cm^-1 (<0)
+    mulliken_charges: dict[int, float] = field(default_factory=dict)     # {atom_idx: charge_e}
     coordinates: np.ndarray | None = None
     n_atoms: int = 0
     atomic_numbers: list[int] = field(default_factory=list)
@@ -93,13 +104,13 @@ class CCLibAdapter:
                 data = cclib.io.ccread(str(filepath))
                 if data is not None:
                     res = self._from_cclib_data(data)
-                    # 补充提取 TD-DFT 激发态（若日志含 Excited State）
-                    self._enrich_excited_states_from_text(res, text)
+                    # 补充提取 TD-DFT 与热力学参数
+                    self._enrich_from_text(res, text)
                     return res
             except Exception:
                 pass
 
-        # 3. 纯 Python 正则兜底解析 Gaussian / ORCA 日志
+        # 3. 纯 Python 正则深度解析 Gaussian / ORCA 日志
         return self._parse_gaussian_or_orca_fallback(text, sw)
 
     def _from_cclib_data(self, data) -> QuantumResult:
@@ -108,7 +119,7 @@ class CCLibAdapter:
         functional = md.get("functional", "")
         method_str = functional or (methods[-1] if methods else "")
         result = QuantumResult(
-            software=str(md.get("package", "unknown")),
+            software=str(md.get("package", "Gaussian")),
             method=str(method_str),
             basis=str(md.get("basis_set", "")),
             charge=int(getattr(data, "charge", 0)),
@@ -117,6 +128,7 @@ class CCLibAdapter:
 
         if hasattr(data, "scfenergies") and len(data.scfenergies) > 0:
             result.energy = float(data.scfenergies[-1])
+            result.energy_hartree = result.energy / HARTREE_TO_EV
         else:
             result.missing_data.append("能量")
 
@@ -147,8 +159,22 @@ class CCLibAdapter:
 
         if hasattr(data, "vibfreqs"):
             result.frequencies = [float(f) for f in data.vibfreqs]
+            result.imaginary_frequencies = [float(f) for f in data.vibfreqs if f < 0.0]
         else:
             result.missing_data.append("频率")
+
+        if hasattr(data, "atomcharges") and isinstance(data.atomcharges, dict):
+            if "mulliken" in data.atomcharges:
+                result.mulliken_charges = {i: float(c) for i, c in enumerate(data.atomcharges["mulliken"])}
+
+        if hasattr(data, "moments") and len(data.moments) > 1:
+            dip = data.moments[1]
+            if dip is not None and len(dip) == 3:
+                result.dipole_vector = (float(dip[0]), float(dip[1]), float(dip[2]))
+                result.dipole_debye = float(np.linalg.norm(dip))
+
+        if hasattr(data, "zpve"):
+            result.zpe_hartree = float(data.zpve)
 
         if hasattr(data, "atomcoords") and len(data.atomcoords) > 0:
             result.coordinates = np.array(data.atomcoords[-1])
@@ -161,8 +187,9 @@ class CCLibAdapter:
 
         return result
 
-    def _enrich_excited_states_from_text(self, result: QuantumResult, text: str) -> None:
-        """从 Gaussian TD-DFT 日志提取 Excited State 1..N (eV, nm, f)。"""
+    def _enrich_from_text(self, result: QuantumResult, text: str) -> None:
+        """从日志文本补充提取激发态、热力学修正及 Mulliken 电荷。"""
+        # TD-DFT 激发态
         pattern = re.compile(
             r"Excited State\s+(\d+):\s+([A-Za-z0-9\-\?]+)\s+(-?\d+\.\d+)\s+eV\s+(\d+\.\d+)\s+nm\s+f=(\d+\.\d+)"
         )
@@ -182,6 +209,47 @@ class CCLibAdapter:
             result.s1_wavelength_nm = s1["wavelength_nm"]
             result.s1_oscillator_f = s1["oscillator_f"]
 
+        # 偶极矩
+        if result.dipole_debye == 0.0:
+            dip_matches = re.findall(
+                r"Dipole moment.*?\n\s*X=\s*([-\d\.]+)\s+Y=\s*([-\d\.]+)\s+Z=\s*([-\d\.]+)\s+Tot=\s*([-\d\.]+)",
+                text
+            )
+            if dip_matches:
+                dx, dy, dz, dtot = dip_matches[-1]
+                result.dipole_vector = (float(dx), float(dy), float(dz))
+                result.dipole_debye = float(dtot)
+
+        # 热力学修正
+        zpe_m = re.search(r"Zero-point correction=\s*([-\d\.]+)", text)
+        if zpe_m:
+            result.zpe_hartree = float(zpe_m.group(1))
+
+        gibbs_m = re.search(r"Sum of electronic and thermal Free Energies=\s*([-\d\.]+)", text)
+        if gibbs_m:
+            result.gibbs_free_energy_hartree = float(gibbs_m.group(1))
+
+        enth_m = re.search(r"Sum of electronic and thermal Enthalpies=\s*([-\d\.]+)", text)
+        if enth_m:
+            result.enthalpy_hartree = float(enth_m.group(1))
+
+        # Mulliken 电荷
+        if not result.mulliken_charges:
+            mull_matches = list(re.finditer(
+                r"Mulliken (?:atomic )?charges(?:\s+and spin densities)?:\s*\n(?:\s+\d+\s*\n)?((?:\s+\d+\s+[A-Za-z]+\s+[-+]?\d+\.\d+\s*\n)+)",
+                text
+            ))
+            if mull_matches:
+                last_block = mull_matches[-1].group(1)
+                for line in last_block.strip().splitlines():
+                    parts = line.split()
+                    if len(parts) >= 3 and parts[0].isdigit():
+                        idx = int(parts[0]) - 1
+                        try:
+                            result.mulliken_charges[idx] = float(parts[2])
+                        except ValueError:
+                            pass
+
     def _parse_rest_text(self, text: str) -> QuantumResult:
         """解析复旦 REST 输出文件。"""
         from ..application.calculators.rest_engine import parse_rest_log_text
@@ -193,6 +261,7 @@ class CCLibAdapter:
             method=(xc_m.group(1).upper() if xc_m else "DFT/xDH"),
             basis=(Path(bas_m.group(1).strip()).name if bas_m else "def2-TZVPP"),
             energy=float(info["final_energy_ev"] or 0.0),
+            energy_hartree=(float(info["final_energy_ev"] or 0.0) / HARTREE_TO_EV),
             homo=float(info["homo_ev"] or 0.0),
             lumo=float(info["lumo_ev"] or 0.0),
             gap=float(info["gap_ev"] or 0.0),
@@ -205,16 +274,31 @@ class CCLibAdapter:
         return res
 
     def _parse_gaussian_or_orca_fallback(self, text: str, sw: str) -> QuantumResult:
-        """纯 Python 正则解析 Gaussian 日志（提取 SCF Done、Alpha occ/virt eigenvalues、TD-DFT）。"""
+        """纯 Python 正则深度解析 Gaussian / ORCA 日志。"""
         res = QuantumResult(software=sw.capitalize() if sw != "unknown" else "Gaussian")
+
+        # 1. 提取理论方法与 SCF Done 能量
         scf = re.findall(r"SCF Done:\s+E\(([^)]+)\)\s*=\s*(-?\d+\.\d+)", text)
         if scf:
             res.method = scf[-1][0]
-            res.energy = float(scf[-1][1]) * HARTREE_TO_EV
+            res.energy_hartree = float(scf[-1][1])
+            res.energy = res.energy_hartree * HARTREE_TO_EV
         else:
-            res.missing_data.append("能量")
+            # ORCA 兼容
+            orca_scf = re.findall(r"FINAL SINGLE POINT ENERGY\s+([-\d\.]+)", text)
+            if orca_scf:
+                res.energy_hartree = float(orca_scf[-1])
+                res.energy = res.energy_hartree * HARTREE_TO_EV
+                res.method = "DFT/HF"
+            else:
+                res.missing_data.append("能量")
 
-        # 提取 Alpha occ. eigenvalues 与 Alpha virt. eigenvalues
+        # 2. 提取基组
+        bas_m = re.search(r"Standard basis:\s+([^\(\n]+)", text)
+        if bas_m:
+            res.basis = bas_m.group(1).strip()
+
+        # 3. 提取前线轨道 Alpha occ. eigenvalues 与 Alpha virt. eigenvalues
         occ_lines = re.findall(r"Alpha\s+occ\.\s+eigenvalues\s+--\s+([-\d\.\s]+)", text)
         virt_lines = re.findall(r"Alpha\s+virt\.\s+eigenvalues\s+--\s+([-\d\.\s]+)", text)
         if occ_lines and virt_lines:
@@ -227,6 +311,43 @@ class CCLibAdapter:
         else:
             res.missing_data.append("轨道能级")
 
-        self._enrich_excited_states_from_text(res, text)
-        res.converged = ("Normal termination" in text) or bool(scf)
+        # 4. 振动分析频率与虚频判定
+        freq_matches = re.findall(r"Frequencies\s*--\s*([-\d\.\s]+)", text)
+        freqs = []
+        for fm in freq_matches:
+            for x in fm.split():
+                try:
+                    freqs.append(float(x))
+                except ValueError:
+                    pass
+        if freqs:
+            res.frequencies = freqs
+            res.imaginary_frequencies = [f for f in freqs if f < 0.0]
+
+        # 5. 补充激发态、偶极矩与热力学修正
+        self._enrich_from_text(res, text)
+
+        # 6. 提取分子坐标与原子种类
+        std_blocks = list(re.finditer(
+            r"(?:Standard|Input)\s+orientation:\s*\n\s*-+\s*\n\s*Center\s+Atomic\s+Atomic\s+Coordinates\s+\(Angstroms\)\s*\n\s*Number\s+Number\s+Type\s+X\s+Y\s+Z\s*\n\s*-+\s*\n((?:\s*\d+\s+\d+\s+\d+\s+[-\d\.]+\s+[-\d\.]+\s+[-\d\.]+\s*\n)+)\s*-+",
+            text
+        ))
+        if std_blocks:
+            last_coords_text = std_blocks[-1].group(1)
+            at_nums: list[int] = []
+            coords_list: list[list[float]] = []
+            for line in last_coords_text.strip().splitlines():
+                p = line.split()
+                if len(p) >= 6:
+                    try:
+                        at_nums.append(int(p[1]))
+                        coords_list.append([float(p[3]), float(p[4]), float(p[5])])
+                    except ValueError:
+                        pass
+            if at_nums and coords_list:
+                res.atomic_numbers = at_nums
+                res.coordinates = np.array(coords_list, dtype=np.float32)
+                res.n_atoms = len(at_nums)
+
+        res.converged = ("Normal termination" in text) or ("THE OPTIMIZATION HAS CONVERGED" in text) or bool(scf)
         return res

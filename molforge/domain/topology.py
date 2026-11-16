@@ -70,20 +70,38 @@ class Topology:
         self._bonds: dict[BondId, Bond] = {}
         self._adjacency: dict[AtomId, list[BondId]] = {}
         self._id_counter = IdCounter()
+        self._atom_index_cache: tuple[list[AtomId], dict[AtomId, int]] | None = None
+        self._bond_index_cache: tuple[list[BondId], dict[BondId, int]] | None = None
 
     # ---------- 双向映射表（Phase 1 核心要求） ----------
 
+    def invalidate_index_caches(self) -> None:
+        self._atom_index_cache = None
+        self._bond_index_cache = None
+        self._ring_bonds_cache = None
+
+
     def atom_index_map(self) -> tuple[list[AtomId], dict[AtomId, int]]:
         """返回 (idx_to_atom_id 列表, atom_id_to_idx 字典)。"""
-        idx_to_id = list(self._atoms.keys())
-        id_to_idx = {aid: i for i, aid in enumerate(idx_to_id)}
-        return idx_to_id, id_to_idx
+        cache = getattr(self, "_atom_index_cache", None)
+        atoms_dict = self._atoms
+        if cache is None or cache[0] != id(atoms_dict) or cache[1] != len(atoms_dict):
+            idx_to_id = list(atoms_dict.keys())
+            id_to_idx = {aid: i for i, aid in enumerate(idx_to_id)}
+            cache = (id(atoms_dict), len(atoms_dict), idx_to_id, id_to_idx)
+            self._atom_index_cache = cache
+        return cache[2], cache[3]
 
     def bond_index_map(self) -> tuple[list[BondId], dict[BondId, int]]:
         """返回 (idx_to_bond_id 列表, bond_id_to_idx 字典)。"""
-        idx_to_id = list(self._bonds.keys())
-        id_to_idx = {bid: i for i, bid in enumerate(idx_to_id)}
-        return idx_to_id, id_to_idx
+        cache = getattr(self, "_bond_index_cache", None)
+        bonds_dict = self._bonds
+        if cache is None or cache[0] != id(bonds_dict) or cache[1] != len(bonds_dict):
+            idx_to_id = list(bonds_dict.keys())
+            id_to_idx = {bid: i for i, bid in enumerate(idx_to_id)}
+            cache = (id(bonds_dict), len(bonds_dict), idx_to_id, id_to_idx)
+            self._bond_index_cache = cache
+        return cache[2], cache[3]
 
     # ---------- 原子操作 ----------
 
@@ -111,6 +129,7 @@ class Topology:
         self._atoms[aid] = atom
         if aid not in self._adjacency:
             self._adjacency[aid] = []
+        self._atom_index_cache = None
         return aid
 
     def restore_atom(self, atom: Atom, index: int | None = None) -> AtomId:
@@ -126,6 +145,7 @@ class Topology:
             self._atoms = dict(items)
         if aid not in self._adjacency:
             self._adjacency[aid] = []
+        self._atom_index_cache = None
         return aid
 
     def remove_atom(self, aid: AtomId) -> None:
@@ -137,16 +157,18 @@ class Topology:
             self.remove_bond(bid)
         del self._atoms[aid]
         del self._adjacency[aid]
+        self._atom_index_cache = None
 
     def get_atom(self, aid: AtomId) -> Atom:
         return self._atoms[aid]
 
     def index_of_atom(self, aid: AtomId) -> int:
         """返回原子在当前拓扑序列中的索引（0-based）。"""
-        for idx, k in enumerate(self._atoms.keys()):
-            if k == aid:
-                return idx
-        raise KeyError(f"原子 {aid} 不存在")
+        _, id_to_idx = self.atom_index_map()
+        idx = id_to_idx.get(aid)
+        if idx is None:
+            raise KeyError(f"原子 {aid} 不存在")
+        return idx
 
     @property
     def num_atoms(self) -> int:
@@ -189,6 +211,7 @@ class Topology:
         self._bonds[bid] = bond
         self._adjacency[a].append(bid)
         self._adjacency[b].append(bid)
+        self._bond_index_cache = None
         return bid
 
     def restore_bond(self, bond: Bond) -> BondId:
@@ -203,6 +226,7 @@ class Topology:
             self._adjacency[bond.begin].append(bid)
         if bid not in self._adjacency[bond.end]:
             self._adjacency[bond.end].append(bid)
+        self._bond_index_cache = None
         return bid
 
     def remove_bond(self, bid: BondId) -> None:
@@ -215,6 +239,7 @@ class Topology:
         if bond.end in self._adjacency and bid in self._adjacency[bond.end]:
             self._adjacency[bond.end].remove(bid)
         del self._bonds[bid]
+        self._bond_index_cache = None
 
     def get_bond(self, bid: BondId) -> Bond:
         return self._bonds[bid]
@@ -266,3 +291,74 @@ class Topology:
             [self._atoms[aid].atomic_num for aid in self._atoms],
             dtype=np.int32,
         )
+
+    def connected_components(self) -> list[set[AtomId]]:
+        """计算拓扑中所有不连通的子图/连通分量集合列表。"""
+        visited = set()
+        components: list[set[AtomId]] = []
+        for aid in self._atoms:
+            if aid not in visited:
+                comp: set[AtomId] = set()
+                queue = [aid]
+                visited.add(aid)
+                while queue:
+                    curr = queue.pop(0)
+                    comp.add(curr)
+                    for nbr in self.neighbors_of(curr):
+                        if nbr not in visited:
+                            visited.add(nbr)
+                            queue.append(nbr)
+                components.append(comp)
+        return components
+
+    def rings_count(self) -> int:
+        """根据图论圈秩（Cyclomatic Number / SSSR 基础环数）严格计算环数：
+        R = E - V + C，其中 C 为连通分量数。对于独立多分子体系也能精准给出真值。
+        """
+        v = len(self._atoms)
+        if v == 0:
+            return 0
+        e = len(self._bonds)
+        c = len(self.connected_components())
+        return max(0, e - v + c)
+
+    def is_bond_in_ring(self, bid: BondId) -> bool:
+        """判断指定化学键是否属于任意分子环内（即非桥接/非割边割链化学键）。"""
+        if bid not in self._bonds:
+            return False
+        cache = getattr(self, "_ring_bonds_cache", None)
+        bonds_dict = self._bonds
+        if cache is None or cache[0] != id(bonds_dict) or cache[1] != len(bonds_dict):
+            self._compute_ring_bonds()
+            cache = self._ring_bonds_cache
+        return bid in cache[2]
+
+    def _compute_ring_bonds(self) -> None:
+        """使用图论备用路径搜索检测所有环内化学键。
+        化学键 (u, v) 在环内 当且仅当 从 u 到 v 存在不经过该键的第二条路径。
+        """
+        ring_bonds: set[BondId] = set()
+        for bid, bond in self._bonds.items():
+            # Aromaticity is a bond-property, not proof of a topological cycle.
+            u, v = bond.begin, bond.end
+            visited = {u}
+            queue = [u]
+            found = False
+            while queue and not found:
+                curr = queue.pop(0)
+                for b_other in self._adjacency.get(curr, []):
+                    if b_other == bid:
+                        continue
+                    other_atom = self._bonds[b_other].other_end(curr)
+                    if other_atom is None:
+                        continue
+                    if other_atom == v:
+                        found = True
+                        break
+                    if other_atom not in visited:
+                        visited.add(other_atom)
+                        queue.append(other_atom)
+            if found:
+                ring_bonds.add(bid)
+        self._ring_bonds_cache = (id(self._bonds), len(self._bonds), ring_bonds)
+

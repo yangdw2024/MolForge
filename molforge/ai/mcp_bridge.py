@@ -1,4 +1,4 @@
-﻿"""
+"""
 mcp_bridge.py - MolForge 大语言模型桥接（OpenAI 兼容端点 + 真实 function calling）
 =================================================================================
 让外部 LLM（任意 OpenAI 兼容端点：本地 vLLM/Ollama/DeepSeek/OpenAI 等）能：
@@ -49,17 +49,41 @@ def _settings() -> Optional[Any]:
         return None
 
 
-_CONFIG_CACHE: dict[str, str] = {}
+_CONFIG_CACHE: dict[str, Any] = {}
 
 
-def get_llm_config() -> dict[str, str]:
+def fetch_remote_models(base_url: str, api_key: str) -> list[str]:
+    """通过 OpenAI 兼容的 /models 端点拉取服务器当前所有可用模型。"""
+    url = str(base_url).strip().rstrip("/")
+    if not url.endswith("/v1"):
+        if not url.endswith("/models"):
+            models_url = url + "/v1/models"
+        else:
+            models_url = url
+    else:
+        models_url = url + "/models"
+    headers = {}
+    if api_key and api_key != "EMPTY":
+        headers["Authorization"] = f"Bearer {api_key.strip()}"
+    req = urllib.request.Request(models_url, headers=headers)
+    with urllib.request.urlopen(req, timeout=6) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        models = [m["id"] for m in data.get("data", []) if isinstance(m, dict) and "id" in m]
+        return models
+
+
+def get_llm_config() -> dict[str, Any]:
     global _CONFIG_CACHE
     if _CONFIG_CACHE:
         return dict(_CONFIG_CACHE)
     """读取全局统一的大模型配置（打通右侧面板 AI_Config、独立弹窗 LLM 与 JSON 持久化存储，彻底杜绝割裂二次配置）。"""
-    base_url = "http://127.0.0.1:8000/v1"
-    api_key = "EMPTY"
-    model = "default-model"
+    base_url = "http://127.0.0.1:8045/v1"
+    api_key = ""
+    model = "gemini-3.8-flash"
+    temperature = 0.3
+    max_tokens = 4096
+    reasoning_effort = "none"
+
 
     # 1. 优先读取磁盘配置文件 (Single Source of Truth)
     cfg_file = _config_file()
@@ -73,11 +97,24 @@ def get_llm_config() -> dict[str, str]:
                     if disk_data.get("api_key"):
                         api_key = str(disk_data["api_key"]).strip()
                     if disk_data.get("model"):
-                        model = str(disk_data["model"]).strip()
+                        m_str = str(disk_data["model"]).strip()
+                        if m_str and m_str not in ("default-model", "antigravity"):
+                            model = m_str
+                        else:
+                            model = "gemini-3.8-flash"
+                    if "temperature" in disk_data:
+                        temperature = float(disk_data["temperature"])
+                    if "max_tokens" in disk_data:
+                        max_tokens = int(disk_data["max_tokens"])
+                    if "reasoning_effort" in disk_data:
+                        reasoning_effort = str(disk_data["reasoning_effort"])
             return {
-                "base_url": base_url or "http://127.0.0.1:8000/v1",
-                "api_key": api_key or "EMPTY",
-                "model": model or "default-model",
+                "base_url": base_url or "http://127.0.0.1:8045/v1",
+                "api_key": api_key if api_key else "EMPTY",
+                "model": model or "gemini-3.8-flash",
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "reasoning_effort": reasoning_effort,
             }
         except Exception:
             pass
@@ -91,7 +128,18 @@ def get_llm_config() -> dict[str, str]:
             v_model = s_llm.value("model", "", str)
             if v_url: base_url = v_url.strip()
             if v_key: api_key = v_key.strip()
-            if v_model: model = v_model.strip()
+            if v_model:
+                v_model = v_model.strip()
+                if v_model and v_model not in ("default-model", "antigravity"):
+                    model = v_model
+                else:
+                    model = "gemini-3.8-flash"
+            v_temp = s_llm.value("temperature", None)
+            if v_temp is not None: temperature = float(v_temp)
+            v_mt = s_llm.value("max_tokens", None)
+            if v_mt is not None: max_tokens = int(v_mt)
+            v_re = s_llm.value("reasoning_effort", "", str)
+            if v_re: reasoning_effort = v_re
         except Exception:
             pass
 
@@ -104,32 +152,56 @@ def get_llm_config() -> dict[str, str]:
             ai_model = s_ai.value("llm_model_name", "", str)
             if ai_url: base_url = ai_url.strip()
             if ai_key: api_key = ai_key.strip()
-            if ai_model: model = ai_model.strip()
+            if ai_model:
+                ai_model = ai_model.strip()
+                if ai_model and ai_model not in ("default-model", "antigravity"):
+                    model = ai_model
+                else:
+                    model = "gemini-3.8-flash"
         except Exception:
             pass
 
     return {
-        "base_url": base_url or "http://127.0.0.1:8000/v1",
+        "base_url": base_url or "http://127.0.0.1:8045/v1",
         "api_key": api_key or "EMPTY",
-        "model": model or "default-model",
+        "model": model or "gemini-3.8-flash",
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "reasoning_effort": reasoning_effort,
     }
 
 
-def set_llm_config(base_url: str, api_key: str, model: str) -> None:
+
+def set_llm_config(
+    base_url: str,
+    api_key: str,
+    model: str,
+    temperature: float = 0.3,
+    max_tokens: int = 4096,
+    reasoning_effort: str = "none",
+) -> None:
     global _CONFIG_CACHE
-    base_url = str(base_url).strip() or "http://127.0.0.1:8000/v1"
-    api_key = str(api_key).strip() or "EMPTY"
-    model = str(model).strip() or "default-model"
+    base_url = str(base_url).strip() or "http://127.0.0.1:8045/v1"
+    key_str = str(api_key).strip()
+    api_key = key_str if key_str else "EMPTY"
+    m_val = str(model).strip()
+    if not m_val or m_val in ("default-model", "antigravity"):
+        model = "gemini-3.8-flash"
+    else:
+        model = m_val
+    temperature = float(temperature)
+    max_tokens = int(max_tokens)
+    reasoning_effort = str(reasoning_effort)
+
     _CONFIG_CACHE = {
         "base_url": base_url,
         "api_key": api_key,
         "model": model,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "reasoning_effort": reasoning_effort,
     }
     """持久化保存大模型配置，同步写入 MolForge/LLM、MolForge/AI_Config 与本地 JSON 文件，保持 100% 同步。"""
-    base_url = str(base_url).strip() or "http://127.0.0.1:8000/v1"
-    api_key = str(api_key).strip() or "EMPTY"
-    model = str(model).strip() or "default-model"
-
     # 1. 写入磁盘 JSON 文件 (单点真理)
     try:
         cfg_file = _config_file()
@@ -138,6 +210,9 @@ def set_llm_config(base_url: str, api_key: str, model: str) -> None:
                 "base_url": base_url,
                 "api_key": api_key,
                 "model": model,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "reasoning_effort": reasoning_effort,
             }, f, indent=2, ensure_ascii=False)
     except Exception:
         pass
@@ -149,6 +224,9 @@ def set_llm_config(base_url: str, api_key: str, model: str) -> None:
             s_llm.setValue("base_url", base_url)
             s_llm.setValue("api_key", api_key)
             s_llm.setValue("model", model)
+            s_llm.setValue("temperature", temperature)
+            s_llm.setValue("max_tokens", max_tokens)
+            s_llm.setValue("reasoning_effort", reasoning_effort)
             s_llm.sync()
         except Exception:
             pass
@@ -160,6 +238,9 @@ def set_llm_config(base_url: str, api_key: str, model: str) -> None:
             s_ai.setValue("llm_base_url", base_url)
             s_ai.setValue("deepseek_api_key", api_key)
             s_ai.setValue("llm_model_name", model)
+            s_ai.setValue("temperature", temperature)
+            s_ai.setValue("max_tokens", max_tokens)
+            s_ai.setValue("reasoning_effort", reasoning_effort)
             s_ai.sync()
         except Exception:
             pass
@@ -593,6 +674,7 @@ class MolForgeMCPBridge:
         if urlsplit(cfg["base_url"]).scheme not in ("http", "https"):
             return "LLM端点必须是http/https地址"
         if self.document is not None:
+            turn_start_len = len(self.history)
             self.history.append({"role": "user", "content": user_message})
         else:
             return "当前没有打开的分子文档，LLM 无可读取的结构。"
@@ -603,7 +685,12 @@ class MolForgeMCPBridge:
                 "messages": self.history,
                 "tools": self.tool_definitions(),
                 "tool_choice": "auto",
+                "temperature": float(cfg.get("temperature", 0.3)),
+                "max_tokens": int(cfg.get("max_tokens", 4096)),
             }
+            if cfg.get("reasoning_effort") and cfg["reasoning_effort"] not in ("none", "关闭"):
+                payload["reasoning_effort"] = cfg["reasoning_effort"]
+
             url = cfg["base_url"].rstrip("/") + "/chat/completions"
             req = urllib.request.Request(
                 url,
@@ -617,7 +704,23 @@ class MolForgeMCPBridge:
             try:
                 with urllib.request.urlopen(req, timeout=120) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
+            except urllib.error.HTTPError as exc:
+                del self.history[turn_start_len:]
+                err_body = exc.read().decode("utf-8", errors="ignore")
+                detail = ""
+                try:
+                    err_json = json.loads(err_body)
+                    detail = (
+                        err_json.get("error", {}).get("readable_summary")
+                        or err_json.get("error", {}).get("message")
+                        or err_json.get("message")
+                        or str(exc)
+                    )
+                except Exception:
+                    detail = err_body[:240] if err_body else str(exc)
+                return f"LLM 服务返回错误 (HTTP {exc.code})：{detail}\n💡 诊断建议：若提示模型不存在，请在上方配置区点击「🔄 获取可用模型」并从下拉菜单中选中可用模型（如 gemini-3.8-flash）。"
             except (urllib.error.URLError, TimeoutError, ValueError, OSError) as exc:
+                del self.history[turn_start_len:]
                 return f"无法连接 LLM 端点 ({cfg['base_url']})：{exc}"
 
             try:
@@ -625,9 +728,11 @@ class MolForgeMCPBridge:
                 if not isinstance(msg, dict):
                     raise ValueError("message不是对象")
             except (KeyError, IndexError, TypeError, ValueError) as exc:
+                del self.history[turn_start_len:]
                 return f"LLM响应格式错误：{exc}"
             tool_calls = msg.get("tool_calls") or []
             if not isinstance(tool_calls, list):
+                del self.history[turn_start_len:]
                 return "LLM响应格式错误：tool_calls必须是数组"
             if not tool_calls:
                 reply = msg.get("content", "")
@@ -637,6 +742,7 @@ class MolForgeMCPBridge:
             self.history.append(msg)
             for call in tool_calls:
                 if not isinstance(call, dict) or not isinstance(call.get("function"), dict) or not call.get("id") or not isinstance(call["function"].get("name"), str):
+                    del self.history[turn_start_len:]
                     return "LLM响应格式错误：工具调用缺少id/function/name"
                 fname = call["function"]["name"]
                 try:

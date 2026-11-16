@@ -1,0 +1,197 @@
+{
+  "generated_at": "2026-11-16T18:07:29+08:00",
+  "version": "7.4.2",
+  "method": "Consolidated from direct engine results, native desktop evidence, file readback and isolated installation; these tests are not rerun by the ZIP builder.",
+  "native_mouse_acceptance": {
+    "status": "PASS",
+    "desktop": "isolated Windows PIP desktop; independent QSettings and MOLFORGE_DATA_DIR",
+    "actions": [
+      "Ctrl+N",
+      "mouse atom creation and drag bond creation",
+      "3D mouse rotation",
+      "Ctrl+S",
+      "Ctrl+O"
+    ],
+    "font_size_px": 22,
+    "window_size": [
+      960,
+      774
+    ],
+    "saved_atoms": 2,
+    "saved_bonds": 1,
+    "saved_project_bytes": 843,
+    "initial_screenshot": "docs/repair_20261116/evidence/native_22_initial.png",
+    "reopened_screenshot": "docs/repair_20261116/evidence/native_two_atoms_reopened.png",
+    "saved_project": "docs/repair_20261116/evidence/native_two_atoms.mforge",
+    "scope": "Real mouse/keyboard evidence for the listed actions, not every GUI feature or a frame-rate benchmark."
+  },
+  "external_engines": {
+    "gaussian": {
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 9.345210400002543,
+      "normal_termination": true,
+      "output_exists": true,
+      "output_bytes": 75218,
+      "stationary_point_found": true
+    },
+    "multiwfn": {
+      "status": "PASS",
+      "mayer": {
+        "seconds": 0.1529009000005317,
+        "bond_orders": {
+          "1-2": 0.96416243,
+          "1-3": 0.96416243
+        },
+        "total_valences": {
+          "1": 1.92832485,
+          "2": 0.97266994,
+          "3": 0.97266994
+        }
+      },
+      "qtaim": {
+        "seconds": 0.09548770000037621,
+        "critical_points": 5,
+        "bond_critical_points": 2,
+        "attractors": 3,
+        "paths": 4
+      }
+    },
+    "xtb": {
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.07268249999833643,
+      "log": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\external_engines\\xtb\\xtb.log",
+      "normal_termination": true,
+      "optimized_xyz": true
+    },
+    "orca": {
+      "status": "PASS_SERIAL_ONLY",
+      "returncode": 0,
+      "seconds": 27.786821400000917,
+      "log": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\external_engines\\orca\\water.out",
+      "normal_termination": true,
+      "optimized_xyz": true,
+      "parallel_status": "NOT_AVAILABLE: 8-process launch could not find mpiexec; serial run passed"
+    },
+    "gromacs": {
+      "status": "FAIL_OUTPUT_FILE_IO",
+      "versions_observed": [
+        "2025.1",
+        "2026.1",
+        "2026.3"
+      ],
+      "detail": "Version commands and input reading worked, but pdb2gmx/editconf failed to create output files; no MD pass claimed.",
+      "last_result": {
+        "status": "failed",
+        "steps": {
+          "editconf": {
+            "returncode": 1,
+            "seconds": 0.009454399998503504
+          }
+        },
+        "error": "RuntimeError: editconf failed; see E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\external_engines\\gromacs_direct\\editconf_console.log"
+      }
+    },
+    "hpc_remote": {
+      "status": "NOT_TESTED",
+      "detail": "Only mock runner tests; no real credentials or remote queue verification."
+    },
+    "external_llm": {
+      "status": "NOT_TESTED",
+      "detail": "No real external LLM request was sent."
+    }
+  },
+  "large_system_main_window": {
+    "status": "passed",
+    "input": "E:\\YDW\\test_wsl\\ydw-PM6-ClFFCl.pdb",
+    "platform": "Qt offscreen",
+    "stages": {
+      "open_main_window": {
+        "ok": true,
+        "seconds": 8.602213400001347,
+        "atoms": 321554,
+        "bonds": 275500
+      },
+      "offscreen_render": {
+        "frames": 12,
+        "p50_ms": 0.09554999996908009,
+        "p95_ms": 0.15950000306474976,
+        "note": "Offscreen software/backend timing; not native GUI FPS"
+      },
+      "select_one": {
+        "seconds": 0.0008951999989221804,
+        "selected": true
+      },
+      "delete_one": {
+        "success": true,
+        "seconds": 13.672023800001625,
+        "atoms_after": 321552,
+        "deleted_count": 2,
+        "cascade_terminal_hydrogens": 1
+      },
+      "undo_one": {
+        "success": true,
+        "seconds": 4.638530599997466,
+        "atoms_after": 321554,
+        "atom_restored": true
+      }
+    },
+    "memory": {
+      "rss_mb": 1281.60546875,
+      "peak_working_set_mb": 1584.4140625
+    },
+    "renderer": {
+      "type": "VtkRendererBackend"
+    }
+  },
+  "clean_install": {
+    "status": "passed",
+    "python": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Scripts\\python.exe",
+    "installed": {
+      "version": "7.4.2",
+      "package": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Lib\\site-packages\\molforge\\__init__.py",
+      "main": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Lib\\site-packages\\main.py",
+      "entry_point_callable": true
+    },
+    "offscreen_window": {
+      "atoms": 24,
+      "bonds": 25,
+      "title": "[G1:M1:V1] 咖啡因 — MolForge 7.4.2 · AI-Native Molecular & OSC Workbench"
+    },
+    "console_entry_point": {
+      "path": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Scripts\\molforge.exe",
+      "running_after_8_seconds": true,
+      "seconds": 8.025050999996893
+    }
+  },
+  "credential_scan": {
+    "status": "REVIEWED",
+    "files_scanned": 366,
+    "candidate_count": 1,
+    "review": "The sole candidate is the explicit fake value sk-custom-test-key-999 in tests/test_llm_config_sync.py; no production credential or private key was found."
+  },
+  "artifacts": {
+    "gaussian_multiwfn": "docs/repair_20261116/evidence/gaussian_multiwfn_result.json",
+    "xtb_orca": "docs/repair_20261116/evidence/xtb_orca_result.json",
+    "gromacs_editconf_log": "docs/repair_20261116/evidence/gromacs_editconf_failure.txt",
+    "large_gui": "docs/repair_20261116/evidence/large_gui_result.json",
+    "clean_install": "docs/repair_20261116/evidence/clean_install_result.json",
+    "secret_scan": "docs/repair_20261116/evidence/secret_scan.json",
+    "full_regression": "docs/repair_20261116/evidence/full_regression_result.json"
+  },
+  "gates": {
+    "native_gui_acceptance": "PASS_REVIEWED_EXTERNAL_EVIDENCE",
+    "real_external_engines": "PARTIAL_GAUSSIAN_MULTIWFN_XTB_ORCA_SERIAL_PASS_GROMACS_FAIL",
+    "clean_environment_install": "PASS_REVIEWED_EXTERNAL_EVIDENCE"
+  },
+  "not_certified": [
+    "All 79 research entries as independent production algorithms",
+    "GROMACS end-to-end MD execution",
+    "ORCA MPI parallel execution",
+    "Real HPC credentials, remote submission or queue",
+    "Real external LLM request",
+    "100M-atom rendering or 60 FPS",
+    "Native 321554-atom FPS or every export format"
+  ]
+}

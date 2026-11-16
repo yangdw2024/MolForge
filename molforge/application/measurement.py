@@ -29,101 +29,62 @@ class Measurement:
     diagnostic: str = ""  # 退化时的说明
 
 
-def distance(coords: np.ndarray, i: int, j: int) -> float:
-    """
-    计算两个原子之间的距离（Å）。
-
-    Args:
-        coords: (N, 3) 坐标数组
-        i: 第一个原子索引
-        j: 第二个原子索引
-
-    Returns:
-        距离（Å）
-    """
+def distance(coords: np.ndarray, i: int, j: int, cell=None) -> float:
+    """计算原子距离（Å）；提供 ``UnitCell`` 时采用最小镜像约定。"""
     diff = coords[i] - coords[j]
+    if cell is not None:
+        from ..domain.periodic import minimum_image_delta
+        diff = minimum_image_delta(diff, cell)
     return float(np.linalg.norm(diff))
 
 
-def angle(coords: np.ndarray, i: int, j: int, k: int) -> tuple[float, bool, str]:
-    """
-    计算键角（i-j-k）。
-
-    Args:
-        coords: (N, 3) 坐标数组
-        i: 第一个原子索引
-        j: 中间原子索引
-        k: 第三个原子索引
-
-    Returns:
-        (角度，是否有效，诊断信息)
-    """
+def angle(coords: np.ndarray, i: int, j: int, k: int, cell=None) -> tuple[float, bool, str]:
+    """计算键角 i-j-k（度），可选采用周期最小镜像向量。"""
     v1 = coords[i] - coords[j]
     v2 = coords[k] - coords[j]
+    if cell is not None:
+        from ..domain.periodic import minimum_image_delta
+        v1 = minimum_image_delta(v1, cell)
+        v2 = minimum_image_delta(v2, cell)
 
-    # 检查退化
     norm1 = np.linalg.norm(v1)
     norm2 = np.linalg.norm(v2)
     if norm1 < 1e-6 or norm2 < 1e-6:
         return 0.0, False, "原子重合，角度无定义"
 
-    # dot 积
     cos_theta = np.dot(v1, v2) / (norm1 * norm2)
-    cos_theta = np.clip(cos_theta, -1.0, 1.0)
-
-    theta_rad = math.acos(cos_theta)
-    theta_deg = math.degrees(theta_rad)
-
-    return theta_deg, True, ""
+    theta_rad = math.acos(np.clip(cos_theta, -1.0, 1.0))
+    return math.degrees(theta_rad), True, ""
 
 
-def dihedral(coords: np.ndarray, i: int, j: int, k: int, l: int) -> tuple[float, bool, str]:
-    """
-    计算二面角（i-j-k-l）。
-
-    Args:
-        coords: (N, 3) 坐标数组
-        i: 第一个原子索引
-        j: 第二个原子索引
-        k: 第三个原子索引
-        l: 第四个原子索引
-
-    Returns:
-        (角度，是否有效，诊断信息)
-    """
-    # 向量 (按照标准 IUPAC 链式有向定义：b1: i->j, b2: j->k, b3: k->l，严格对齐 Gaussian / Chem3D / Multiwfn)
+def dihedral(coords: np.ndarray, i: int, j: int, k: int, l: int, cell=None) -> tuple[float, bool, str]:
+    """计算有向二面角 i-j-k-l（度），可选逐链段展开周期坐标。"""
     b1 = coords[j] - coords[i]
     b2 = coords[k] - coords[j]
     b3 = coords[l] - coords[k]
+    if cell is not None:
+        from ..domain.periodic import minimum_image_delta
+        b1 = minimum_image_delta(b1, cell)
+        b2 = minimum_image_delta(b2, cell)
+        b3 = minimum_image_delta(b3, cell)
 
-    # 检查退化
     norm_b2 = np.linalg.norm(b2)
     if norm_b2 < 1e-6:
         return 0.0, False, "中间原子重合，二面角无定义"
 
-    # 法向量
     n1 = np.cross(b1, b2)
     n2 = np.cross(b2, b3)
-
     norm_n1 = np.linalg.norm(n1)
     norm_n2 = np.linalg.norm(n2)
-
     if norm_n1 < 1e-6 or norm_n2 < 1e-6:
         return 0.0, False, "共线原子，二面角无定义"
 
     n1_norm = n1 / norm_n1
     n2_norm = n2 / norm_n2
-
-    # 二面角（严格对齐 Gaussian / Multiwfn / RDKit / IUPAC 标准定义：
-    # 视线沿 b2 (j->k) 方向看去，顺时针旋转为正，逆时针旋转为负）
     u2 = b2 / norm_b2
     x = float(np.dot(n1_norm, n2_norm))
     y = float(np.dot(np.cross(n1_norm, n2_norm), u2))
-
-    angle_rad = math.atan2(y, x)
-    angle_deg = math.degrees(angle_rad)
-
-    return angle_deg, True, ""
+    return math.degrees(math.atan2(y, x)), True, ""
 
 
 class MeasurementService:
@@ -140,11 +101,11 @@ class MeasurementService:
 
     def measure_distance(self, coords: np.ndarray,
                          atom_ids: tuple[AtomId, AtomId],
-                         idx_map: dict[AtomId, int]) -> Measurement:
-        """测量距离。"""
+                         idx_map: dict[AtomId, int], cell=None) -> Measurement:
+        """测量距离，可选传入晶胞采用最小镜像。"""
         i = idx_map[atom_ids[0]]
         j = idx_map[atom_ids[1]]
-        d = distance(coords, i, j)
+        d = distance(coords, i, j, cell)
         m = Measurement(
             type="distance",
             atoms=atom_ids,
@@ -156,12 +117,12 @@ class MeasurementService:
 
     def measure_angle(self, coords: np.ndarray,
                       atom_ids: tuple[AtomId, AtomId, AtomId],
-                      idx_map: dict[AtomId, int]) -> Measurement:
-        """测量键角。"""
+                      idx_map: dict[AtomId, int], cell=None) -> Measurement:
+        """测量键角，可选采用周期最小镜像。"""
         i = idx_map[atom_ids[0]]
         j = idx_map[atom_ids[1]]
         k = idx_map[atom_ids[2]]
-        value, valid, diagnostic = angle(coords, i, j, k)
+        value, valid, diagnostic = angle(coords, i, j, k, cell)
         m = Measurement(
             type="angle",
             atoms=atom_ids,
@@ -174,13 +135,13 @@ class MeasurementService:
 
     def measure_dihedral(self, coords: np.ndarray,
                          atom_ids: tuple[AtomId, AtomId, AtomId, AtomId],
-                         idx_map: dict[AtomId, int]) -> Measurement:
-        """测量二面角。"""
+                         idx_map: dict[AtomId, int], cell=None) -> Measurement:
+        """测量二面角，可选逐链段展开周期坐标。"""
         i = idx_map[atom_ids[0]]
         j = idx_map[atom_ids[1]]
         k = idx_map[atom_ids[2]]
         l = idx_map[atom_ids[3]]
-        value, valid, diagnostic = dihedral(coords, i, j, k, l)
+        value, valid, diagnostic = dihedral(coords, i, j, k, l, cell)
         m = Measurement(
             type="dihedral",
             atoms=atom_ids,

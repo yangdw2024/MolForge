@@ -304,6 +304,12 @@ class VtkRendererBackend(Renderer3D):
         self._measure_actor = None
         self._measure_chain: list[AtomId] | None = None
 
+        # 可选晶胞线框（12 条边，只在存在有效 CRYST1 时显示）
+        self._cell_matrix = None
+        self._cell_actor = None
+        self._cell_points = None
+        self._cell_polydata = None
+
         # 6. 常驻 3D 文字标签 Actor (vtkLabeledDataMapper / 2D overlay)
         self._label_points = None
         self._label_strings = None
@@ -894,6 +900,8 @@ class VtkRendererBackend(Renderer3D):
 
     def set_snapshot(self, snapshot: RenderSnapshot, reset_cam: bool = True) -> None:
         """设置渲染快照并原地更新逐原子/逐键常驻 VTK 对象。"""
+        previous_n_atoms = int(getattr(self, "_n_atoms", 0))
+        fit_initial_small_system = 0 < snapshot.num_atoms <= 3 and snapshot.num_atoms != previous_n_atoms
         self._atom_ids = list(snapshot.atom_ids)
         self._id_to_idx = {aid: i for i, aid in enumerate(self._atom_ids)}
         self._bonds = list(snapshot.bonds)
@@ -901,6 +909,7 @@ class VtkRendererBackend(Renderer3D):
         self._n_atoms = snapshot.num_atoms
         self._coordinates = snapshot.coordinates.copy().astype(np.float32) if len(snapshot.coordinates) > 0 else np.zeros((0, 3), dtype=np.float32)
         self._atomic_numbers = snapshot.atomic_numbers.copy()
+        self._cell_matrix = None if snapshot.cell_matrix is None else np.asarray(snapshot.cell_matrix, dtype=np.float64).copy()
 
         values = snapshot.atom_opacities
         self._atom_opacities = np.ones(self._n_atoms) if values is None else np.clip(np.asarray(values,dtype=float),0.,1.)
@@ -987,11 +996,57 @@ class VtkRendererBackend(Renderer3D):
         self._rebuild_vtk_molecule_in_place()
         self._apply_mode()
         self._update_highlights_in_place()
+        self._update_unit_cell()
 
-        if reset_cam or not self._camera_state:
+        if reset_cam or not self._camera_state or fit_initial_small_system:
             self.reset_camera()
         else:
             self.render()
+
+    def _update_unit_cell(self) -> None:
+        """Create/update the persistent 12-edge crystallographic cell actor."""
+        if self._viewer is None or vtk is None:
+            return
+        if self._cell_matrix is None:
+            if self._cell_actor is not None:
+                self._cell_actor.VisibilityOff()
+            return
+        matrix = np.asarray(self._cell_matrix, dtype=np.float64)
+        if matrix.shape != (3, 3) or not np.all(np.isfinite(matrix)):
+            if self._cell_actor is not None:
+                self._cell_actor.VisibilityOff()
+            return
+        from itertools import product
+        corners = np.asarray(list(product((0.0, 1.0), repeat=3))) @ matrix
+        edges = (
+            (0, 1), (0, 2), (0, 4), (1, 3), (1, 5), (2, 3),
+            (2, 6), (3, 7), (4, 5), (4, 6), (5, 7), (6, 7),
+        )
+        if self._cell_actor is None:
+            self._cell_points = vtk.vtkPoints()
+            lines = vtk.vtkCellArray()
+            for begin, end in edges:
+                line = vtk.vtkLine()
+                line.GetPointIds().SetId(0, begin)
+                line.GetPointIds().SetId(1, end)
+                lines.InsertNextCell(line)
+            self._cell_polydata = vtk.vtkPolyData()
+            self._cell_polydata.SetPoints(self._cell_points)
+            self._cell_polydata.SetLines(lines)
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputData(self._cell_polydata)
+            self._cell_actor = vtk.vtkActor()
+            self._cell_actor.SetMapper(mapper)
+            self._cell_actor.GetProperty().SetColor(0.30, 0.85, 0.95)
+            self._cell_actor.GetProperty().SetOpacity(0.75)
+            self._cell_actor.GetProperty().SetLineWidth(1.5)
+            self._viewer.renderer.AddActor(self._cell_actor)
+        self._cell_points.Reset()
+        for point in corners:
+            self._cell_points.InsertNextPoint(float(point[0]), float(point[1]), float(point[2]))
+        self._cell_points.Modified()
+        self._cell_polydata.Modified()
+        self._cell_actor.VisibilityOn()
 
     def _apply_mode(self) -> None:
         if self._surface_actor is not None and self._viewer is not None:
@@ -1280,9 +1335,10 @@ class VtkRendererBackend(Renderer3D):
             if ren is not None and hasattr(ren, "SetUseFXAA"):
                 ren.SetUseFXAA(False)
             if self._n_atoms > 80:
-                if getattr(self, "_sphere_source", None) is not None:
-                    self._sphere_source.SetThetaResolution(8)
-                    self._sphere_source.SetPhiResolution(8)
+                sphere = getattr(self, "_atom_sphere", None) or getattr(self, "_sphere_source", None)
+                if sphere is not None:
+                    sphere.SetThetaResolution(8)
+                    sphere.SetPhiResolution(8)
                 if getattr(self, "_bond_tube_filter", None) is not None:
                     self._bond_tube_filter.SetNumberOfSides(6)
         except Exception:
@@ -1301,12 +1357,14 @@ class VtkRendererBackend(Renderer3D):
                 ren.SetUseFXAA(True)
             res = 16 if self._n_atoms > 500 else 28
             sides = 10 if self._n_atoms > 500 else 18
-            if getattr(self, "_sphere_source", None) is not None:
-                self._sphere_source.SetThetaResolution(res)
-                self._sphere_source.SetPhiResolution(res)
+            sphere = getattr(self, "_atom_sphere", None) or getattr(self, "_sphere_source", None)
+            if sphere is not None:
+                sphere.SetThetaResolution(res)
+                sphere.SetPhiResolution(res)
             if getattr(self, "_bond_tube_filter", None) is not None:
                 self._bond_tube_filter.SetNumberOfSides(sides)
             self.render()
+
         except Exception:
             pass
 
@@ -1511,26 +1569,37 @@ class VtkRendererBackend(Renderer3D):
         try:
             ren = self._viewer.renderer
             cam = ren.GetActiveCamera()
-            if self._coordinates is not None and len(self._coordinates) >= 3:
-                coords = self._coordinates.astype(np.float64)
-                center = coords.mean(axis=0)
-                centered = coords - center
+            coords = self._coordinates.astype(np.float64) if self._coordinates is not None else np.zeros((0, 3))
+            center = coords.mean(axis=0) if len(coords) else np.zeros(3, dtype=np.float64)
+            centered = coords - center if len(coords) else coords
+            normal = np.array([0.0, 0.0, 1.0])
+            up_vec = np.array([0.0, 1.0, 0.0])
+            span = 4.5
+            if len(coords) >= 3:
                 _, _, vh = np.linalg.svd(centered, full_matrices=False)
-                normal = vh[2] if len(vh) >= 3 else np.array([0.0, 0.0, 1.0])
-                up_vec = vh[1] if len(vh) >= 2 else np.array([0.0, 1.0, 0.0])
+                normal = vh[2] if len(vh) >= 3 else normal
+                up_vec = vh[1] if len(vh) >= 2 else up_vec
                 if normal[2] < 0:
                     normal = -normal
                 if up_vec[1] < 0:
                     up_vec = -up_vec
-                span = max(4.5, float(np.linalg.norm(centered, axis=1).max()) * 2.4)
-                dist = span / math.tan(math.radians(15.0))
-                cam.SetFocalPoint(float(center[0]), float(center[1]), float(center[2]))
-                pos = center + normal * dist
-                cam.SetPosition(float(pos[0]), float(pos[1]), float(pos[2]))
-                cam.SetViewUp(float(up_vec[0]), float(up_vec[1]), float(up_vec[2]))
-                ren.ResetCameraClippingRange()
-            else:
-                self._viewer.reset_camera()
+                span = max(span, float(np.linalg.norm(centered, axis=1).max()) * 2.4)
+            elif len(coords) == 2:
+                bond = coords[1] - coords[0]
+                bond_length = float(np.linalg.norm(bond))
+                if bond_length > 1e-8 and abs(float(np.dot(bond / bond_length, normal))) > 0.95:
+                    normal = np.array([1.0, 0.0, 0.0])
+                span = max(span, bond_length * 2.4)
+            if self._cell_matrix is not None:
+                from itertools import product
+                corners = np.asarray(list(product((0.0, 1.0), repeat=3))) @ self._cell_matrix
+                span = max(span, float(np.linalg.norm(corners - center, axis=1).max()) * 2.4)
+            dist = span / math.tan(math.radians(15.0))
+            cam.SetFocalPoint(float(center[0]), float(center[1]), float(center[2]))
+            pos = center + normal * dist
+            cam.SetPosition(float(pos[0]), float(pos[1]), float(pos[2]))
+            cam.SetViewUp(float(up_vec[0]), float(up_vec[1]), float(up_vec[2]))
+            ren.ResetCameraClippingRange()
             self.save_camera_state()
             self.render()
         except Exception:

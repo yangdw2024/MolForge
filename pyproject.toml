@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "molforge-studio"
-version = "7.4.1"
+version = "7.4.2"
 description = "MolForge Studio: Unified molecular science workstation (2D sketcher, 3D modeler, quantum chemistry & MD, LLM assistant)"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -66,6 +66,9 @@ molforge-studio = "main:main"
 Homepage = "https://github.com/yangdw2024/MolForge"
 Repository = "https://github.com/yangdw2024/MolForge.git"
 Issues = "https://github.com/yangdw2024/MolForge/issues"
+
+[tool.setuptools]
+py-modules = ["main"]
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -10,9 +10,10 @@ import sys, os
 if sys.platform == "win32":
     try:
         import platform
-        platform._wmi_query = lambda *a, **kw: ("10.0.22631", 1, "Multiprocessor Free", 0, 0)
+        _wv = sys.getwindowsversion()
+        platform._wmi_query = lambda *a, **kw: (f"{_wv.major}.{_wv.minor}.{_wv.build}", 1, "Multiprocessor Free", 0, 0)
     except Exception:
         pass
 
-__version__ = "7.4.1"
+__version__ = "7.4.2"
 __app_name__ = "MolForge"

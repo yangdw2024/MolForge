@@ -158,9 +158,19 @@ class DeepSeekChemistryAssistant:
             headers=headers,
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
-        return body["choices"][0]["message"]["content"]
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+            return body["choices"][0]["message"]["content"]
+        except urllib.error.HTTPError as exc:
+            err_body = exc.read().decode("utf-8", errors="ignore")
+            detail = ""
+            try:
+                err_json = json.loads(err_body)
+                detail = err_json.get("error", {}).get("readable_summary") or err_json.get("error", {}).get("message") or err_json.get("message") or str(exc)
+            except Exception:
+                detail = err_body[:240] if err_body else str(exc)
+            return f"❌ 接口请求失败 (HTTP {exc.code})：{detail}\n💡 建议：请点击「获取可用模型」下拉选择正确的可用模型（如 gemini-3.8-flash）。"
 
     def _extract_and_run_actions(
         self,

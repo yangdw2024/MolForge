@@ -100,7 +100,7 @@ def test_large_pdb_fixed_column_conect_parsing():
         doc = parse_pdb_to_document(pdb_path)
         dt = time.perf_counter() - t0
         assert doc.num_atoms == 321554, f"期望 321554 原子，实际解析得到 {doc.num_atoms}"
-        assert doc.num_bonds == 273522, f"期望 273522 键，实际解析得到 {doc.num_bonds}"
+        assert doc.num_bonds == 275500, f"期望 275500 键 (551000 半边/2)，实际解析得到 {doc.num_bonds}"
         assert dt < 10.0, f"32万原子解析耗时超标: {dt:.2f}s"
     else:
         # 内存合成超过 10000 序号无空格的 PDB 文本进行格式校验

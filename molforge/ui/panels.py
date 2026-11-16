@@ -24,12 +24,13 @@ import json
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QSize, QSettings, pyqtSignal, QEvent, QTimer
-from PyQt6.QtGui import QIcon, QWheelEvent, QColor, QCursor
+from PyQt6.QtGui import QIcon, QWheelEvent, QColor, QCursor, QFont
 from PyQt6.QtWidgets import (
     QFrame, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
     QScrollArea, QLineEdit, QStackedWidget, QButtonGroup, QComboBox, QTextEdit,
     QSizePolicy, QDoubleSpinBox, QMessageBox, QTableWidget, QTableWidgetItem,
-    QHeaderView, QSlider, QListWidget, QListWidgetItem, QCheckBox, QMenu
+    QHeaderView, QAbstractItemView, QSlider, QListWidget, QListWidgetItem, QCheckBox, QMenu,
+    QApplication, QFileDialog, QFormLayout, QDialog, QInputDialog
 )
 
 from .settings_panel import WheelGuardFilter, install_wheel_guard
@@ -125,6 +126,9 @@ class TopBar(QFrame):
 
         brand = QLabel("MolForge")
         brand.setProperty("role", "brand")
+        self.brand_label = brand
+        self._font_size = 14
+        self._compact = False
         brand.setStyleSheet("font-size:16px; font-weight:800; color:#66DEC9; margin-right:4px;")
         lay.addWidget(brand)
 
@@ -133,36 +137,43 @@ class TopBar(QFrame):
         lay.addWidget(self.project_label)
 
         self.status_label = QLabel("● 就绪")
+        self._status_color = "#66DEC9"
         self.status_label.setStyleSheet("color:#66DEC9; font-weight:700; font-size:12px;")
         lay.addWidget(self.status_label)
 
         lay.addStretch(1)
 
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("快捷命令或智能搜索 (Ctrl+K)...")
-        self.search_input.setMinimumWidth(180)
-        self.search_input.setMaximumWidth(260)
+        self.search_input.setPlaceholderText("🔍 搜分子/SMILES/AI指令 (Ctrl+K)")
+        self.search_input.setToolTip(
+            "【智能全局检索入口】按 Enter 立即执行：\n"
+            "• 分子名：输入 '咖啡因'、'PM6'、'BDT' 快速载入分子\n"
+            "• SMILES：输入任意结构式 (如 c1ccccc1) 快速生成\n"
+            "• AI 指令：输入提问或修改指令直达 AI 科研助手"
+        )
+        self.search_input.setMinimumWidth(200)
+        self.search_input.setMaximumWidth(280)
         self.search_input.returnPressed.connect(lambda: self.search_submitted.emit(self.search_input.text().strip()))
         lay.addWidget(self.search_input)
 
-        open_btn = QPushButton("📂 打开 / 导入")
-        open_btn.setMinimumWidth(96)
-        open_btn.setToolTip("打开分子或量化输出：.log / .out / .gjf / .xyz / .mol / .sdf / .pdb / ctrl.in (Ctrl+O)")
-        open_btn.clicked.connect(self.open_clicked.emit)
-        lay.addWidget(open_btn)
+        self.open_btn = QPushButton("📂 打开 / 导入")
+        self.open_btn.setMinimumWidth(96)
+        self.open_btn.setToolTip("打开分子或量化输出：.log / .out / .gjf / .xyz / .mol / .sdf / .pdb / ctrl.in (Ctrl+O)")
+        self.open_btn.clicked.connect(self.open_clicked.emit)
+        lay.addWidget(self.open_btn)
 
-        qc_btn = QPushButton("⚛ 量化 / 能级图")
-        qc_btn.setMinimumWidth(106)
-        qc_btn.setToolTip("打开 Gaussian、复旦 REST 与 OSC HOMO-LUMO 能级图工作台 (Ctrl+G)")
-        qc_btn.clicked.connect(self.qc_workbench_clicked.emit)
-        lay.addWidget(qc_btn)
+        self.qc_btn = QPushButton("⚛ 量化 / 能级图")
+        self.qc_btn.setMinimumWidth(106)
+        self.qc_btn.setToolTip("打开 Gaussian、复旦 REST 与 OSC HOMO-LUMO 能级图工作台 (Ctrl+G)")
+        self.qc_btn.clicked.connect(self.qc_workbench_clicked.emit)
+        lay.addWidget(self.qc_btn)
 
-        export = QPushButton("💾 导出 / 保存")
-        export.setMinimumWidth(96)
-        export.setProperty("role", "action")
-        export.setToolTip("导出 2D 矢量 SVG / PNG / GJF / REST ctrl.in / XYZ / PDB / MOL (Ctrl+S)")
-        export.clicked.connect(self.export_clicked.emit)
-        lay.addWidget(export)
+        self.export_btn = QPushButton("💾 导出 / 保存")
+        self.export_btn.setMinimumWidth(96)
+        self.export_btn.setProperty("role", "action")
+        self.export_btn.setToolTip("导出 2D 矢量 SVG / PNG / GJF / REST ctrl.in / XYZ / PDB / MOL (Ctrl+S)")
+        self.export_btn.clicked.connect(self.export_clicked.emit)
+        lay.addWidget(self.export_btn)
 
         outer.addWidget(strip)
         self.setFixedHeight(48)
@@ -171,8 +182,36 @@ class TopBar(QFrame):
         self.project_label.setText(text)
 
     def set_status(self, text: str, color: str = "#66DEC9"):
+        self._status_color = color
+        sz_sm = max(10, getattr(self, "_font_size", 14) - 2)
         self.status_label.setText(f"● {text}")
-        self.status_label.setStyleSheet(f"color:{color}; font-weight:700; font-size:12px;")
+        self.status_label.setStyleSheet(f"color:{color}; font-weight:700; font-size:{sz_sm}px;")
+
+    def set_compact(self, compact: bool):
+        self._compact = bool(compact)
+        self.project_label.setVisible(not compact)
+        self.status_label.setVisible(not compact)
+        self.open_btn.setText("打开" if compact else "📂 打开 / 导入")
+        self.qc_btn.setText("量化" if compact else "⚛ 量化 / 能级图")
+        self.export_btn.setText("导出" if compact else "💾 导出 / 保存")
+        for button, normal_width in ((self.open_btn, 96), (self.qc_btn, 106), (self.export_btn, 96)):
+            button.setMinimumWidth(58 if compact else normal_width)
+            button.setMaximumWidth(76 if compact else 200)
+        self.search_input.setMinimumWidth(120 if compact else 200)
+        self.search_input.setMaximumWidth(190 if compact else 280)
+
+    def apply_typography(self, family: str, base_size: int):
+        sz = max(10, int(base_size))
+        self._font_size = sz
+        self.setFixedHeight(max(48, sz + 30))
+        f = QFont(family)
+        f.setPixelSize(sz)
+        self.setFont(f)
+        self.brand_label.setStyleSheet(f"font-size:{sz + 2}px; font-weight:800; color:#66DEC9; margin-right:4px;")
+        self.project_label.setStyleSheet(f"color:#EAF2F6; font-size:{max(11, sz - 1)}px; font-weight:600;")
+        self.status_label.setStyleSheet(
+            f"color:{getattr(self, '_status_color', '#66DEC9')}; font-weight:700; font-size:{max(10, sz - 2)}px;"
+        )
 
 
 class NavigationRail(QFrame):
@@ -187,6 +226,84 @@ class NavigationRail(QFrame):
 
     def set_active_index(self, tab_idx: int):
         pass
+
+
+# ==============================================================================
+# 自定义砌块与分子片段保存对话框
+# ==============================================================================
+
+class SaveCustomFragmentDialog(QDialog):
+    """保存自定义砌块 / 分子 / 片段的交互对话框，支持设置名称、选择/新建分组、类型与说明。"""
+
+    def __init__(self, parent=None, default_name: str = "", default_desc: str = "", default_type: str = "fragment"):
+        super().__init__(parent)
+        self.setWindowTitle("保存到自定义结构库")
+        self.setMinimumWidth(400)
+        from ..domain.custom_fragments import get_custom_groups, DEFAULT_GROUP
+
+        lay = QVBoxLayout(self)
+        form = QFormLayout()
+        form.setSpacing(10)
+
+        self.name_edit = QLineEdit(default_name)
+        self.name_edit.setPlaceholderText("请输入自定义名称...")
+        form.addRow("名称 (*):", self.name_edit)
+
+        # 分组选择与新建
+        self.group_combo = QComboBox()
+        self.group_combo.setEditable(True)
+        groups = get_custom_groups()
+        for g in groups:
+            self.group_combo.addItem(g)
+        self.group_combo.setCurrentText(groups[0] if groups else DEFAULT_GROUP)
+        self.group_combo.setToolTip("选择已有分组，或直接输入新分组名称以创建新分组")
+        form.addRow("自定义分组:", self.group_combo)
+
+        # 结构类型
+        self.type_combo = QComboBox()
+        self.type_combo.addItem("结构片段 / 砌块 (Fragment)", "fragment")
+        self.type_combo.addItem("完整分子 (Molecule)", "molecule")
+        self.type_combo.addItem("官能团 (Functional Group)", "group")
+        if default_type == "molecule":
+            self.type_combo.setCurrentIndex(1)
+        elif default_type == "group":
+            self.type_combo.setCurrentIndex(2)
+        else:
+            self.type_combo.setCurrentIndex(0)
+        form.addRow("结构类别:", self.type_combo)
+
+        self.desc_edit = QLineEdit(default_desc)
+        self.desc_edit.setPlaceholderText("可选：添加性质或用途说明...")
+        form.addRow("备注说明:", self.desc_edit)
+
+        lay.addLayout(form)
+
+        btns = QHBoxLayout()
+        btns.addStretch()
+        cancel_btn = QPushButton("取消")
+        cancel_btn.clicked.connect(self.reject)
+        btns.addWidget(cancel_btn)
+
+        save_btn = QPushButton("💾 保存到库")
+        save_btn.setProperty("role", "action")
+        save_btn.clicked.connect(self._on_save)
+        btns.addWidget(save_btn)
+        lay.addLayout(btns)
+
+    def _on_save(self):
+        name = self.name_edit.text().strip()
+        if not name:
+            QMessageBox.warning(self, "输入有误", "名称不能为空！")
+            return
+        self.accept()
+
+    def get_data(self) -> dict:
+        return {
+            "name": self.name_edit.text().strip(),
+            "group": self.group_combo.currentText().strip() or "🌟 默认分组",
+            "type": self.type_combo.currentData() or "fragment",
+            "description": self.desc_edit.text().strip(),
+        }
 
 
 # ==============================================================================
@@ -221,6 +338,7 @@ class LeftPanel(QFrame):
         self.on_atom_selected = None
         self.on_bond_selected = None
         self._current_document = None
+        self._font_size = 14
 
         self._wheel_guard = WheelGuardFilter(self)
 
@@ -258,6 +376,12 @@ class LeftPanel(QFrame):
 
         self.stack.setCurrentIndex(0)
 
+    def _resolve_active_document(self, document=None):
+        doc = document if document is not None else getattr(self, "_current_document", None)
+        if doc is None and getattr(self, "_window_ref", None) is not None:
+            doc = getattr(self._window_ref, "document", None)
+        return doc
+
     def set_document(self, document):
         self._current_document = document
         if self.stack.currentIndex() == 2:
@@ -268,8 +392,10 @@ class LeftPanel(QFrame):
             self.stack.setCurrentIndex(index)
             for i, b in enumerate(self.tab_buttons):
                 refresh_button_visual(b, active=(i == index))
-            if index == 2 and self._current_document is not None:
-                self.refresh_structure_tree(self._current_document)
+            if index == 2:
+                doc = self._resolve_active_document()
+                if doc is not None:
+                    self.refresh_structure_tree(doc)
 
     # ---------- Tab 0: 结构砌块库 ----------
     def _build_fragments_page(self) -> QWidget:
@@ -284,26 +410,22 @@ class LeftPanel(QFrame):
         self.filter_edit.textChanged.connect(self._apply_filter)
         lay.addWidget(self.filter_edit)
 
-        # 💡 使用指南卡片（操作逻辑一目了然）
-        guide_frame = QFrame()
-        guide_frame.setObjectName("GuideBox")
-        guide_frame.setStyleSheet("background-color: rgba(13, 148, 136, 0.12); border: 1px solid rgba(94, 234, 212, 0.28); border-radius: 6px; padding: 5px;")
-        g_lay = QVBoxLayout(guide_frame)
-        g_lay.setContentsMargins(4, 4, 4, 4)
-        g_lay.setSpacing(3)
-        lbl_g1 = QLabel("💡 <b>砌块与基团使用指南：</b>")
-        lbl_g1.setStyleSheet("color: #5EEAD4; font-weight: 700;")
-        lbl_g2 = QLabel("• <b>选中原子时</b>：点击环系/基团，自动在其上精准接枝取代")
-        lbl_g2.setStyleSheet("color: #C2D5E5;")
-        lbl_g3 = QLabel("• <b>未选原子时</b>：点击环系在画布中心放置独立新结构")
-        lbl_g3.setStyleSheet("color: #C2D5E5;")
-        lbl_g4 = QLabel("• <b>点击分子库</b>：一键载入标准分子，支持随时另存为自定义砌块")
-        lbl_g4.setStyleSheet("color: #C2D5E5;")
-        g_lay.addWidget(lbl_g1)
-        g_lay.addWidget(lbl_g2)
-        g_lay.addWidget(lbl_g3)
-        g_lay.addWidget(lbl_g4)
-        lay.addWidget(guide_frame)
+        # 💡 使用技巧提示（小巧紧凑的 Hover 提示徽标，不挤占竖向空间）
+        hint_row = QHBoxLayout()
+        lbl_tip = QLabel("💡 砌块与基团使用技巧 ⓘ")
+        self.lbl_tip = lbl_tip
+        lbl_tip.setCursor(Qt.CursorShape.WhatsThisCursor)
+        lbl_tip.setStyleSheet("color: #5EEAD4; font-size: 11px; padding: 1px 4px; font-weight: 600;")
+        lbl_tip.setToolTip(
+            "【结构砌块与官能团使用指南】\n"
+            "• 选中原子时：点击环系/基团，自动在其上精准接枝取代并保持立体构型\n"
+            "• 未选原子时：点击环系/基团，在画布中心放置独立新结构\n"
+            "• 点击分子库：一键载入标准分子，支持随时另存为自定义砌块\n"
+            "• 自定义库：支持存整分子/选中片段，并可按文件夹分组管理"
+        )
+        hint_row.addWidget(lbl_tip)
+        hint_row.addStretch()
+        lay.addLayout(hint_row)
 
         # ⭐ 我的自定义砌块 (用户保存分子与片段库)
         self.custom_card = CollapsibleCard("⭐ 我的自定义砌块 (CUSTOM)", expanded=True)
@@ -320,6 +442,12 @@ class LeftPanel(QFrame):
         btn_save_sel.setStyleSheet("QPushButton { font-weight:700; }")
         btn_save_sel.clicked.connect(self._on_save_selected_as_fragment)
         row_c_actions.addWidget(btn_save_sel)
+
+        btn_add_grp = QPushButton("📁+ 新分组")
+        btn_add_grp.setToolTip("新建一个自定义分组（空分组也会即时保存并在下方呈现）")
+        btn_add_grp.setStyleSheet("QPushButton { font-weight:700; color:#5EEAD4; }")
+        btn_add_grp.clicked.connect(self._on_create_new_group)
+        row_c_actions.addWidget(btn_add_grp)
         c_lay.addLayout(row_c_actions)
 
         self.custom_chips_container = QWidget()
@@ -381,8 +509,8 @@ class LeftPanel(QFrame):
 
         # 环系与稠环
         self.ring_card = CollapsibleCard("共轭环与常见环系 (RINGS)", expanded=True)
+        self.ring_card.setToolTip("【快捷环模板】选中原子时接枝成环；未选原子时在画布空白处放置独立新环")
         r_lay = self.ring_card.body_layout
-        r_lay.addWidget(muted("选中原子时接枝；未选中时在画布放置独立新环："))
         r_grid = QGridLayout()
         r_grid.setSpacing(5)
         self.ring_buttons: list[tuple[str, QPushButton]] = []
@@ -414,8 +542,8 @@ class LeftPanel(QFrame):
 
         # 官能团取代
         self.fg_card = CollapsibleCard("常用官能团取代 (GROUPS)", expanded=True)
+        self.fg_card.setToolTip("【官能团取代】先在画布点击选中目标原子，再点击官能团即可自动接枝并优化几何构型")
         f_lay = self.fg_card.body_layout
-        f_lay.addWidget(muted("选中原子后点击接枝并优化几何构型："))
         f_grid = QGridLayout()
         f_grid.setSpacing(5)
         self.fg_buttons: list[tuple[str, QPushButton]] = []
@@ -470,35 +598,198 @@ class LeftPanel(QFrame):
                     sub = item.layout().takeAt(0)
                     if sub.widget():
                         sub.widget().deleteLater()
-        from ..domain.custom_fragments import load_custom_fragments
-        frags = load_custom_fragments()
+        from ..domain.custom_fragments import (
+            get_grouped_custom_fragments, remove_custom_fragment, delete_custom_group, rename_custom_group
+        )
+        grouped = get_grouped_custom_fragments()
         self.custom_fragment_buttons = []
-        if not frags:
-            self.custom_chips_layout.addWidget(muted("暂无自定义砌块。点击上方按钮可将分子或选中片段存入。"))
+        if not grouped:
+            self.custom_chips_layout.addWidget(muted("暂无自定义分组。点击上方「📁+ 新分组」可创建专属片段库。"))
             return
-        grid = QGridLayout()
-        grid.setSpacing(5)
-        for idx, item in enumerate(frags):
-            name = item.get("name", "未命名")
-            smi = item.get("smiles", "")
-            desc = item.get("description", "")
-            btn = QPushButton(f"★ {name}")
-            btn.setProperty("role", "chip")
-            btn.setCheckable(True)
-            btn.setMinimumHeight(28)
-            btn.setToolTip(f"{name}\nSMILES: {smi}\n说明: {desc}\n（左键插入当前画布，右键可删除）")
-            btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-            btn.customContextMenuRequested.connect(lambda pos, n=name: self._show_custom_fragment_menu(n))
-            btn.clicked.connect(lambda checked=False, s=smi, n=name: self._on_custom_fragment_clicked(s, n))
-            grid.addWidget(btn, idx // 2, idx % 2)
-            self.custom_fragment_buttons.append((name, btn))
-        self.custom_chips_layout.addLayout(grid)
 
-    def _show_custom_fragment_menu(self, name: str):
+        for grp_name, frags in grouped.items():
+            grp_box = QFrame()
+            grp_box.setStyleSheet(
+                "QFrame { background: rgba(19, 36, 54, 0.45); border: 1px solid rgba(36, 62, 86, 0.6); "
+                "border-radius: 6px; padding: 2px; margin-bottom: 4px; }"
+            )
+            g_vlay = QVBoxLayout(grp_box)
+            g_vlay.setContentsMargins(4, 4, 4, 4)
+            g_vlay.setSpacing(4)
+
+            # 分组标题行 (名称、重命名、删除)
+            sz_xs = max(10, getattr(self, "_font_size", 14) - 3)
+            hdr_row = QHBoxLayout()
+            lbl_ghdr = QLabel(f"📁 {grp_name} ({len(frags)})")
+            lbl_ghdr.setStyleSheet(f"color: #66DEC9; font-weight: 700; font-size: {sz_xs}px;")
+            hdr_row.addWidget(lbl_ghdr)
+            hdr_row.addStretch()
+
+            btn_ren_grp = QPushButton("✏️")
+            btn_ren_grp.setToolTip(f"重命名分组「{grp_name}」")
+            btn_ren_grp.setStyleSheet(
+                f"QPushButton {{ background: transparent; border: none; color: #8C9BAE; font-size: {sz_xs}px; padding: 0 2px; }}"
+                "QPushButton:hover { color: #5EEAD4; }"
+            )
+            btn_ren_grp.clicked.connect(lambda checked=False, g=grp_name: self._on_rename_group(g))
+            hdr_row.addWidget(btn_ren_grp)
+
+            btn_del_grp = QPushButton("✕")
+            btn_del_grp.setToolTip(f"删除分组「{grp_name}」及其中所有砌块")
+            btn_del_grp.setStyleSheet(
+                f"QPushButton {{ background: transparent; border: none; color: #8C9BAE; font-size: {sz_xs}px; padding: 0 4px; }}"
+                "QPushButton:hover { color: #FF6B6B; }"
+            )
+            btn_del_grp.clicked.connect(lambda checked=False, g=grp_name: self._on_delete_group(g))
+            hdr_row.addWidget(btn_del_grp)
+            g_vlay.addLayout(hdr_row)
+
+            # 分组内砌块 (若为空显示专属添加提示卡，彻底解决自建分组看不到的问题)
+            if not frags:
+                empty_btn = QPushButton("＋ 暂无砌块，点击存入当前分子/片段")
+                empty_btn.setToolTip(f"点击快速将当前编辑的分子或选中片段存入「{grp_name}」")
+                empty_btn.setStyleSheet(
+                    "QPushButton { background: rgba(14, 26, 39, 0.5); border: 1px dashed rgba(94, 234, 212, 0.4); "
+                    f"color: #8BA0B2; font-size: {sz_xs}px; padding: 6px; border-radius: 4px; text-align: center; }}"
+                    "QPushButton:hover { border-color: #5EEAD4; color: #5EEAD4; background: rgba(20, 45, 65, 0.6); }"
+                )
+                empty_btn.clicked.connect(lambda checked=False, g=grp_name: self._save_into_group(g))
+                g_vlay.addWidget(empty_btn)
+            else:
+                grid = QGridLayout()
+                grid.setSpacing(4)
+                for idx, item in enumerate(frags):
+                    name = item.get("name", "未命名")
+                    smi = item.get("smiles", "")
+                    desc = item.get("description", "")
+                    ftype = item.get("type", "fragment")
+                    btn = QPushButton(f"★ {name}")
+                    btn.setProperty("role", "chip")
+                    btn.setCheckable(True)
+                    btn.setMinimumHeight(28)
+                    btn.setToolTip(
+                        f"【自定义结构】\n"
+                        f"• 名称: {name}\n"
+                        f"• 分组: {grp_name}\n"
+                        f"• 类别: {ftype}\n"
+                        f"• SMILES: {smi}\n"
+                        f"• 说明: {desc or '无'}\n"
+                        f"（左键点击插入画布，右键可移动分组或删除）"
+                    )
+                    btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+                    btn.customContextMenuRequested.connect(
+                        lambda pos, n=name, g=grp_name: self._show_custom_fragment_menu(n, g)
+                    )
+                    btn.clicked.connect(lambda checked=False, s=smi, n=name: self._on_custom_fragment_clicked(s, n))
+                    grid.addWidget(btn, idx // 2, idx % 2)
+                    self.custom_fragment_buttons.append((name, btn))
+                g_vlay.addLayout(grid)
+            self.custom_chips_layout.addWidget(grp_box)
+
+    def _on_create_new_group(self):
+        from ..domain.custom_fragments import add_custom_group
+        name, ok = QInputDialog.getText(self, "新建自定义分组", "请输入新分组名称（如：光伏受体单元、修饰卤素基团）：")
+        if ok and name.strip():
+            add_custom_group(name.strip())
+            self._refresh_custom_fragments_card()
+
+    def _on_rename_group(self, old_name: str):
+        from ..domain.custom_fragments import rename_custom_group
+        new_name, ok = QInputDialog.getText(self, "重命名分组", f"请输入分组「{old_name}」的新名称：", text=old_name)
+        if ok and new_name.strip() and new_name.strip() != old_name:
+            if rename_custom_group(old_name, new_name.strip()):
+                self._refresh_custom_fragments_card()
+
+    def _save_into_group(self, group_name: str):
+        win = getattr(self, "_window_ref", None)
+        if win is None:
+            QMessageBox.information(self, "提示", "请在工作台画布中打开分子后再保存。")
+            return
+        doc = getattr(win, "document", None)
+        if doc is None or doc.num_atoms == 0:
+            QMessageBox.information(self, "提示", "当前画布为空，请先打开或绘制分子。")
+            return
+        sel = getattr(win, "selection", None)
+        has_sel = sel is not None and bool(sel.selected_atoms)
+        dlg = SaveCustomFragmentDialog(
+            self,
+            default_name=f"片段_{len(sel.selected_atoms)}原子" if has_sel else (doc.name or "我的分子"),
+            default_desc=f"{len(sel.selected_atoms)} 原子片段" if has_sel else f"{doc.num_atoms} 原子 · 全分子",
+            default_type="fragment" if has_sel else "molecule",
+        )
+        dlg.group_combo.setCurrentText(group_name)
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        data = dlg.get_data()
+        from ..io.rdkit_adapter import doc_to_rdkit
+        from rdkit import Chem
+        try:
+            if has_sel:
+                from ..domain.document import MoleculeDocument
+                sub_doc = MoleculeDocument(name=data["name"])
+                old_to_new = {}
+                for aid in sel.selected_atoms:
+                    old_atom = doc.topology.get_atom(aid)
+                    new_aid = sub_doc.topology.add_atom(old_atom.atomic_num, formal_charge=old_atom.formal_charge, aromatic=old_atom.aromatic)
+                    old_to_new[aid] = new_aid
+                for bid in doc.topology.bond_ids:
+                    b = doc.topology.get_bond(bid)
+                    if b.begin in old_to_new and b.end in old_to_new:
+                        sub_doc.topology.add_bond(old_to_new[b.begin], old_to_new[b.end], b.order, aromatic=b.aromatic)
+                rdmol = doc_to_rdkit(sub_doc, sanitize=False)[0]
+            else:
+                rdmol = doc_to_rdkit(doc)[0]
+            smi = Chem.MolToSmiles(rdmol)
+            if not smi:
+                raise ValueError("未能生成有效的 SMILES")
+            from ..domain.custom_fragments import add_custom_fragment
+            add_custom_fragment(
+                name=data["name"],
+                smiles=smi,
+                description=data["description"],
+                group=data["group"],
+                frag_type=data["type"],
+            )
+            self._refresh_custom_fragments_card()
+            QMessageBox.information(self, "保存成功", f"结构「{data['name']}」已成功存入「{data['group']}」！")
+        except Exception as e:
+            QMessageBox.warning(self, "保存失败", f"无法提取并保存结构: {e}")
+
+    def _show_custom_fragment_menu(self, name: str, current_group: str = ""):
         menu = QMenu(self)
+        move_act = menu.addAction(f"📁 移动「{name}」到其他分组...")
+        move_act.triggered.connect(lambda: self._on_move_custom_fragment(name, current_group))
         del_act = menu.addAction(f"🗑️ 删除砌块「{name}」")
         del_act.triggered.connect(lambda: self._on_delete_custom_fragment(name))
         menu.exec(QCursor.pos())
+
+    def _on_move_custom_fragment(self, name: str, current_group: str):
+        from ..domain.custom_fragments import get_custom_groups, load_custom_fragments, save_custom_fragments
+        groups = get_custom_groups()
+        target_group, ok = QInputDialog.getItem(
+            self, "移动分组", f"请选择将砌块「{name}」移动到的目标分组：", groups, 0, True
+        )
+        if ok and target_group.strip() and target_group.strip() != current_group:
+            frags = load_custom_fragments()
+            for f in frags:
+                if f.get("name") == name:
+                    f["group"] = target_group.strip()
+                    break
+            save_custom_fragments(frags)
+            self._refresh_custom_fragments_card()
+
+    def _on_delete_group(self, group_name: str):
+        from ..domain.custom_fragments import delete_custom_group
+        ret = QMessageBox.question(
+            self,
+            "确认删除分组",
+            f"确定要删除分组「{group_name}」及其下的所有自定义结构砌块吗？此操作不可撤销。",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if ret == QMessageBox.StandardButton.Yes:
+            if delete_custom_group(group_name):
+                self._refresh_custom_fragments_card()
 
     def _on_delete_custom_fragment(self, name: str):
         from ..domain.custom_fragments import remove_custom_fragment
@@ -525,10 +816,15 @@ class LeftPanel(QFrame):
         if doc is None or doc.num_atoms == 0:
             QMessageBox.information(self, "提示", "当前文档为空，无法保存为砌块。")
             return
-        from PyQt6.QtWidgets import QInputDialog
-        name, ok = QInputDialog.getText(self, "保存自定义砌块", "请输入自定义砌块名称：", text=doc.name or "我的砌块")
-        if not ok or not name.strip():
+        dlg = SaveCustomFragmentDialog(
+            self,
+            default_name=doc.name or "我的分子",
+            default_desc=f"{doc.num_atoms} 原子 · 全分子",
+            default_type="molecule",
+        )
+        if dlg.exec() != QDialog.DialogCode.Accepted:
             return
+        data = dlg.get_data()
         from ..io.rdkit_adapter import doc_to_rdkit
         from rdkit import Chem
         try:
@@ -537,9 +833,15 @@ class LeftPanel(QFrame):
             if not smi:
                 raise ValueError("未能生成有效的 SMILES")
             from ..domain.custom_fragments import add_custom_fragment
-            add_custom_fragment(name.strip(), smi, f"{doc.num_atoms} 原子 · 全分子")
+            add_custom_fragment(
+                name=data["name"],
+                smiles=smi,
+                description=data["description"] or f"{doc.num_atoms} 原子 · 全分子",
+                group=data["group"],
+                frag_type=data["type"],
+            )
             self._refresh_custom_fragments_card()
-            QMessageBox.information(self, "保存成功", f"自定义砌块「{name.strip()}」已成功保存到左侧砌块库！")
+            QMessageBox.information(self, "保存成功", f"分子「{data['name']}」已成功存入「{data['group']}」分组！")
         except Exception as e:
             QMessageBox.warning(self, "保存失败", f"无法将当前分子转换为砌块: {e}")
 
@@ -553,13 +855,18 @@ class LeftPanel(QFrame):
         if doc is None or sel is None or not sel.selected_atoms:
             QMessageBox.information(self, "提示", "请先在 2D 或 3D 画布中选中要保存为砌块的原子片段。")
             return
-        from PyQt6.QtWidgets import QInputDialog
-        name, ok = QInputDialog.getText(self, "保存选中片段为砌块", "请输入片段砌块名称：", text=f"片段_{len(sel.selected_atoms)}原子")
-        if not ok or not name.strip():
+        dlg = SaveCustomFragmentDialog(
+            self,
+            default_name=f"片段_{len(sel.selected_atoms)}原子",
+            default_desc=f"{len(sel.selected_atoms)} 原子片段",
+            default_type="fragment",
+        )
+        if dlg.exec() != QDialog.DialogCode.Accepted:
             return
+        data = dlg.get_data()
         try:
             from ..domain.document import MoleculeDocument
-            sub_doc = MoleculeDocument(name=name.strip())
+            sub_doc = MoleculeDocument(name=data["name"])
             old_to_new = {}
             for aid in sel.selected_atoms:
                 old_atom = doc.topology.get_atom(aid)
@@ -576,9 +883,15 @@ class LeftPanel(QFrame):
             if not smi:
                 raise ValueError("未能生成有效 SMILES")
             from ..domain.custom_fragments import add_custom_fragment
-            add_custom_fragment(name.strip(), smi, f"{len(sel.selected_atoms)} 原子片段")
+            add_custom_fragment(
+                name=data["name"],
+                smiles=smi,
+                description=data["description"] or f"{len(sel.selected_atoms)} 原子片段",
+                group=data["group"],
+                frag_type=data["type"],
+            )
             self._refresh_custom_fragments_card()
-            QMessageBox.information(self, "保存成功", f"选中片段「{name.strip()}」已成功存为自定义砌块！")
+            QMessageBox.information(self, "保存成功", f"片段「{data['name']}」已成功存入「{data['group']}」分组！")
         except Exception as e:
             QMessageBox.warning(self, "保存失败", f"无法提取选中片段: {e}")
 
@@ -643,7 +956,7 @@ class LeftPanel(QFrame):
             b.setStyleSheet(
                 f"QPushButton {{ background-color: {bg_col}; color: {text_col}; font-weight: bold; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); }}"
                 f"QPushButton:hover {{ border: 2px solid #5EEAD4; }}"
-                f"QPushButton:checked {{ border: 2px solid #66DEC9; font-size: 13px; }}"
+                f"QPushButton:checked {{ border: 2px solid #66DEC9; }}"
             )
             b.clicked.connect(lambda checked=False, btn=b, atomic_z=z: self._on_palette_element_clicked(btn, atomic_z))
             e_grid.addWidget(b, i // 2, i % 2)
@@ -732,7 +1045,15 @@ class LeftPanel(QFrame):
         a_lay = atom_card.body_layout
         self.atom_table = QTableWidget(0, 5)
         self.atom_table.setHorizontalHeaderLabels(["#ID", "元素", "X (Å)", "Y (Å)", "Z (Å)"])
-        self.atom_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        atom_hdr = self.atom_table.horizontalHeader()
+        atom_hdr.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+        atom_hdr.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        atom_hdr.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        atom_hdr.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        atom_hdr.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        self.atom_table.setColumnWidth(0, 44)
+        self.atom_table.setColumnWidth(1, 52)
+        self.atom_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.atom_table.verticalHeader().setVisible(False)
         self.atom_table.setAlternatingRowColors(True)
         self.atom_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
@@ -740,6 +1061,18 @@ class LeftPanel(QFrame):
         self.atom_table.setMinimumHeight(170)
         self.atom_table.cellClicked.connect(self._on_atom_table_clicked)
         a_lay.addWidget(self.atom_table)
+
+        row_atom_export = QHBoxLayout()
+        btn_copy_coords = QPushButton("📋 复制 XYZ 坐标")
+        btn_copy_coords.setToolTip("复制当前分子所有原子的标准 XYZ 笛卡尔坐标到剪贴板")
+        btn_copy_coords.clicked.connect(self._on_copy_xyz_to_clipboard)
+        row_atom_export.addWidget(btn_copy_coords)
+
+        btn_export_coords = QPushButton("💾 导出原子表...")
+        btn_export_coords.setToolTip("将当前分子原子坐标导出为 .xyz 或 .csv 文件")
+        btn_export_coords.clicked.connect(self._on_export_atoms_to_file)
+        row_atom_export.addWidget(btn_export_coords)
+        a_lay.addLayout(row_atom_export)
         lay.addWidget(atom_card)
 
         # 键表格
@@ -747,7 +1080,15 @@ class LeftPanel(QFrame):
         b_lay = bond_card.body_layout
         self.bond_table = QTableWidget(0, 4)
         self.bond_table.setHorizontalHeaderLabels(["#ID", "原子对", "键级", "键长 (Å)"])
-        self.bond_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        bond_hdr = self.bond_table.horizontalHeader()
+        bond_hdr.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+        bond_hdr.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        bond_hdr.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        bond_hdr.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+        self.bond_table.setColumnWidth(0, 44)
+        self.bond_table.setColumnWidth(2, 46)
+        self.bond_table.setColumnWidth(3, 62)
+        self.bond_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.bond_table.verticalHeader().setVisible(False)
         self.bond_table.setAlternatingRowColors(True)
         self.bond_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
@@ -755,6 +1096,18 @@ class LeftPanel(QFrame):
         self.bond_table.setMinimumHeight(150)
         self.bond_table.cellClicked.connect(self._on_bond_table_clicked)
         b_lay.addWidget(self.bond_table)
+
+        row_bond_export = QHBoxLayout()
+        btn_copy_bonds = QPushButton("📋 复制键表")
+        btn_copy_bonds.setToolTip("复制当前分子的完整化学键列表（序号、原子对、键级、键长）到剪贴板")
+        btn_copy_bonds.clicked.connect(self._on_copy_bonds_to_clipboard)
+        row_bond_export.addWidget(btn_copy_bonds)
+
+        btn_export_bonds = QPushButton("💾 导出键表...")
+        btn_export_bonds.setToolTip("将化学键列表导出为 .csv 表格文件")
+        btn_export_bonds.clicked.connect(self._on_export_bonds_to_file)
+        row_bond_export.addWidget(btn_export_bonds)
+        b_lay.addLayout(row_bond_export)
         lay.addWidget(bond_card)
 
         lay.addStretch(1)
@@ -766,6 +1119,7 @@ class LeftPanel(QFrame):
             aid = item.data(Qt.ItemDataRole.UserRole)
             if aid is None:
                 try:
+                    from ..domain.ids import AtomId
                     raw_val = int(item.text().lstrip("#")) - 1
                     aid = AtomId(raw_val)
                 except Exception:
@@ -779,6 +1133,7 @@ class LeftPanel(QFrame):
             bid = item.data(Qt.ItemDataRole.UserRole)
             if bid is None:
                 try:
+                    from ..domain.ids import BondId
                     raw_val = int(item.text().lstrip("#")) - 1
                     bid = BondId(raw_val)
                 except Exception:
@@ -787,98 +1142,269 @@ class LeftPanel(QFrame):
                 self.on_bond_selected(bid)
 
     def refresh_structure_tree(self, document):
+        document = self._resolve_active_document(document)
         if document is None or not hasattr(document, "topology"):
             return
+        self._current_document = document
         top = document.topology
-        coords_arr = document.coordinates.current.coords if hasattr(document, "coordinates") and document.coordinates and document.coordinates.current is not None else None
+        coords_arr = (
+            document.coordinates.current.coords
+            if hasattr(document, "coordinates") and document.coordinates and document.coordinates.current is not None
+            else None
+        )
 
         # 大体系虚拟截断保护：超过 500 个原子/键时仅渲染前 500 项，防止超大盒子导致 GUI 假死
         max_display = 500
-        total_atoms = top.num_atoms
-        total_bonds = top.num_bonds
+        atom_ids_all, id_to_idx = top.atom_index_map()
+        bond_ids_all, bond_id_to_idx = top.bond_index_map()
+        total_atoms = len(atom_ids_all)
+        total_bonds = len(bond_ids_all)
         disp_atom_count = min(total_atoms, max_display)
         disp_bond_count = min(total_bonds, max_display)
 
         if total_atoms > max_display:
-            self.tree_info_label.setText(f"{document.name}：共 {total_atoms} 原子 · {total_bonds} 键 (当前显示前 {disp_atom_count} 个)")
+            self.tree_info_label.setText(f"{document.name}：共 {total_atoms} 原子 · {total_bonds} 键 (显示前 {disp_atom_count} 个)")
         else:
             self.tree_info_label.setText(f"{document.name}：共 {total_atoms} 原子 · {total_bonds} 键")
 
-        # 刷新原子列表
-        self.atom_table.setRowCount(disp_atom_count)
-        atom_id_list = list(top.atom_ids)[:disp_atom_count]
-        for row, aid in enumerate(atom_id_list):
+        import numpy as np
+        n_coords = len(coords_arr) if coords_arr is not None else 0
+
+        self.atom_table.setUpdatesEnabled(False)
+        self.bond_table.setUpdatesEnabled(False)
+        try:
+            # 刷新原子列表（采用全产品统一稳定编号 aid.value + 1 与 O(1) 坐标表读取）
+            self.atom_table.setRowCount(disp_atom_count)
+            for row, aid in enumerate(atom_ids_all[:disp_atom_count]):
+                atom = top.get_atom(aid)
+                disp_id = aid.value + 1
+                it0 = QTableWidgetItem(f"#{disp_id}")
+                it0.setData(Qt.ItemDataRole.UserRole, aid)
+                it0.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                it0.setToolTip(f"全产品统一稳定编号 #{disp_id} (内部 AtomId={aid.value}, 列表第 {row + 1} 行)")
+                self.atom_table.setItem(row, 0, it0)
+
+                elem_txt = f"{atom.symbol}({atom.atomic_num})"
+                it1 = QTableWidgetItem(elem_txt)
+                it1.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                it1.setToolTip(f"{atom.symbol} · 原子序数 Z={atom.atomic_num}")
+                self.atom_table.setItem(row, 1, it1)
+
+                if coords_arr is not None and row < n_coords:
+                    p3 = coords_arr[row]
+                    x_val, y_val, z_val = float(p3[0]), float(p3[1]), float(p3[2])
+                    xyz_tip = f"#{disp_id} {atom.symbol}: ({x_val:.5f}, {y_val:.5f}, {z_val:.5f}) Å"
+                    it_x = QTableWidgetItem(f"{x_val:.3f}")
+                    it_y = QTableWidgetItem(f"{y_val:.3f}")
+                    it_z = QTableWidgetItem(f"{z_val:.3f}")
+                else:
+                    xyz_tip = f"#{disp_id} {atom.symbol}: (0.000, 0.000, 0.000) Å"
+                    it_x = QTableWidgetItem("0.000")
+                    it_y = QTableWidgetItem("0.000")
+                    it_z = QTableWidgetItem("0.000")
+
+                for it_c in (it_x, it_y, it_z):
+                    it_c.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                    it_c.setToolTip(xyz_tip)
+                self.atom_table.setItem(row, 2, it_x)
+                self.atom_table.setItem(row, 3, it_y)
+                self.atom_table.setItem(row, 4, it_z)
+
+            # 刷新化学键列表
+            self.bond_table.setRowCount(disp_bond_count)
+            order_names = {1: "单键", 2: "双键", 3: "叁键", 4: "芳香"}
+            for row, bid in enumerate(bond_ids_all[:disp_bond_count]):
+                bond = top.get_bond(bid)
+                a1 = top.get_atom(bond.begin)
+                a2 = top.get_atom(bond.end)
+                i1 = id_to_idx.get(bond.begin, -1)
+                i2 = id_to_idx.get(bond.end, -1)
+                idx1 = bond.begin.value + 1
+                idx2 = bond.end.value + 1
+                pair_str = f"#{idx1} {a1.symbol} - #{idx2} {a2.symbol}"
+                b_order_str = "芳香" if bond.aromatic else order_names.get(int(bond.order), f"{bond.order}")
+
+                length_str = "—"
+                if coords_arr is not None and 0 <= i1 < n_coords and 0 <= i2 < n_coords:
+                    dist = float(np.linalg.norm(coords_arr[i1] - coords_arr[i2]))
+                    length_str = f"{dist:.3f}"
+
+                disp_bid = bid.value + 1
+                it_b0 = QTableWidgetItem(f"#{disp_bid}")
+                it_b0.setData(Qt.ItemDataRole.UserRole, bid)
+                it_b0.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                it_b0.setToolTip(f"全产品统一化学键编号 #{disp_bid} (内部 BondId={bid.value}, 列表第 {row + 1} 行)")
+                self.bond_table.setItem(row, 0, it_b0)
+
+
+                it_b1 = QTableWidgetItem(pair_str)
+                it_b1.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                it_b1.setToolTip(f"{pair_str} ({b_order_str}, {length_str} Å)")
+                self.bond_table.setItem(row, 1, it_b1)
+
+                it_b2 = QTableWidgetItem(b_order_str)
+                it_b2.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                it_b2.setToolTip(f"键级: {b_order_str}")
+                self.bond_table.setItem(row, 2, it_b2)
+
+                it_b3 = QTableWidgetItem(length_str)
+                it_b3.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                it_b3.setToolTip(f"键长: {length_str} Å")
+                self.bond_table.setItem(row, 3, it_b3)
+        finally:
+            self.atom_table.setUpdatesEnabled(True)
+            self.bond_table.setUpdatesEnabled(True)
+
+    def _on_copy_xyz_to_clipboard(self):
+        doc = self._resolve_active_document()
+        if doc is None or doc.topology.num_atoms == 0:
+            QMessageBox.information(self, "提示", "当前没有已加载的分子结构。")
+            return
+        top = doc.topology
+        atom_ids_all, _ = top.atom_index_map()
+        coords_arr = doc.coordinates.current.coords if hasattr(doc, "coordinates") and doc.coordinates and doc.coordinates.current is not None else None
+        n_coords = len(coords_arr) if coords_arr is not None else 0
+        lines = [f"{len(atom_ids_all)}", f"{doc.name or 'MolForge'} - Standard XYZ Cartesian Coordinates"]
+        for idx, aid in enumerate(atom_ids_all):
             atom = top.get_atom(aid)
-            it0 = QTableWidgetItem(f"#{aid.value + 1}")
-            it0.setData(Qt.ItemDataRole.UserRole, aid)
-            it0.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.atom_table.setItem(row, 0, it0)
-
-            it1 = QTableWidgetItem(f"{atom.symbol} ({atom.atomic_num})")
-            it1.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.atom_table.setItem(row, 1, it1)
-
-            p3 = document.get_atom_3d_pos(aid)
-            if p3 is None and coords_arr is not None and aid.value < len(coords_arr):
-                p3 = coords_arr[aid.value]
-
-            if p3 is not None:
-                it_x = QTableWidgetItem(f"{float(p3[0]):.3f}")
-                it_y = QTableWidgetItem(f"{float(p3[1]):.3f}")
-                it_z = QTableWidgetItem(f"{float(p3[2]):.3f}")
+            if coords_arr is not None and idx < n_coords:
+                p3 = coords_arr[idx]
+                x, y, z = float(p3[0]), float(p3[1]), float(p3[2])
             else:
-                it_x = QTableWidgetItem("0.000")
-                it_y = QTableWidgetItem("0.000")
-                it_z = QTableWidgetItem("0.000")
+                x, y, z = 0.0, 0.0, 0.0
+            lines.append(f"{atom.symbol:<4} {x:14.6f} {y:14.6f} {z:14.6f}")
+        xyz_txt = "\n".join(lines)
+        QApplication.clipboard().setText(xyz_txt)
+        QMessageBox.information(self, "复制成功", f"已成功将全部分子 ({top.num_atoms} 原子) 的 XYZ 坐标复制到系统剪贴板！")
 
-            it_x.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            it_y.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            it_z.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            self.atom_table.setItem(row, 2, it_x)
-            self.atom_table.setItem(row, 3, it_y)
-            self.atom_table.setItem(row, 4, it_z)
+    def _on_export_atoms_to_file(self):
+        doc = self._resolve_active_document()
+        if doc is None or doc.topology.num_atoms == 0:
+            QMessageBox.information(self, "提示", "当前没有已加载的分子结构。")
+            return
+        top = doc.topology
+        atom_ids_all, _ = top.atom_index_map()
+        coords_arr = doc.coordinates.current.coords if hasattr(doc, "coordinates") and doc.coordinates and doc.coordinates.current is not None else None
+        n_coords = len(coords_arr) if coords_arr is not None else 0
+        def_name = f"{doc.name or 'molecule'}_atoms.xyz"
+        fpath, sel_filter = QFileDialog.getSaveFileName(
+            self, "导出原子坐标表", def_name, "XYZ 坐标文件 (*.xyz);;CSV 表格文件 (*.csv)"
+        )
+        if not fpath:
+            return
+        try:
+            is_csv = fpath.lower().endswith(".csv") or "csv" in sel_filter.lower()
+            with open(fpath, "w", encoding="utf-8") as f:
+                if is_csv:
+                    f.write("Index,Symbol,AtomicNum,X(Angstrom),Y(Angstrom),Z(Angstrom)\n")
+                    for idx, aid in enumerate(atom_ids_all):
+                        atom = top.get_atom(aid)
+                        if coords_arr is not None and idx < n_coords:
+                            p3 = coords_arr[idx]
+                            x, y, z = float(p3[0]), float(p3[1]), float(p3[2])
+                        else:
+                            x, y, z = 0.0, 0.0, 0.0
+                        f.write(f"{idx + 1},{atom.symbol},{atom.atomic_num},{x:.6f},{y:.6f},{z:.6f}\n")
+                else:
+                    f.write(f"{len(atom_ids_all)}\n")
+                    f.write(f"{doc.name or 'MolForge'} exported from MolForge Studio\n")
+                    for idx, aid in enumerate(atom_ids_all):
+                        atom = top.get_atom(aid)
+                        if coords_arr is not None and idx < n_coords:
+                            p3 = coords_arr[idx]
+                            x, y, z = float(p3[0]), float(p3[1]), float(p3[2])
+                        else:
+                            x, y, z = 0.0, 0.0, 0.0
+                        f.write(f"{atom.symbol:<4} {x:14.6f} {y:14.6f} {z:14.6f}\n")
+            QMessageBox.information(self, "导出成功", f"原子列表已成功导出至:\n{fpath}")
+        except Exception as e:
+            QMessageBox.warning(self, "导出失败", f"写入文件失败: {e}")
 
-        # 刷新化学键列表
-        self.bond_table.setRowCount(disp_bond_count)
+    def _on_copy_bonds_to_clipboard(self):
+        doc = self._resolve_active_document()
+        if doc is None or doc.topology.num_bonds == 0:
+            QMessageBox.information(self, "提示", "当前分子没有化学键数据。")
+            return
+        top = doc.topology
+        _, id_to_idx = top.atom_index_map()
+        coords_arr = doc.coordinates.current.coords if hasattr(doc, "coordinates") and doc.coordinates and doc.coordinates.current is not None else None
+        n_coords = len(coords_arr) if coords_arr is not None else 0
         order_names = {1: "单键", 2: "双键", 3: "叁键", 4: "芳香"}
-        bond_id_list = list(top.bond_ids)[:disp_bond_count]
-        for row, bid in enumerate(bond_id_list):
+        lines = ["#ID\tAtom1\tAtom2\tOrder\tLength(Å)"]
+        import numpy as np
+        for b_row, bid in enumerate(top.bond_ids, start=1):
             bond = top.get_bond(bid)
             a1 = top.get_atom(bond.begin)
             a2 = top.get_atom(bond.end)
-            pair_str = f"#{bond.begin.value + 1} {a1.symbol} - #{bond.end.value + 1} {a2.symbol}"
-            b_order_str = order_names.get(int(bond.order), f"{bond.order}")
-            
-            # 计算键长
-            length_str = "—"
-            p1 = document.get_atom_3d_pos(bond.begin)
-            p2 = document.get_atom_3d_pos(bond.end)
-            if p1 is None and coords_arr is not None and bond.begin.value < len(coords_arr):
-                p1 = coords_arr[bond.begin.value]
-            if p2 is None and coords_arr is not None and bond.end.value < len(coords_arr):
-                p2 = coords_arr[bond.end.value]
+            i1 = id_to_idx.get(bond.begin, -1)
+            i2 = id_to_idx.get(bond.end, -1)
+            idx1 = (i1 + 1) if i1 >= 0 else (bond.begin.value + 1)
+            idx2 = (i2 + 1) if i2 >= 0 else (bond.end.value + 1)
+            dist_str = f"{float(np.linalg.norm(coords_arr[i1] - coords_arr[i2])):.3f}" if (coords_arr is not None and 0 <= i1 < n_coords and 0 <= i2 < n_coords) else "—"
+            b_order_str = "芳香" if bond.aromatic else order_names.get(int(bond.order), str(bond.order))
+            lines.append(f"#{b_row}\t#{idx1} {a1.symbol}\t#{idx2} {a2.symbol}\t{b_order_str}\t{dist_str}")
+        QApplication.clipboard().setText("\n".join(lines))
+        QMessageBox.information(self, "复制成功", f"已成功将全部分子 ({top.num_bonds} 条化学键) 的键表复制到系统剪贴板！")
 
-            if p1 is not None and p2 is not None:
-                import numpy as np
-                dist = float(np.linalg.norm(np.asarray(p1) - np.asarray(p2)))
-                length_str = f"{dist:.3f}"
+    def _on_export_bonds_to_file(self):
+        doc = self._resolve_active_document()
+        if doc is None or doc.topology.num_bonds == 0:
+            QMessageBox.information(self, "提示", "当前分子没有化学键数据。")
+            return
+        top = doc.topology
+        _, id_to_idx = top.atom_index_map()
+        coords_arr = doc.coordinates.current.coords if hasattr(doc, "coordinates") and doc.coordinates and doc.coordinates.current is not None else None
+        n_coords = len(coords_arr) if coords_arr is not None else 0
+        def_name = f"{doc.name or 'molecule'}_bonds.csv"
+        fpath, _ = QFileDialog.getSaveFileName(self, "导出化学键表", def_name, "CSV 表格文件 (*.csv)")
+        if not fpath:
+            return
+        try:
+            order_names = {1: "单键", 2: "双键", 3: "叁键", 4: "芳香"}
+            import numpy as np
+            with open(fpath, "w", encoding="utf-8") as f:
+                f.write("BondID,Atom1_Index,Atom1_Symbol,Atom2_Index,Atom2_Symbol,BondOrder,Length(Angstrom)\n")
+                for b_row, bid in enumerate(top.bond_ids, start=1):
+                    bond = top.get_bond(bid)
+                    a1 = top.get_atom(bond.begin)
+                    a2 = top.get_atom(bond.end)
+                    i1 = id_to_idx.get(bond.begin, -1)
+                    i2 = id_to_idx.get(bond.end, -1)
+                    idx1 = (i1 + 1) if i1 >= 0 else (bond.begin.value + 1)
+                    idx2 = (i2 + 1) if i2 >= 0 else (bond.end.value + 1)
+                    dist_str = f"{float(np.linalg.norm(coords_arr[i1] - coords_arr[i2])):.4f}" if (coords_arr is not None and 0 <= i1 < n_coords and 0 <= i2 < n_coords) else ""
+                    b_order_str = "芳香" if bond.aromatic else order_names.get(int(bond.order), str(bond.order))
+                    f.write(f"{b_row},{idx1},{a1.symbol},{idx2},{a2.symbol},{b_order_str},{dist_str}\n")
+            QMessageBox.information(self, "导出成功", f"化学键列表已成功导出至:\n{fpath}")
+        except Exception as e:
+            QMessageBox.warning(self, "导出失败", f"写入文件失败: {e}")
 
-            it_b0 = QTableWidgetItem(f"#{bid.value + 1}")
-            it_b0.setData(Qt.ItemDataRole.UserRole, bid)
-            it_b0.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.bond_table.setItem(row, 0, it_b0)
 
-            it_b1 = QTableWidgetItem(pair_str)
-            it_b1.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.bond_table.setItem(row, 1, it_b1)
-
-            it_b2 = QTableWidgetItem(b_order_str)
-            it_b2.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.bond_table.setItem(row, 2, it_b2)
-
-            it_b3 = QTableWidgetItem(length_str)
-            it_b3.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            self.bond_table.setItem(row, 3, it_b3)
+    def apply_typography(self, family: str, base_size: int):
+        """将全局字体与比例字号同步应用到左侧栏所有卡片、标签、表格与自定义砌块区。"""
+        sz = max(10, int(base_size))
+        self._font_size = sz
+        sz_sm = max(10, sz - 2)
+        f = QFont(family)
+        f.setPixelSize(sz)
+        self.setFont(f)
+        if hasattr(self, "lbl_tip"):
+            self.lbl_tip.setStyleSheet(f"color: #5EEAD4; font-size: {sz_sm}px; padding: 1px 4px; font-weight: 600;")
+        if hasattr(self, "tree_info_label"):
+            self.tree_info_label.setStyleSheet(f"color:#66DEC9; font-weight:700; font-size:{sz_sm}px;")
+        if hasattr(self, "atom_table"):
+            self.atom_table.setFont(f)
+            self.atom_table.horizontalHeader().setFont(f)
+            self.atom_table.verticalHeader().setDefaultSectionSize(sz + 18)
+        if hasattr(self, "bond_table"):
+            self.bond_table.setFont(f)
+            self.bond_table.horizontalHeader().setFont(f)
+            self.bond_table.verticalHeader().setDefaultSectionSize(sz + 18)
+        if hasattr(self, "_refresh_custom_fragments_card"):
+            try:
+                self._refresh_custom_fragments_card()
+            except Exception:
+                pass
 
 
 # 保持向后兼容别名
@@ -977,11 +1503,11 @@ class RightPanel(QFrame):
             ("相对分子质量", "194.19 Da"),
             ("原子 (重/氢)", "24 (14 重 / 10 氢)"),
             ("化学键 (单/双/芳)", "25 键"),
-            ("净电荷 / 自旋", "0 / 单重态 (Singlet)"),
+            ("净电荷 / 自旋", "0 / 未指定（默认单重态）"),
             ("环系数量", "2 环 (双环稠合)"),
-            ("可旋转单键", "3 个"),
+            ("非环单键 (自定义)", "3 个"),
             ("空间质心 (Å)", "(0.00, 0.00, 0.00)"),
-            ("空间点群对称性", "C1 (非对称)"),
+            ("点群 / 几何形态", "未计算"),
             ("3D 渲染器", "VTK Studio Phong"),
         ):
             row = QHBoxLayout()
@@ -1298,6 +1824,7 @@ class RightPanel(QFrame):
         l.addLayout(row_bw_hdr)
 
         self.bond_width_slider = QSlider(Qt.Orientation.Horizontal)
+        self.selected_bond_width_slider = self.bond_width_slider
         self.bond_width_slider.setRange(40, 220)
         self.bond_width_slider.setValue(100)
         install_wheel_guard(self.bond_width_slider, self._wheel_guard)
@@ -1422,8 +1949,10 @@ class RightPanel(QFrame):
                 if a in id2idx and b in id2idx:
                     import numpy as np
                     from ..application import measurement as mm
+                    from ..domain.periodic import cell_from_document
+                    cell = cell_from_document(doc)
                     ia, ib = id2idx[a], id2idx[b]
-                    d = float(np.linalg.norm(coords[ib] - coords[ia]))
+                    d = mm.distance(coords, ia, ib, cell)
                     self.bond_length_spin.blockSignals(True)
                     self.bond_length_spin.setValue(round(d, 3))
                     self.bond_length_spin.blockSignals(False)
@@ -1432,7 +1961,7 @@ class RightPanel(QFrame):
                     nbrs_b = [n for n in doc.topology.neighbors_of(b) if n != a and n in id2idx]
                     extra_parts = [f"键长: {d:.3f} Å"]
                     if nbrs_a:
-                        ang_v, ok_a, _ = mm.angle(coords, id2idx[nbrs_a[0]], ia, ib)
+                        ang_v, ok_a, _ = mm.angle(coords, id2idx[nbrs_a[0]], ia, ib, cell)
                         if ok_a:
                             extra_parts.append(f"邻角: {ang_v:.1f}°")
                     from ..application.measurement_targets import MeasurementTargetResolver
@@ -1440,11 +1969,11 @@ class RightPanel(QFrame):
                     if canon_dih:
                         i, j, k, l = canon_dih
                         if i in id2idx and j in id2idx and k in id2idx and l in id2idx:
-                            dih_v, ok_d, _ = mm.dihedral(coords, id2idx[i], id2idx[j], id2idx[k], id2idx[l])
+                            dih_v, ok_d, _ = mm.dihedral(coords, id2idx[i], id2idx[j], id2idx[k], id2idx[l], cell)
                             if ok_d:
                                 extra_parts.append(f"主二面角(#{i.value+1}-#{j.value+1}-#{k.value+1}-#{l.value+1}): {dih_v:.1f}°")
                     elif nbrs_a and nbrs_b:
-                        dih_v, ok_d, _ = mm.dihedral(coords, id2idx[nbrs_a[0]], ia, ib, id2idx[nbrs_b[0]])
+                        dih_v, ok_d, _ = mm.dihedral(coords, id2idx[nbrs_a[0]], ia, ib, id2idx[nbrs_b[0]], cell)
                         if ok_d:
                             extra_parts.append(f"二面角: {dih_v:.1f}°")
                     self.bond_angle_dih_label.setText("  ·  ".join(extra_parts))
@@ -1583,12 +2112,12 @@ class RightPanel(QFrame):
             self.inspect_labels["净电荷 / 自旋"].setText(f"{charge:+d} / {spin_label} (M={spin_mult})")
         if "环系数量" in self.inspect_labels:
             self.inspect_labels["环系数量"].setText(f"{rings_count} 环")
-        if "可旋转单键" in self.inspect_labels:
-            self.inspect_labels["可旋转单键"].setText(f"{rotatable_bonds} 个")
+        if "非环单键 (自定义)" in self.inspect_labels:
+            self.inspect_labels["非环单键 (自定义)"].setText(f"{rotatable_bonds} 个")
         if "空间质心 (Å)" in self.inspect_labels:
             self.inspect_labels["空间质心 (Å)"].setText(centroid_str)
-        if "空间点群对称性" in self.inspect_labels:
-            self.inspect_labels["空间点群对称性"].setText(point_group)
+        if "点群 / 几何形态" in self.inspect_labels:
+            self.inspect_labels["点群 / 几何形态"].setText(point_group)
 
     # ---------- DeepSeek AI 助手页 ----------
 
@@ -1639,12 +2168,12 @@ class RightPanel(QFrame):
                 "models": ["deepseek-r1:14b", "qwen2.5:14b", "llama3.3"],
             },
             "Antigravity MCP / 本地端点": {
-                "url": "http://127.0.0.1:8000/v1",
-                "models": ["default-model"],
+                "url": "http://127.0.0.1:8045/v1",
+                "models": ["gemini-3.8-flash", "claude-sonnet-5-5", "claude-opus-5-5"],
             },
             "自定义端点 (Custom URL)": {
-                "url": "http://127.0.0.1:8000/v1",
-                "models": ["default-model"],
+                "url": "http://127.0.0.1:8045/v1",
+                "models": ["gemini-3.8-flash"],
             },
         }
         for p_name in self.providers_data:
@@ -1662,14 +2191,28 @@ class RightPanel(QFrame):
         row_url.addWidget(self.ds_url_input, 1)
         cfg_lay.addLayout(row_url)
 
-        # Model Name (高可靠 QLineEdit 直接绑定，消除下拉框重置冲突)
+        # Model Name (editable QComboBox + 获取模型按钮)
         row_m = QHBoxLayout()
         row_m.addWidget(muted("模型名:"))
-        self.ds_model_input = QLineEdit()
-        self.ds_model_input.setText(cfg["model"])
-        self.ds_model_input.setPlaceholderText("如 antigravity / gemini-3.8-flash-low / deepseek-chat")
-        self.ds_model_input.editingFinished.connect(self._on_ds_config_changed)
-        row_m.addWidget(self.ds_model_input, 1)
+        self.ds_model_combo = QComboBox()
+        self.ds_model_combo.setEditable(True)
+        self.ds_model_combo.setToolTip("输入或从端点下拉选择可用模型")
+        self.ds_model_combo.lineEdit().setPlaceholderText("如 gemini-3.8-flash / deepseek-chat")
+        self.ds_model_combo.setMinimumWidth(150)
+        cur_m = cfg["model"] if cfg["model"] not in ("default-model", "antigravity") else "gemini-3.8-flash"
+        self.ds_model_combo.addItem(cur_m)
+        self.ds_model_combo.setCurrentText(cur_m)
+        self.ds_model_input = self.ds_model_combo.lineEdit()
+        self.ds_model_combo.activated.connect(self._on_ds_config_changed)
+        if self.ds_model_input is not None:
+            self.ds_model_input.editingFinished.connect(self._on_ds_config_changed)
+        install_wheel_guard(self.ds_model_combo, self._wheel_guard)
+        row_m.addWidget(self.ds_model_combo, 1)
+
+        self.btn_fetch_models = QPushButton("🔄 获取模型")
+        self.btn_fetch_models.setToolTip("请求所填 Base URL 的 /v1/models 接口，自动拉取当前端点所有可用模型并填充下拉列表")
+        self.btn_fetch_models.clicked.connect(self._fetch_remote_models_action)
+        row_m.addWidget(self.btn_fetch_models)
         cfg_lay.addLayout(row_m)
 
         # Match provider with cfg["base_url"]
@@ -1686,9 +2229,6 @@ class RightPanel(QFrame):
         self.provider_combo.blockSignals(False)
         self.provider_combo.currentIndexChanged.connect(self._on_provider_changed)
 
-        # 初始装载模型名
-        self.ds_model_input.setText(cfg["model"])
-
         # API Key
         self.ds_key_input = QLineEdit()
         self.ds_key_input.setEchoMode(QLineEdit.EchoMode.Password)
@@ -1699,6 +2239,52 @@ class RightPanel(QFrame):
             self.ds_key_input.setText("")
         self.ds_key_input.editingFinished.connect(self._on_ds_config_changed)
         cfg_lay.addWidget(self.ds_key_input)
+
+        # Temperature (温度调节)
+        row_temp = QHBoxLayout()
+        row_temp.addWidget(muted("温度 (Temp):"))
+        self.temp_slider = QSlider(Qt.Orientation.Horizontal)
+        self.temp_slider.setRange(0, 100)
+        self.temp_slider.setValue(int(cfg.get("temperature", 0.3) * 100))
+        self.temp_val_lbl = QLabel(f"{cfg.get('temperature', 0.3):.2f}")
+        self.temp_val_lbl.setMinimumWidth(35)
+        self.temp_val_lbl.setStyleSheet("color:#5EEAD4; font-weight:700;")
+        self.temp_slider.valueChanged.connect(lambda v: self.temp_val_lbl.setText(f"{v / 100.0:.2f}"))
+        self.temp_slider.valueChanged.connect(self._on_ds_config_changed)
+        install_wheel_guard(self.temp_slider, self._wheel_guard)
+        row_temp.addWidget(self.temp_slider, 1)
+        row_temp.addWidget(self.temp_val_lbl)
+        cfg_lay.addLayout(row_temp)
+
+        # Max Tokens & Reasoning Effort (深度思考/推理等级)
+        row_params = QHBoxLayout()
+        row_params.addWidget(muted("最大输出:"))
+        self.max_tokens_spin = QDoubleSpinBox()
+        self.max_tokens_spin.setRange(256, 131072)
+        self.max_tokens_spin.setDecimals(0)
+        self.max_tokens_spin.setSingleStep(1024)
+        self.max_tokens_spin.setValue(float(cfg.get("max_tokens", 4096)))
+        self.max_tokens_spin.setSuffix(" tokens")
+        self.max_tokens_spin.valueChanged.connect(self._on_ds_config_changed)
+        install_wheel_guard(self.max_tokens_spin, self._wheel_guard)
+        row_params.addWidget(self.max_tokens_spin)
+
+        row_params.addWidget(muted("思考等级:"))
+        self.reasoning_combo = QComboBox()
+        self.reasoning_combo.addItem("关闭 (none)", "none")
+        self.reasoning_combo.addItem("低 (low)", "low")
+        self.reasoning_combo.addItem("中 (medium)", "medium")
+        self.reasoning_combo.addItem("高 (high)", "high")
+        cur_re = str(cfg.get("reasoning_effort", "none")).lower()
+        re_idx = 0
+        if cur_re in ("low", "低"): re_idx = 1
+        elif cur_re in ("medium", "中"): re_idx = 2
+        elif cur_re in ("high", "高"): re_idx = 3
+        self.reasoning_combo.setCurrentIndex(re_idx)
+        self.reasoning_combo.currentIndexChanged.connect(self._on_ds_config_changed)
+        install_wheel_guard(self.reasoning_combo, self._wheel_guard)
+        row_params.addWidget(self.reasoning_combo, 1)
+        cfg_lay.addLayout(row_params)
 
         row_save = QHBoxLayout()
         self.save_cfg_btn = QPushButton("💾 保存配置")
@@ -1737,11 +2323,9 @@ class RightPanel(QFrame):
         self.chat_history.setMinimumHeight(210)
         self.chat_history.setHtml(
             "<div style='color:#9AB0C2; font-size:12px; line-height:1.45;'>"
-            "<b style='color:#66DEC9'>MolForge AI Scientist 已就绪 (已支持 OpenAI / DeepSeek / 通义 / Ollama / MCP)。</b><br>"
-            "无论是否填入在线 Key，均可直接输入自然语言执行操作：<br>"
-            "• <span style='color:#7DAEFA'>“帮我生成复旦 REST 的 XYG3 输入卡”</span><br>"
-            "• <span style='color:#7DAEFA'>“生成 Gaussian CAM-B3LYP TD-DFT 输入”</span><br>"
-            "• <span style='color:#7DAEFA'>“加一个噻吩环”</span> / <span style='color:#7DAEFA'>“引入氰基 -CN”</span>"
+            "<b style='color:#66DEC9'>🤖 MolForge AI 智能科研助手就绪</b><br>"
+            "支持自然语言对话、分子结构修改、3D构象优化与量化计算卡生成。<br>"
+            "（可点击下方「💡 常用指令示例 ▾」快速调用）"
             "</div>"
         )
         c_lay.addWidget(self.chat_history)
@@ -1757,6 +2341,11 @@ class RightPanel(QFrame):
         self.ai_prompt_send_btn.clicked.connect(self._on_ask_question)
         input_row.addWidget(self.ai_prompt_send_btn)
 
+        btn_examples = QPushButton("💡 示例 ▾")
+        btn_examples.setToolTip("点击展开常用 AI 建模与量子化学计算指令示例")
+        btn_examples.clicked.connect(self._show_prompt_examples_menu)
+        input_row.addWidget(btn_examples)
+
         standalone_btn = QPushButton("🗗 独立弹窗")
         standalone_btn.setToolTip("在独立弹出窗口中打开全功能 LLM / MCP 工具对话")
         standalone_btn.clicked.connect(self._open_standalone_dialog)
@@ -1768,36 +2357,111 @@ class RightPanel(QFrame):
         box.addStretch(1)
         return page
 
+    def _show_prompt_examples_menu(self):
+        menu = QMenu(self)
+        examples = [
+            ("帮我画一个水分子", "帮我画一个水分子"),
+            ("加一个噻吩环", "在当前选中的位置加一个噻吩环"),
+            ("引入氰基 -CN 取代基", "在当前选中的原子上引入氰基 -CN"),
+            ("计算重原子最佳拟合平面度 (RMSD)", "计算当前分子所有重原子的最佳拟合平面度 RMSD"),
+            ("生成复旦 REST 的 XYG3 计算卡", "帮我生成复旦 REST 的 XYG3 双杂化 DFT 输入卡"),
+            ("生成 Gaussian CAM-B3LYP TD-DFT 输入", "生成 Gaussian 16 的 CAM-B3LYP/def2-SVP TD-DFT 激发态计算输入文件"),
+            ("生成超算 Slurm 提交脚本", "生成可直接提交至远程超算集群的 Slurm 运行脚本"),
+        ]
+        for title, prompt in examples:
+            act = menu.addAction(title)
+            act.triggered.connect(lambda checked=False, p=prompt: self.ai_prompt_input.setText(p))
+        menu.exec(QCursor.pos())
+
+    def _fetch_remote_models_action(self):
+        url = self.ds_url_input.text().strip()
+        key = self.ds_key_input.text().strip()
+        if not url:
+            QMessageBox.warning(self, "提示", "请先输入 Base URL")
+            return
+        self.save_feedback_lbl.setText("⏳ 正在拉取可用模型列表...")
+        from ..ai.mcp_bridge import fetch_remote_models
+        try:
+            models = fetch_remote_models(url, key)
+            if not models:
+                self.save_feedback_lbl.setText("⚠️ 未获取到模型")
+                QMessageBox.information(self, "获取模型结果", f"成功连接到端点 {url}，但未返回模型列表。您可以手动在输入框中填入模型名称。")
+                return
+            self.ds_model_combo.blockSignals(True)
+            self.ds_model_combo.clear()
+            for m in models:
+                self.ds_model_combo.addItem(m)
+            self.ds_model_combo.blockSignals(False)
+
+            preferred = ["gemini-3.8-flash", "claude-sonnet-5-5", "deepseek-chat", "gpt-4o-mini"]
+            chosen = None
+            for p in preferred:
+                if p in models:
+                    chosen = p
+                    break
+            if chosen:
+                self.ds_model_combo.setCurrentText(chosen)
+            else:
+                self.ds_model_combo.setCurrentIndex(0)
+            self._save_and_confirm_config()
+            self.save_feedback_lbl.setText(f"✓ 成功获取 {len(models)} 个可用模型！")
+            QMessageBox.information(
+                self, "获取模型成功",
+                f"成功从端点获取到 {len(models)} 个可用模型！\n\n已为您自动选中：{self.ds_model_combo.currentText()}"
+            )
+        except Exception as e:
+            self.save_feedback_lbl.setText(f"❌ 获取失败")
+            QMessageBox.warning(
+                self, "获取模型失败",
+                f"无法连接端点 {url} 获取模型列表:\n{e}\n\n请检查服务是否启动及网络配置。"
+            )
+
     def _on_provider_changed(self, idx: int):
         p_name = self.provider_combo.currentText()
         data = self.providers_data.get(p_name)
         if data:
             self.ds_url_input.setText(data["url"])
-            if hasattr(self, "ds_model_input") and data.get("models"):
+            if hasattr(self, "ds_model_combo") and data.get("models"):
                 if p_name != "自定义端点 (Custom URL)":
-                    self.ds_model_input.setText(data["models"][0])
+                    self.ds_model_combo.setCurrentText(data["models"][0])
             self._on_ds_config_changed()
 
     def _on_ds_config_changed(self):
         key = self.ds_key_input.text().strip()
-        model = self.ds_model_input.text().strip() if hasattr(self, "ds_model_input") else "default-model"
-        url = self.ds_url_input.text().strip() or "http://127.0.0.1:8000/v1"
+        model = self.ds_model_combo.currentText().strip() if hasattr(self, "ds_model_combo") else "gemini-3.8-flash"
+        if not model:
+            return
+        url = self.ds_url_input.text().strip() or "http://127.0.0.1:8045/v1"
+        temp = float(self.temp_slider.value()) / 100.0 if hasattr(self, "temp_slider") else 0.3
+        mt = int(self.max_tokens_spin.value()) if hasattr(self, "max_tokens_spin") else 4096
+        re_eff = self.reasoning_combo.currentData() if hasattr(self, "reasoning_combo") else "none"
+
         self.deepseek.api_key = key
         self.deepseek.model = model
         self.deepseek.base_url = url
         from ..ai.mcp_bridge import set_llm_config
-        set_llm_config(url, key or "EMPTY", model)
+        set_llm_config(url, key or "EMPTY", model, temperature=temp, max_tokens=mt, reasoning_effort=re_eff)
         if self._chat_bridge is not None:
-            self._chat_bridge.config = {"base_url": url, "api_key": key or "EMPTY", "model": model}
+            self._chat_bridge.config = {
+                "base_url": url, "api_key": key or "EMPTY", "model": model,
+                "temperature": temp, "max_tokens": mt, "reasoning_effort": re_eff
+            }
 
     def _save_and_confirm_config(self):
-        url = self.ds_url_input.text().strip() or "http://127.0.0.1:8000/v1"
-        model = self.ds_model_input.text().strip() if hasattr(self, "ds_model_input") else "default-model"
+        url = self.ds_url_input.text().strip() or "http://127.0.0.1:8045/v1"
+        model = self.ds_model_combo.currentText().strip() if hasattr(self, "ds_model_combo") else "gemini-3.8-flash"
         key = self.ds_key_input.text().strip() or "EMPTY"
+        temp = float(self.temp_slider.value()) / 100.0 if hasattr(self, "temp_slider") else 0.3
+        mt = int(self.max_tokens_spin.value()) if hasattr(self, "max_tokens_spin") else 4096
+        re_eff = self.reasoning_combo.currentData() if hasattr(self, "reasoning_combo") else "none"
+
         from ..ai.mcp_bridge import set_llm_config
-        set_llm_config(url, key, model)
+        set_llm_config(url, key, model, temperature=temp, max_tokens=mt, reasoning_effort=re_eff)
         if self._chat_bridge is not None:
-            self._chat_bridge.config = {"base_url": url, "api_key": key, "model": model}
+            self._chat_bridge.config = {
+                "base_url": url, "api_key": key, "model": model,
+                "temperature": temp, "max_tokens": mt, "reasoning_effort": re_eff
+            }
         if hasattr(self, "save_feedback_lbl"):
             self.save_feedback_lbl.setText(f"✓ 已保存: {model}")
             QTimer.singleShot(3000, lambda: self.save_feedback_lbl.setText(""))
@@ -1818,8 +2482,19 @@ class RightPanel(QFrame):
         self.provider_combo.blockSignals(False)
 
         self.ds_url_input.setText(cur_url)
-        if hasattr(self, "ds_model_input"):
-            self.ds_model_input.setText(cfg["model"])
+        if hasattr(self, "ds_model_combo"):
+            self.ds_model_combo.setCurrentText(cfg["model"])
+        if hasattr(self, "temp_slider") and "temperature" in cfg:
+            self.temp_slider.setValue(int(float(cfg["temperature"]) * 100))
+        if hasattr(self, "max_tokens_spin") and "max_tokens" in cfg:
+            self.max_tokens_spin.setValue(float(cfg["max_tokens"]))
+        if hasattr(self, "reasoning_combo") and "reasoning_effort" in cfg:
+            cur_re = str(cfg["reasoning_effort"]).lower()
+            re_idx = 0
+            if cur_re in ("low", "低"): re_idx = 1
+            elif cur_re in ("medium", "中"): re_idx = 2
+            elif cur_re in ("high", "高"): re_idx = 3
+            self.reasoning_combo.setCurrentIndex(re_idx)
 
         if cfg["api_key"] and cfg["api_key"] != "EMPTY":
             self.ds_key_input.setText(cfg["api_key"])
@@ -1914,15 +2589,25 @@ class RightPanel(QFrame):
             self.chat_history.append("<div style='color:#E06C75;'>⚠️ 当前窗口命令总线与文档不一致，无法执行操作。</div>")
             return
 
-        url = self.ds_url_input.text().strip() or "http://127.0.0.1:8000/v1"
-        model = self.ds_model_input.text().strip() if hasattr(self, "ds_model_input") else "default-model"
-        key = self.ds_key_input.text().strip() or "EMPTY"
+        url = self.ds_url_input.text().strip() if hasattr(self, "ds_url_input") and self.ds_url_input.text().strip() else "http://127.0.0.1:8045/v1"
+        model = self.ds_model_combo.currentText().strip() if hasattr(self, "ds_model_combo") else "gemini-3.8-flash"
+        if not model or model in ("default-model", "antigravity"):
+            model = "gemini-3.8-flash"
+        key = self.ds_key_input.text().strip() if hasattr(self, "ds_key_input") and self.ds_key_input.text().strip() else "EMPTY"
+
+        temp = float(self.temp_slider.value()) / 100.0 if hasattr(self, "temp_slider") else 0.3
+        mt = int(self.max_tokens_spin.value()) if hasattr(self, "max_tokens_spin") else 4096
+        re_eff = self.reasoning_combo.currentData() if hasattr(self, "reasoning_combo") else "none"
+
         from ..ai.mcp_bridge import MolForgeMCPBridge, set_llm_config
-        set_llm_config(url, key, model)
+        set_llm_config(url, key, model, temperature=temp, max_tokens=mt, reasoning_effort=re_eff)
 
         if self._chat_bridge is None or self._chat_bridge.document is not doc:
             self._chat_bridge = MolForgeMCPBridge(doc, bus)
-        self._chat_bridge.config = {"base_url": url, "api_key": key, "model": model}
+        self._chat_bridge.config = {
+            "base_url": url, "api_key": key, "model": model,
+            "temperature": temp, "max_tokens": mt, "reasoning_effort": re_eff
+        }
 
         self.ai_prompt_input.clear()
         self.chat_history.append(
@@ -2092,14 +2777,14 @@ class RightPanel(QFrame):
         self.btn_undo = QPushButton("⏪ 撤销 (Ctrl+Z)")
         self.btn_undo.setEnabled(can_undo)
         self.btn_undo.setMinimumHeight(30)
-        self.btn_undo.setStyleSheet("QPushButton { font-weight:700; font-size:12px; }")
+        self.btn_undo.setStyleSheet("QPushButton { font-weight:700; }")
         self.btn_undo.clicked.connect(self._history_do_undo)
         row_act.addWidget(self.btn_undo)
 
         self.btn_redo = QPushButton("⏩ 重做 (Ctrl+Y)")
         self.btn_redo.setEnabled(can_redo)
         self.btn_redo.setMinimumHeight(30)
-        self.btn_redo.setStyleSheet("QPushButton { font-weight:700; font-size:12px; }")
+        self.btn_redo.setStyleSheet("QPushButton { font-weight:700; }")
         self.btn_redo.clicked.connect(self._history_do_redo)
         row_act.addWidget(self.btn_redo)
 
@@ -2206,3 +2891,35 @@ class RightPanel(QFrame):
             QMessageBox.warning(self, "导出失败", str(exc))
             return
         QMessageBox.information(self, "技能已导出", str(result / "SKILL.md"))
+
+    def apply_typography(self, family: str, base_size: int):
+        """将全局字体与比例字号同步应用到右侧属性面板、AI 助手与历史面板。"""
+        sz = max(10, int(base_size))
+        self._font_size = sz
+        for button, full_text in zip(self._tab_buttons, ("属性", "AI 助手", "量化", "历史", "设置")):
+            button.setText(full_text if sz < 18 else ("属性", "AI", "量化", "历史", "设置")[self._tab_buttons.index(button)])
+        sz_xs = max(10, sz - 3)
+        sz_sm = max(10, sz - 2)
+        f = QFont(family)
+        f.setPixelSize(sz)
+        self.setFont(f)
+        if hasattr(self, "mol_name_label"):
+            self.mol_name_label.setStyleSheet(f"font-size: {sz}px; font-weight: 700; color: #66DEC9;")
+        if hasattr(self, "measure_label") and "●" in self.measure_label.text():
+            self.measure_label.setStyleSheet(f"color:#66DEC9; font-weight:700; font-size:{max(11, sz - 1)}px;")
+        if hasattr(self, "multi_atom_ids_label"):
+            self.multi_atom_ids_label.setStyleSheet(f"color:#66DEC9; font-weight:700; font-size:{sz_sm}px;")
+        if hasattr(self, "multi_atom_pos_label"):
+            self.multi_atom_pos_label.setStyleSheet(f"color:#9AB0C2; font-size:{sz_xs}px;")
+        for attr, color, bold in (
+            ("atom_neighbors_label", "#7DAEFA", False),
+            ("atom_vdw_label", "#9AB0C2", False),
+            ("atom_partial_charge_label", "#66DEC9", True),
+            ("bond_angle_dih_label", "#7DAEFA", True),
+            ("bond_ring_label", "#9AB0C2", False),
+            ("save_feedback_lbl", "#66DEC9", True),
+        ):
+            lbl = getattr(self, attr, None)
+            if lbl is not None:
+                fw = "font-weight:700;" if bold else ""
+                lbl.setStyleSheet(f"color:{color}; font-size:{sz_sm}px; {fw}")

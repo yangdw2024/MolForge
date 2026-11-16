@@ -172,7 +172,7 @@ def perceive_bonds_and_orders_3d(
         try:
             from scipy.spatial import cKDTree
             tree = cKDTree(pts)
-            pairs = tree.query_pairs(r=2.55, output_type="ndarray")
+            pairs = tree.query_pairs(r=2.85, output_type="ndarray")
         except Exception:
             pairs = np.empty((0, 2), dtype=np.int32)
         if len(pairs) == 0:
@@ -940,43 +940,190 @@ def parse_mol_or_sdf_to_document(path: Path) -> MoleculeDocument:
     return doc
 
 
+def _parse_pdb_atom_element(raw_name_4ch: str, elem_col: str) -> int:
+    """按 wwPDB 列对齐规范解析元素序数，避免 ' CA '/' HG '/'1H  ' 误判为 Ca/Hg/C。"""
+    elem_clean = elem_col.strip()
+    if elem_clean:
+        z = _token_to_atomic_num(elem_clean)
+        if z is not None:
+            return z
+
+    if not raw_name_4ch or not raw_name_4ch.strip():
+        return 6
+
+    stripped = raw_name_4ch.strip()
+
+    # 1. 第 13 列为空格（如 ' CA ', ' HG ', ' HE1', ' PA '）通常为单字母元素；
+    #    仅当存在明确的大小写混排双字母元素（如 ' Cl ', ' Br ', ' Fe '）时优先按双字母识别。
+    if raw_name_4ch[0] == " ":
+        m_mixed = re.match(r"^([A-Z][a-z])", stripped)
+        if m_mixed:
+            z = SYM_TO_Z.get(m_mixed.group(1).upper())
+            if z is not None:
+                return z
+        for ch in stripped:
+            if ch.isalpha():
+                z = SYM_TO_Z.get(ch.upper())
+                if z is not None:
+                    return z
+                break
+
+    # 2. 前导数字氢/编号原子（如 '1H  ', '2HB ', '1HD1'）
+    if stripped[0].isdigit():
+        no_lead = stripped.lstrip("0123456789")
+        if no_lead:
+            if no_lead[0].upper() == "H":
+                return 1
+            z = SYM_TO_Z.get(no_lead[0].upper())
+            if z is not None:
+                return z
+
+    # 3. 4 字符支链氢命名（如 'HG11', 'HE21', 'HD12', 'HB11'）避免误判为 Hg / He
+    if len(stripped) >= 3 and stripped[0].upper() == "H":
+        if stripped[1].upper() in ("A", "B", "G", "D", "E", "Z", "H") and stripped[2].isdigit():
+            return 1
+
+    # 4. 第 13 列非空格：双字母元素优先（'FE', 'CL1', 'CA'），失败则回退首字母（'HB1' -> H）
+    z = _token_to_atomic_num(stripped)
+    if z is not None:
+        return z
+    for ch in stripped:
+        if ch.isalpha():
+            z1 = SYM_TO_Z.get(ch.upper())
+            if z1 is not None:
+                return z1
+            break
+    return 6
+
+
 def parse_pdb_to_document(path: Union[Path, str]) -> MoleculeDocument:
-    """纯 Python 高性能解析 PDB (支持标准 ATOM / HETATM、五位以上序号无空格、大分子与 CONECT 化学键)。"""
+    """纯 Python 高性能解析 PDB (支持标准 ATOM / HETATM、>99999 十六进制序号消歧与 CONECT 化学键)。"""
     p = Path(path)
     text = p.read_text(encoding="utf-8", errors="replace")
     z_list: list[int] = []
-    xyz_list: list[list[float]] = []
-    serial_to_idx: dict[str, int] = {}
+    xyz_list: list[tuple[float, float, float]] = []
+    serial_to_indices: dict[str, list[int]] = {}
     conect_pairs: set[tuple[int, int]] = set()
+    _float_re = re.compile(r"[+-]?\d+\.\d+")
 
+    def _pick_src(cands: list[int], dst_tokens: list[str], last_idx: int) -> int:
+        if len(cands) == 1:
+            return cands[0]
+        # 同时考量序数递增连续性与邻接 3D 距离（避免十进制 20000 与十六进制 0x20000 串线）
+        best_c = cands[0]
+        best_score = float("inf")
+        for sc in cands:
+            seq_pen = abs(sc - (last_idx + 1)) if last_idx >= 0 else sc
+            min_d2 = float("inf")
+            sx, sy, sz = xyz_list[sc]
+            for dt in dst_tokens:
+                dcands = serial_to_indices.get(dt)
+                if not dcands:
+                    continue
+                for dc in dcands:
+                    if dc == sc:
+                        continue
+                    dx = xyz_list[dc][0] - sx
+                    dy = xyz_list[dc][1] - sy
+                    dz = xyz_list[dc][2] - sz
+                    d2 = dx * dx + dy * dy + dz * dz
+                    if d2 < min_d2:
+                        min_d2 = d2
+            # 超过 6.0 Å 视作非真实化学键惩罚，优先选有近邻键长且顺序贴近的候选
+            geo_pen = 0.0 if min_d2 <= 36.0 else 1_000_000.0
+            score = geo_pen + seq_pen
+            if score < best_score:
+                best_score = score
+                best_c = sc
+        return best_c
+
+    def _pick_dst(sc: int, dcands: list[int]) -> int | None:
+        if len(dcands) == 1:
+            dc = dcands[0]
+            return None if dc == sc else dc
+        sx, sy, sz = xyz_list[sc]
+        best_dc = None
+        best_d2 = float("inf")
+        for dc in dcands:
+            if dc == sc:
+                continue
+            dx = xyz_list[dc][0] - sx
+            dy = xyz_list[dc][1] - sy
+            dz = xyz_list[dc][2] - sz
+            d2 = dx * dx + dy * dy + dz * dz
+            if d2 < best_d2:
+                best_d2 = d2
+                best_dc = dc
+        return best_dc if (best_dc is not None and best_d2 <= 36.0) else None
+
+    last_src_idx = -1
+    cryst1_data: dict[str, Any] | None = None
+    cryst1_error: str | None = None
     for line in text.splitlines():
         rec = line[:6].strip()
-        if rec in ("ATOM", "HETATM"):
+        if rec == "CRYST1":
+            cryst1_data = None
+            try:
+                candidate = {
+                    "a": float(line[6:15].strip()),
+                    "b": float(line[15:24].strip()),
+                    "c": float(line[24:33].strip()),
+                    "alpha": float(line[33:40].strip()),
+                    "beta": float(line[40:47].strip()),
+                    "gamma": float(line[47:54].strip()),
+                    "space_group": line[55:66].strip() if len(line) >= 66 else "",
+                }
+                from ..domain.periodic import UnitCell
+                cryst1_data = UnitCell(**candidate).to_dict()
+            except (ValueError, TypeError) as exc:
+                cryst1_error = str(exc)
+        elif rec in ("ATOM", "HETATM"):
+
             try:
                 serial = line[6:11].strip()
-                x = float(line[30:38].strip())
-                y = float(line[38:46].strip())
-                z = float(line[46:54].strip())
-                elem_col = line[76:78].strip() if len(line) >= 78 else ""
-                atom_name = line[12:16].strip()
-                z_num = _token_to_atomic_num(elem_col) or _token_to_atomic_num(atom_name) or 6
+                try:
+                    x = float(line[30:38].strip())
+                    y = float(line[38:46].strip())
+                    z = float(line[46:54].strip())
+                except ValueError:
+                    # 列偏移 / 连体负号回退解析
+                    floats = _float_re.findall(line[26:])
+                    if len(floats) < 3:
+                        continue
+                    x, y, z = float(floats[0]), float(floats[1]), float(floats[2])
+                elem_col = line[76:78] if len(line) >= 78 else ""
+                raw_name_4ch = line[12:16]
+                z_num = _parse_pdb_atom_element(raw_name_4ch, elem_col)
+                idx_now = len(z_list)
                 z_list.append(z_num)
-                xyz_list.append([x, y, z])
-                if serial:
-                    serial_to_idx[serial] = len(z_list) - 1
+                xyz_list.append((x, y, z))
+                if serial and serial != "*****":
+                    serial_to_indices.setdefault(serial, []).append(idx_now)
             except ValueError:
                 continue
         elif rec == "CONECT":
             src = line[6:11].strip()
-            if src in serial_to_idx:
-                s_idx = serial_to_idx[src]
-                for off in (11, 16, 21, 26, 31):
-                    if len(line) >= off + 5:
-                        dst = line[off:off+5].strip()
-                        if dst in serial_to_idx:
-                            d_idx = serial_to_idx[dst]
-                            if s_idx != d_idx:
-                                conect_pairs.add((min(s_idx, d_idx), max(s_idx, d_idx)))
+            s_cands = serial_to_indices.get(src) if (src and src != "*****") else None
+            if not s_cands:
+                continue
+            stripped_len = len(line.rstrip())
+            dst_tokens: list[str] = []
+            for off in range(11, stripped_len, 5):
+                dst = line[off:off + 5].strip()
+                if dst and dst != "*****":
+                    dst_tokens.append(dst)
+            if not dst_tokens:
+                continue
+            s_idx = _pick_src(s_cands, dst_tokens, last_src_idx)
+            last_src_idx = s_idx
+            for dst in dst_tokens:
+                d_cands = serial_to_indices.get(dst)
+                if not d_cands:
+                    continue
+                d_idx = _pick_dst(s_idx, d_cands)
+                if d_idx is not None:
+                    a, b = (s_idx, d_idx) if s_idx < d_idx else (d_idx, s_idx)
+                    conect_pairs.add((a, b))
         elif rec == "ENDMDL" and z_list:
             break
 
@@ -984,6 +1131,15 @@ def parse_pdb_to_document(path: Union[Path, str]) -> MoleculeDocument:
         raise ValueError(f"PDB 文件 {p.name} 中未找到有效 ATOM/HETATM 坐标记录")
 
     explicit_bonds = [(i, j, 1, False) for i, j in conect_pairs] if conect_pairs else None
+    props: dict[str, Any] = {}
+    if cryst1_data:
+        props["cryst1"] = cryst1_data
+        props["box_dimensions"] = (cryst1_data["a"], cryst1_data["b"], cryst1_data["c"])
+        props["box_angles"] = (cryst1_data["alpha"], cryst1_data["beta"], cryst1_data["gamma"])
+        props["space_group"] = cryst1_data["space_group"]
+        props["periodic"] = True
+    if cryst1_error:
+        props["cryst1_error"] = cryst1_error
 
     return build_document_from_3d_atoms(
         name=p.stem,
@@ -992,7 +1148,9 @@ def parse_pdb_to_document(path: Union[Path, str]) -> MoleculeDocument:
         explicit_bonds=explicit_bonds,
         source_format="pdb",
         source_path=str(p),
+        properties=props if props else None,
     )
+
 
 
 
@@ -1192,6 +1350,10 @@ def export_document_to_pdb(doc: MoleculeDocument) -> str:
         coords = doc.coordinates.current.coords if (doc.coordinates.current is not None) else np.zeros((n_atoms, 3))
 
     lines = [f"HEADER    {doc.name or 'MOLFORGE'}", "COMPND    MOLFORGE_2_0"]
+    from ..domain.periodic import cell_from_document
+    cell = cell_from_document(doc)
+    if cell is not None:
+        lines.append(cell.to_cryst1())
     elem_counts: dict[str, int] = {}
     for i, aid in enumerate(atom_ids):
         atom = doc.topology.get_atom(aid)
@@ -1571,6 +1733,7 @@ SAMPLE_MOLECULES = {
     "并五苯 (Pentacene)": "c1ccc2cc3cc4cc5ccccc5cc4cc3cc2c1",
     "碗烯 (Corannulene/C60片段)": "c1cc2ccc3ccc4ccc5ccc1c1c2c3c4c51",
     "IC 端基 (1,3-茚满酮型)": "O=C1CC(=C(C#N)C#N)c2ccccc12",
+    "IC 端基 (受体)": "O=C1CC(=C(C#N)C#N)c2ccccc12",
     "2F-IC 端基 (Y6/IT-4F)": "O=C1CC(=C(C#N)C#N)c2cc(F)c(F)cc12",
     "2Cl-IC 端基 (BTP-eC9)": "O=C1CC(=C(C#N)C#N)c2cc(Cl)c(Cl)cc12",
     "BT 受体核 (苯并噻二唑)": "c1ccc2nsnc2c1",

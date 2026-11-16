@@ -104,3 +104,8 @@ class TestGaussianGeometryBenchmark(unittest.TestCase):
         self.assertTrue(ok_c and ok_t)
         self.assertAlmostEqual(deg_cis, 0.0, places=4)
         self.assertAlmostEqual(abs(deg_trans), 180.0, places=4)
+
+
+if __name__ == "__main__":
+    unittest.main()
+

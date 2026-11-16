@@ -324,6 +324,8 @@ class MeasurementTableDock(QDockWidget):
 
         _, id2idx = doc.topology.atom_index_map()
         coords = doc.coordinates.current.coords
+        from ..domain.periodic import cell_from_document
+        cell = cell_from_document(doc)
         rows_data: list[tuple[str, str, str, str, list[AtomId]]] = []
 
         # 1. 所有化学键键长 R(i, j)
@@ -331,7 +333,7 @@ class MeasurementTableDock(QDockWidget):
             b = doc.topology.get_bond(bid)
             if b.begin in id2idx and b.end in id2idx:
                 ia, ib = id2idx[b.begin], id2idx[b.end]
-                d = mm.distance(coords, ia, ib)
+                d = mm.distance(coords, ia, ib, cell)
                 sa = get_element(doc.topology.get_atom(b.begin).atomic_num).symbol
                 sb = get_element(doc.topology.get_atom(b.end).atomic_num).symbol
                 rows_data.append((f"R{k}", "键长 (Bond Length)", f"{sa}#{b.begin.value} - {sb}#{b.end.value}", f"{d:.4f} Å", [b.begin, b.end]))
@@ -346,7 +348,7 @@ class MeasurementTableDock(QDockWidget):
                 for j in range(i + 1, len(nbrs)):
                     a1, a2, a3 = nbrs[i], center_aid, nbrs[j]
                     if a1 in id2idx and a2 in id2idx and a3 in id2idx:
-                        val, ok, _ = mm.angle(coords, id2idx[a1], id2idx[a2], id2idx[a3])
+                        val, ok, _ = mm.angle(coords, id2idx[a1], id2idx[a2], id2idx[a3], cell)
                         if ok:
                             ang_cnt += 1
                             rows_data.append((f"A{ang_cnt}", "键角 (Bond Angle)", f"#{a1.value}-#{a2.value}-#{a3.value}", f"{val:.2f}°", [a1, a2, a3]))
@@ -740,9 +742,12 @@ class ModifyInternalCoordDialog(QDialog):
             coords = doc.coordinates.current.coords
             _, id2idx = doc.topology.atom_index_map()
 
+            from ..domain.periodic import cell_from_document
+            cell = cell_from_document(doc)
+
             if self.mode == "angle" and target.kind in ("angle", "ambiguous") and len(target.atoms) == 3:
                 i, j, k = id2idx[target.atoms[0]], id2idx[target.atoms[1]], id2idx[target.atoms[2]]
-                val, ok, _ = angle(coords, i, j, k)
+                val, ok, _ = angle(coords, i, j, k, cell)
                 return float(val) if ok else None
             elif self.mode == "dihedral":
                 dih_atoms = target.atoms if (target.kind == "dihedral" and len(target.atoms) == 4) else target.canonical_dihedral_atoms
@@ -753,7 +758,7 @@ class ModifyInternalCoordDialog(QDialog):
                         id2idx[dih_atoms[0]], id2idx[dih_atoms[1]],
                         id2idx[dih_atoms[2]], id2idx[dih_atoms[3]],
                     )
-                    val, ok, _ = dihedral(coords, i, j, k, l)
+                    val, ok, _ = dihedral(coords, i, j, k, l, cell)
                     return float(val) if ok else None
         except Exception:
             pass
@@ -772,11 +777,19 @@ class ModifyInternalCoordDialog(QDialog):
             if bid is not None:
                 bus = getattr(self.main_window, "session", None) or getattr(self.main_window, "command_bus", None)
                 if bus:
-                    bus.execute(ModifyBondLength3DCommand(bid, val))
+                    res = bus.execute(ModifyBondLength3DCommand(bid, val))
+                    if not getattr(res, "success", True):
+                        QMessageBox.warning(self, "修改失败", f"化学规则审计未通过：{getattr(res, 'message', '')}")
+                        return False
+            else:
+                QMessageBox.warning(self, "缺少操作目标", "【化学规则审计提示】\n修改键长需要选中 1 条化学键，或者 2 个成键原子！")
+                return False
             if hasattr(self.main_window, "refresh_views"):
                 self.main_window.refresh_views()
-        except Exception:
-            pass
+            return True
+        except Exception as e:
+            QMessageBox.warning(self, "修改失败", f"发生异常: {e}")
+            return False
 
     def _apply_bond_angle_direct(self, val: float):
         try:
@@ -786,11 +799,19 @@ class ModifyInternalCoordDialog(QDialog):
             if target.kind in ("angle", "ambiguous") and len(target.atoms) == 3:
                 bus = getattr(self.main_window, "session", None) or getattr(self.main_window, "command_bus", None)
                 if bus:
-                    bus.execute(ModifyAngle3DCommand(target.atoms[0], target.atoms[1], target.atoms[2], val))
+                    res = bus.execute(ModifyAngle3DCommand(target.atoms[0], target.atoms[1], target.atoms[2], val))
+                    if not getattr(res, "success", True):
+                        QMessageBox.warning(self, "修改失败", f"化学规则审计未通过：{getattr(res, 'message', '')}")
+                        return False
+            else:
+                QMessageBox.warning(self, "缺少操作目标", "【化学规则审计提示】\n修改键角需要选中 3 个相连原子（中心原子在中间）！")
+                return False
             if hasattr(self.main_window, "refresh_views"):
                 self.main_window.refresh_views()
-        except Exception:
-            pass
+            return True
+        except Exception as e:
+            QMessageBox.warning(self, "修改失败", f"发生异常: {e}")
+            return False
 
     def _apply_dihedral_direct(self, val: float):
         try:
@@ -803,27 +824,69 @@ class ModifyInternalCoordDialog(QDialog):
             if dih_atoms and len(dih_atoms) == 4:
                 bus = getattr(self.main_window, "session", None) or getattr(self.main_window, "command_bus", None)
                 if bus:
-                    bus.execute(ModifyDihedral3DCommand(dih_atoms[0], dih_atoms[1], dih_atoms[2], dih_atoms[3], val))
+                    res = bus.execute(ModifyDihedral3DCommand(dih_atoms[0], dih_atoms[1], dih_atoms[2], dih_atoms[3], val))
+                    if not getattr(res, "success", True):
+                        QMessageBox.warning(self, "修改失败", f"化学规则审计未通过：{getattr(res, 'message', '')}")
+                        return False
+            else:
+                QMessageBox.warning(self, "缺少操作目标", "【化学规则审计提示】\n修改二面角需要选中 4 个相连原子，或 1 条可自由旋转的单键！")
+                return False
             if hasattr(self.main_window, "refresh_views"):
                 self.main_window.refresh_views()
-        except Exception:
-            pass
+            return True
+        except Exception as e:
+            QMessageBox.warning(self, "修改失败", f"发生异常: {e}")
+            return False
 
     def _apply(self):
         val = float(self.spin.value())
+        sel = self.main_window.selection
+        doc = self.main_window.document
+        from ..application.measurement_targets import MeasurementTargetResolver
+        target = MeasurementTargetResolver.resolve(doc, sel)
+
         if self.mode == "bond":
+            has_bond = (len(sel.selected_bonds) == 1 or (target.kind == "distance" and len(target.atoms) == 2))
+            if not has_bond:
+                QMessageBox.warning(
+                    self,
+                    "操作未执行 · 缺少目标",
+                    "【化学规则审计提示】\n修改键长需要选中 1 条化学键，或者选中 2 个成键原子！\n\n请先在画布中点击选中相应原子或键后再执行修改。"
+                )
+                return
             if hasattr(self.main_window, "_set_selected_bond_length"):
                 self.main_window._set_selected_bond_length(val)
             else:
-                self._apply_bond_length_direct(val)
+                if not self._apply_bond_length_direct(val):
+                    return
         elif self.mode == "angle":
+            has_angle = (target.kind in ("angle", "ambiguous") and len(target.atoms) == 3)
+            if not has_angle:
+                QMessageBox.warning(
+                    self,
+                    "操作未执行 · 缺少目标",
+                    "【化学规则审计提示】\n修改键角需要选中 3 个相连原子（中心原子在中间），或者选中 2 条相邻化学键！\n\n请先在画布中点击选中相应原子或键后再执行修改。"
+                )
+                return
             if hasattr(self.main_window, "_set_selected_bond_angle"):
                 self.main_window._set_selected_bond_angle(val)
             else:
-                self._apply_bond_angle_direct(val)
+                if not self._apply_bond_angle_direct(val):
+                    return
         elif self.mode == "dihedral":
+            dih_atoms = target.atoms if (target.kind == "dihedral" and len(target.atoms) == 4) else target.canonical_dihedral_atoms
+            if dih_atoms is None and target.center_bond is not None:
+                dih_atoms = MeasurementTargetResolver.find_canonical_dihedral_for_bond(doc, target.center_bond)
+            if dih_atoms is None or len(dih_atoms) != 4:
+                QMessageBox.warning(
+                    self,
+                    "操作未执行 · 缺少目标",
+                    "【化学规则审计提示】\n修改二面角需要选中 4 个相连原子（1-2-3-4），或者选中 1 条可自由旋转的单键！\n\n请先在画布中点击选中相应原子或键后再执行修改。"
+                )
+                return
             if hasattr(self.main_window, "_set_selected_dihedral_angle"):
                 self.main_window._set_selected_dihedral_angle(val)
             else:
-                self._apply_dihedral_direct(val)
+                if not self._apply_dihedral_direct(val):
+                    return
         self.accept()

@@ -28,6 +28,7 @@ except ImportError:  # pragma: no cover
 from ..rendering.vtk_backend import VtkRendererBackend
 from ..rendering.contracts import RenderSnapshot, RepresentationMode
 from ..domain.document import MoleculeDocument
+from ..domain.periodic import cell_from_document
 from ..domain.ids import AtomId, BondId
 from ..domain.elements import get_element
 from ..application.selection import SelectionService
@@ -41,24 +42,29 @@ TOOL_MODE_STATE_TABLE: dict[str, dict[str, str]] = {
     "选择": {
         "name": "选择 (Select)",
         "hud_short": "左键点选/拖动选中原子(支持多选平移) · Shift+拖空白框选/套索 · 右键弹出菜单",
-        "status_hint": "当前模式：选择 (V)  |  操作：左键点选/拖动选中原子(支持多选一起平移)，Shift+拖空白框选/套索，右键弹出完整菜单",
+        "status_hint": "选择模式 (V)",
+        "full_hint": "操作指南：左键点选/拖动选中原子(支持多选平移)，Shift+拖空白框选/套索，右键弹出完整菜单",
     },
     "原子": {
         "name": "建原子 (Atom)",
         "hud_short": "左键点空白加原子并自动成键 · 从已有原子拖拽定向生长新键 · 右键菜单",
-        "status_hint": "当前模式：建原子 (A)  |  操作：左键点空白加原子并自动成键，从已有原子拖拽定向生长新键，右键菜单",
+        "status_hint": "建原子模式 (A)",
+        "full_hint": "操作指南：左键点空白加原子并自动成键，从已有原子拖拽定向生长新键，右键菜单",
     },
     "键": {
         "name": "建键 (Bond)",
         "hud_short": "在两原子间拖拽建键 · 左键点已有键切换单/双/三键 · 右键菜单",
-        "status_hint": "当前模式：建键 (B)  |  操作：在两原子间拖拽建键，左键点击已有化学键切换单/双/三键，右键菜单",
+        "status_hint": "建键模式 (B)",
+        "full_hint": "操作指南：在两原子间拖拽建键，左键点击已有化学键切换单/双/三键，右键菜单",
     },
     "擦除": {
         "name": "擦除 (Erase)",
         "hud_short": "左键点击任意原子或化学键立即删除 (支持 Ctrl+Z 撤销) · 右键菜单",
-        "status_hint": "当前模式：擦除 (E)  |  操作：左键点击任意原子或化学键立即删除（支持 Ctrl+Z 撤销）",
+        "status_hint": "擦除模式 (E)",
+        "full_hint": "操作指南：左键点击任意原子或化学键立即删除（支持 Ctrl+Z 撤销）",
     },
 }
+
 
 
 def _points_in_polygon_numpy(x: np.ndarray, y: np.ndarray, poly_pts: list[tuple[float, float]]) -> np.ndarray:
@@ -356,9 +362,15 @@ class Render3DWidget(QWidget):
         self.hud_info_label.setToolTip(info["hud_short"])
         if self.status_callback is not None:
             try:
-                self.status_callback(info["status_hint"])
+                self.status_callback(info["status_hint"], info.get("full_hint", ""))
+            except TypeError:
+                try:
+                    self.status_callback(info["status_hint"])
+                except Exception:
+                    pass
             except Exception:
                 pass
+
 
     def set_command_bus(self, bus):
         if getattr(self, "_command_bus", None) is bus and getattr(self, "_bus_callback", None) is not None:
@@ -387,9 +399,20 @@ class Render3DWidget(QWidget):
         self._update_hud_text()
 
     def set_document(self, doc: MoleculeDocument):
+        frame_idx = doc.coordinates.current_index if (getattr(doc, "has_3d", False) and getattr(doc, "coordinates", None) is not None) else -1
+        doc_rev = getattr(doc, "revision", None)
         is_new_doc = (self._last_doc_id != doc.document_id)
+        if (
+            not is_new_doc
+            and self._document is doc
+            and getattr(self, "_last_doc_revision", None) == doc_rev
+            and getattr(self, "_last_frame_idx", None) == frame_idx
+        ):
+            return
         self._document = doc
         self._last_doc_id = doc.document_id
+        self._last_doc_revision = doc_rev
+        self._last_frame_idx = frame_idx
         self._refresh_from_document(reset_cam=is_new_doc)
 
     def set_conformer_coords(self, coords):
@@ -439,6 +462,15 @@ class Render3DWidget(QWidget):
             return
 
         doc = self._document
+        cur_rev = getattr(doc, "revision", None)
+        cur_frame = doc.coordinates.current_index if (getattr(doc, "has_3d", False) and getattr(doc, "coordinates", None) is not None) else -1
+        if not reset_cam and getattr(self, "_last_rendered_state", None) == (doc.document_id, cur_rev, cur_frame):
+            return
+        self._last_rendered_state = (doc.document_id, cur_rev, cur_frame)
+        self._last_doc_id = doc.document_id
+        self._last_doc_revision = cur_rev
+        self._last_frame_idx = cur_frame
+
         atom_ids, id_to_idx = doc.topology.atom_index_map()
         atomic_numbers = [doc.topology.get_atom(aid).atomic_num for aid in atom_ids]
 
@@ -462,33 +494,32 @@ class Render3DWidget(QWidget):
                 doc.relax_3d_geometry(max_iters=80)
                 coords = doc.coordinates.current.coords.copy() if doc.coordinates.current is not None else np.zeros((n, 3), dtype=np.float32)
 
-        is_massive = (n > 1500)
-        if is_massive:
-            atom_scales = np.ones(n, dtype=np.float32)
-            atom_colors = {}
-            bond_scales = np.ones(len(self._bond_ids), dtype=np.float32)
-            bond_colors = {}
-            atom_opacities = None
-            atom_glows = {}
-        else:
-            # 提取每个原子的独立 scale 与独立 color，以及每条键的独立 width_scale 与独立 color (P0 核心要求！)
-            atom_scales = [float(getattr(doc.topology.get_atom(aid), "scale", 1.0)) for aid in atom_ids]
-            atom_colors = {}
-            for i, aid in enumerate(atom_ids):
-                c = getattr(doc.topology.get_atom(aid), "color", None)
-                if c is not None:
-                    atom_colors[i] = tuple(float(x) for x in c)
+        # 提取每个原子的独立 scale 与独立 color，以及每条键的独立 width_scale 与独立 color (高保真渲染，绝不因体系大小静默丢弃自定义外观)
+        atom_scales = [float(getattr(doc.topology.get_atom(aid), "scale", 1.0)) for aid in atom_ids]
+        atom_colors = {}
+        for i, aid in enumerate(atom_ids):
+            c = getattr(doc.topology.get_atom(aid), "color", None)
+            if c is not None:
+                atom_colors[i] = tuple(float(x) for x in c)
 
-            bond_scales = []
-            bond_colors = {}
-            for b_idx, bid in enumerate(self._bond_ids):
-                b_obj = doc.topology.get_bond(bid)
-                bond_scales.append(float(getattr(b_obj, "width_scale", 1.0)))
-                bc = getattr(b_obj, "color", None)
-                if bc is not None:
-                    bond_colors[b_idx] = tuple(float(x) for x in bc)
-            atom_opacities = [float(doc.topology.get_atom(a).properties.get("opacity", 1.0)) for a in atom_ids]
-            atom_glows = {i: tuple(doc.topology.get_atom(a).properties.get("glow_color", (0.3, 0.8, 1.0))) + (float(doc.topology.get_atom(a).properties.get("glow", 0.0)),) for i, a in enumerate(atom_ids)}
+        bond_scales = []
+        bond_colors = {}
+        for b_idx, bid in enumerate(self._bond_ids):
+            b_obj = doc.topology.get_bond(bid)
+            bond_scales.append(float(getattr(b_obj, "width_scale", 1.0)))
+            bc = getattr(b_obj, "color", None)
+            if bc is not None:
+                bond_colors[b_idx] = tuple(float(x) for x in bc)
+
+        atom_opacities = [float(doc.topology.get_atom(a).properties.get("opacity", 1.0)) for a in atom_ids]
+        atom_glows = {}
+        if n <= 10000:
+            for i, a in enumerate(atom_ids):
+                atom_obj = doc.topology.get_atom(a)
+                gw = float(atom_obj.properties.get("glow", 0.0))
+                if gw > 0.0:
+                    atom_glows[i] = tuple(atom_obj.properties.get("glow_color", (0.3, 0.8, 1.0))) + (gw,)
+
 
         selected = self._selection.selected_atoms if self._selection is not None else set()
         selected_bonds = self._selection.selected_bonds if self._selection is not None else set()
@@ -506,6 +537,7 @@ class Render3DWidget(QWidget):
             except Exception:
                 pass
 
+        cell = cell_from_document(doc)
         snapshot = RenderSnapshot(
             measure_chain=measure_chain,
             atom_ids=atom_ids,
@@ -528,6 +560,7 @@ class Render3DWidget(QWidget):
             show_symbols=self.renderer.show_symbols,
             show_axes=self.renderer.show_axes,
             color_scheme=self.renderer._color_scheme,
+            cell_matrix=cell.matrix if cell is not None else None,
         )
 
         self.renderer.set_snapshot(snapshot, reset_cam=reset_cam)

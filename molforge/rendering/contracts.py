@@ -60,6 +60,7 @@ class RenderSnapshot:
     show_symbols: bool = False
     show_axes: bool = True
     color_scheme: str = "Default Scheme"
+    cell_matrix: np.ndarray | None = None  # 可选晶胞向量矩阵，行为 a/b/c 矢量
 
     def __post_init__(self) -> None:
         if self.bond_scales is None and self.bond_widths is not None:

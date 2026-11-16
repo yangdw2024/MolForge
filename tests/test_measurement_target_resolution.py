@@ -159,3 +159,8 @@ class TestMeasurementTargetResolution(unittest.TestCase):
             u, v = resolved[k], resolved[k + 1]
             is_bonded = any((u == b[0] and v == b[1]) or (u == b[1] and v == b[0]) for b in backend._bonds)
             self.assertTrue(is_bonded, f"VTK 测量线在索引 {u} 与 {v} 之间斜穿空间！")
+
+
+if __name__ == "__main__":
+    unittest.main()
+

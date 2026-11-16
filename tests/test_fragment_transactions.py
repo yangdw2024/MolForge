@@ -61,3 +61,8 @@ class TestFragmentTransactions(unittest.TestCase):
 
             bus.undo()
             self.assertEqual(doc.topology.num_atoms, n_atoms_0)
+
+
+if __name__ == "__main__":
+    unittest.main()
+

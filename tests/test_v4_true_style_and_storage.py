@@ -544,6 +544,10 @@ class V72BugfixesAndV73WorkflowsSuite(unittest.TestCase):
             self.assertTrue((igmh_dir / "caffeine-igmh.gjf").exists())
             self.assertTrue((igmh_dir / "igmh_multiwfn_stdin.txt").exists())
             self.assertTrue((igmh_dir / "render_igmh_vmd.tcl").exists())
+            gjf_text = (igmh_dir / "caffeine-igmh.gjf").read_text(encoding="utf-8")
+            self.assertIn("%nprocshared=8", gjf_text)
+            self.assertIn("%mem=12GB", gjf_text)
+            self.assertNotIn("%nprocshared=24", gjf_text)
 
             # 5. Verify callable entrypoints on esp_surface, homo_lumo_plot, osc_energy_diagram, dipole_analysis
             self.assertTrue(callable(esp_surface.run_esp_surface_workflow))
@@ -673,9 +677,11 @@ class V7ResultsAndArchitectureSuite(unittest.TestCase):
         from molforge.ui.shells.studio_split import StudioSplitWindow
         from molforge.io.rdkit_adapter import create_instant_caffeine_document
 
+        pkg_root = Path(__file__).resolve().parents[1]
         # Verify Studio2DWindow / Studio3DWindow / StudioSplitWindow do not import or wrap MolForgeWindow
         for rel in ("molforge/ui/shells/studio_2d.py", "molforge/ui/shells/studio_3d.py", "molforge/ui/shells/studio_split.py"):
-            src = Path(rel).read_text(encoding="utf-8")
+            target_p = (pkg_root / rel) if (pkg_root / rel).exists() else Path(rel)
+            src = target_p.read_text(encoding="utf-8")
             self.assertNotIn("from ..window import MolForgeWindow", src)
             self.assertNotIn("MolForgeWindow(", src)
 
@@ -685,7 +691,8 @@ class V7ResultsAndArchitectureSuite(unittest.TestCase):
         self.assertEqual((n_atoms, n_elec, charge, spin), (24, 102, 0, 1))
 
         # Verify the 3 fixed wiring paths in window.py and render3d_widget.py
-        win_src = Path("molforge/ui/window.py").read_text(encoding="utf-8")
+        win_path = (pkg_root / "molforge/ui/window.py") if (pkg_root / "molforge/ui/window.py").exists() else Path("molforge/ui/window.py")
+        win_src = win_path.read_text(encoding="utf-8")
         self.assertIn("from .dialogs.gaussian_calculation_setup import GaussianCalculationSetupDialog", win_src)
         self.assertNotIn("gaussian_setup_dialog", win_src)
         self.assertIn("from .dialogs.element_fragments import ElementFragmentsDialog", win_src)
@@ -694,5 +701,6 @@ class V7ResultsAndArchitectureSuite(unittest.TestCase):
         self.assertIn("self.workspace.view3d_real.set_multiview_layout(pane_count)", win_src)
 
         # Verify default startup mode in main.py and scripts/launch.py is "welcome"
-        main_src = Path("main.py").read_text(encoding="utf-8")
+        main_path = (pkg_root / "main.py") if (pkg_root / "main.py").exists() else Path("main.py")
+        main_src = main_path.read_text(encoding="utf-8")
         self.assertIn('default_mode: str = "welcome"', main_src)

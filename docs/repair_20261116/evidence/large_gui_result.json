@@ -1,0 +1,43 @@
+{
+  "status": "passed",
+  "input": "E:\\YDW\\test_wsl\\ydw-PM6-ClFFCl.pdb",
+  "platform": "Qt offscreen",
+  "stages": {
+    "open_main_window": {
+      "ok": true,
+      "seconds": 8.602213400001347,
+      "atoms": 321554,
+      "bonds": 275500
+    },
+    "offscreen_render": {
+      "frames": 12,
+      "p50_ms": 0.09554999996908009,
+      "p95_ms": 0.15950000306474976,
+      "note": "Offscreen software/backend timing; not native GUI FPS"
+    },
+    "select_one": {
+      "seconds": 0.0008951999989221804,
+      "selected": true
+    },
+    "delete_one": {
+      "success": true,
+      "seconds": 13.672023800001625,
+      "atoms_after": 321552,
+      "deleted_count": 2,
+      "cascade_terminal_hydrogens": 1
+    },
+    "undo_one": {
+      "success": true,
+      "seconds": 4.638530599997466,
+      "atoms_after": 321554,
+      "atom_restored": true
+    }
+  },
+  "memory": {
+    "rss_mb": 1281.60546875,
+    "peak_working_set_mb": 1584.4140625
+  },
+  "renderer": {
+    "type": "VtkRendererBackend"
+  }
+}

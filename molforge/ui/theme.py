@@ -619,9 +619,93 @@ def refresh_button_visual(btn, active: bool | None = None) -> None:
     btn.update()
 
 
+def load_saved_typography() -> tuple[str, int]:
+    """读取并验证持久化的全局字体系列与基准字号。"""
+    from PyQt6.QtCore import QSettings
+    store = QSettings("MolForge", "Typography")
+    family = str(store.value("font_family", "Microsoft YaHei UI") or "Microsoft YaHei UI")
+    try:
+        size = int(store.value("font_size", 14) or 14)
+    except Exception:
+        size = 14
+    size = max(10, min(28, size))
+    return family, size
+
+
+def load_saved_theme() -> tuple[str, str | None]:
+    """读取持久化的界面主题与自定义强调色。"""
+    from PyQt6.QtCore import QSettings
+    store = QSettings("MolForge", "Appearance")
+    theme_name = str(store.value("theme_name", "Dark Professional") or "Dark Professional")
+    if theme_name not in THEMES:
+        theme_name = "Dark Professional"
+    accent = store.value("accent", None)
+    accent_str = str(accent).strip() if accent else None
+    return theme_name, (accent_str or None)
+
+
+def apply_global_typography(
+    family: str,
+    size: int,
+    theme_name: str | None = None,
+    accent: str | None = None,
+) -> None:
+    """将字体与字号应用到 QApplication 全部窗口、左右侧边栏与内联样式控件。"""
+    from PyQt6.QtWidgets import QApplication, QWidget, QTableView, QTreeView
+    from PyQt6.QtGui import QFont
+
+    saved_theme, saved_accent = load_saved_theme()
+    use_theme = theme_name or saved_theme
+    use_accent = accent if accent is not None else saved_accent
+
+    app = QApplication.instance()
+    if app is None:
+        return
+    sz = max(10, min(28, int(size)))
+    font = QFont(family)
+    font.setPixelSize(sz)
+    font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
+    app.setFont(font)
+
+    new_css = build_style(use_theme, use_accent, font_family=family, font_size=sz)
+    app.setStyleSheet(new_css)
+
+    for top_widget in app.topLevelWidgets():
+        top_widget.setFont(font)
+        for child in top_widget.findChildren(QWidget):
+            child.setFont(font)
+            if isinstance(child, (QTableView, QTreeView)):
+                child.verticalHeader().setDefaultSectionSize(sz + 18)
+            if hasattr(child, "apply_typography"):
+                try:
+                    child.apply_typography(family, sz)
+                except Exception:
+                    pass
+        if hasattr(top_widget, "apply_typography"):
+            try:
+                top_widget.apply_typography(family, sz)
+            except Exception:
+                pass
+        st = top_widget.style()
+        if st is not None:
+            st.unpolish(top_widget)
+            st.polish(top_widget)
+        top_widget.update()
+    app.processEvents()
+
+
 def apply_theme(window, theme_name: str, accent: str | None = None):
+    from PyQt6.QtCore import QSettings
     from PyQt6.QtWidgets import QApplication
-    full = build_style(theme_name, accent)
+    store = QSettings("MolForge", "Appearance")
+    store.setValue("theme_name", theme_name)
+    if accent is not None:
+        store.setValue("accent", accent)
+    elif store.value("accent", None):
+        store.remove("accent")
+
+    family, size = load_saved_typography()
+    full = build_style(theme_name, accent, font_family=family, font_size=size)
     app = QApplication.instance()
     if app is not None:
         app.setStyleSheet(full)

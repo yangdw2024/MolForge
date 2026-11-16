@@ -60,20 +60,32 @@ def preferred_geometries(element):
 
 
 def inferred_geometry(document, anchor):
-    atom=document.topology.get_atom(anchor)
-    explicit=atom.properties.get('geometry_template')
-    if explicit in GEOMETRIES:return GEOMETRIES[explicit]
-    orders=[document.topology.get_bond(b).order for b in document.topology._adjacency[anchor]]
-    if atom.atomic_num in (6,7):
-        if any(o>=3 for o in orders):return GEOMETRIES['linear']
-        if atom.aromatic or any(o==2 for o in orders):return GEOMETRIES['trigonal_planar']
-        if atom.atomic_num==7 and atom.formal_charge==0:return GEOMETRIES['trigonal_pyramidal']
+    atom = document.topology.get_atom(anchor)
+    explicit = atom.properties.get('geometry_template')
+    if explicit in GEOMETRIES:
+        return GEOMETRIES[explicit]
+    bonds = [document.topology.get_bond(b) for b in document.topology._adjacency.get(anchor, ())]
+    has_triple = any(b.order == 3 and not b.aromatic for b in bonds)
+    double_bonds = [b for b in bonds if b.order == 2 and not b.aromatic]
+    is_cumulene_linear = (len(double_bonds) >= 2 and len(bonds) == 2)
+    if atom.atomic_num in (6, 7):
+        if has_triple or is_cumulene_linear:
+            return GEOMETRIES['linear']
+        if atom.aromatic or any(b.aromatic for b in bonds) or any(b.order == 2 for b in bonds):
+            return GEOMETRIES['trigonal_planar']
+        if atom.atomic_num == 7 and atom.formal_charge == 0:
+            return GEOMETRIES['trigonal_pyramidal']
         return GEOMETRIES['tetrahedral']
-    if atom.atomic_num==8:return GEOMETRIES['bent']
-    if atom.atomic_num in (1,9,17,35,53):return GEOMETRIES['single']
-    if atom.atomic_num==5:return GEOMETRIES['trigonal_planar']
-    if atom.atomic_num==14:return GEOMETRIES['tetrahedral']
+    if atom.atomic_num == 8:
+        return GEOMETRIES['bent']
+    if atom.atomic_num in (1, 9, 17, 35, 53):
+        return GEOMETRIES['single']
+    if atom.atomic_num == 5:
+        return GEOMETRIES['trigonal_planar']
+    if atom.atomic_num == 14:
+        return GEOMETRIES['tetrahedral']
     return None
+
 
 
 def fit_directions(geometry, observed):

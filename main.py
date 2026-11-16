@@ -19,7 +19,7 @@ try:
 except Exception:
     pass
 
-from molforge.ui.theme import STYLE
+from molforge.ui.theme import STYLE, load_saved_typography, load_saved_theme, apply_global_typography
 from molforge.ui.window import MolForgeWindow
 from molforge.ui.welcome_window import AppController, WelcomeWindow
 
@@ -30,13 +30,18 @@ def run_application(argv: list[str] | None = None, default_mode: str = "welcome"
     app.setApplicationName("MolForge")
     app.setApplicationVersion(__version__)
     try:
-        from PyQt6.QtGui import QFont
-        app_font = QFont("Microsoft YaHei UI", 10)
-        app_font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
-        app.setFont(app_font)
+        family, size = load_saved_typography()
+        theme_name, accent = load_saved_theme()
+        apply_global_typography(family, size, theme_name=theme_name, accent=accent)
     except Exception:
-        pass
-    app.setStyleSheet(STYLE)
+        try:
+            from PyQt6.QtGui import QFont
+            app_font = QFont("Microsoft YaHei UI", 10)
+            app_font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
+            app.setFont(app_font)
+        except Exception:
+            pass
+        app.setStyleSheet(STYLE)
 
     mode = default_mode
     for i, a in enumerate(args):

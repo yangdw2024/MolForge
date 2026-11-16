@@ -26,6 +26,7 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
+from ... import __version__
 MCP_PROTOCOL_VERSION = "2024-11-05"
 
 
@@ -414,7 +415,7 @@ class MolForgeMCPServer:
                 "id": req_id,
                 "result": {
                     "protocolVersion": MCP_PROTOCOL_VERSION,
-                    "serverInfo": {"name": "molforge-mcp-server", "version": "8.0.0"},
+                    "serverInfo": {"name": "molforge-mcp-server", "version": __version__},
                     "capabilities": {
                         "tools": {"listChanged": False},
                         "resources": {"subscribe": False, "listChanged": False},
@@ -593,10 +594,21 @@ class MolForgeMCPServer:
 
 
 if __name__ == "__main__":
-    from ...io.rdkit_adapter import create_sample_molecule
-    from ...application.command_bus import CommandBus
-    doc = create_sample_molecule("咖啡因")
-    bus = CommandBus(doc)
-    server = MolForgeMCPServer(doc, bus)
-    server.run_stdio_loop()
+    import argparse
+    parser = argparse.ArgumentParser(description="MolForge MCP JSON-RPC stdio server")
+    parser.add_argument("--desktop", action="store_true", help="转发到已启动的 MolForge 桌面 MCP 服务")
+    parser.add_argument("--connection", help="desktop.json 路径；默认使用 MOLFORGE_DATA_DIR/mcp/desktop.json")
+    args = parser.parse_args()
+    if args.desktop:
+        from .desktop_client import run_desktop_stdio_loop
+        from ...runtime import data_dir
+        run_desktop_stdio_loop(args.connection or (data_dir() / "mcp" / "desktop.json"))
+    else:
+        from ...io.rdkit_adapter import create_sample_molecule
+        from ...application.command_bus import CommandBus
+        print("MolForge MCP standalone mode: using a separate sample molecule, not the desktop document.", file=sys.stderr)
+        doc = create_sample_molecule("咖啡因")
+        bus = CommandBus(doc)
+        server = MolForgeMCPServer(doc, bus)
+        server.run_stdio_loop()
 

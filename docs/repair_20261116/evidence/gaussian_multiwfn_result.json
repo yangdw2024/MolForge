@@ -1,0 +1,41 @@
+{
+  "status": "passed",
+  "serial_execution": true,
+  "gjf_sha256": "683b258cf87d21241f94faffc76a2840b4cd66b792fa545bb70c71c9b6e6f87c",
+  "input_resources": {
+    "memory_gb": 12,
+    "nproc_shared": 8
+  },
+  "gaussian": {
+    "returncode": 0,
+    "seconds": 9.345210400002543,
+    "normal_termination": true,
+    "output_exists": true,
+    "output_bytes": 75218,
+    "stationary_point_found": true
+  },
+  "formchk": {
+    "returncode": 0,
+    "fchk_exists": true
+  },
+  "multiwfn_mayer": {
+    "seconds": 0.1529009000005317,
+    "bond_orders": {
+      "1-2": 0.96416243,
+      "1-3": 0.96416243
+    },
+    "total_valences": {
+      "1": 1.92832485,
+      "2": 0.97266994,
+      "3": 0.97266994
+    }
+  },
+  "multiwfn_qtaim": {
+    "seconds": 0.09548770000037621,
+    "critical_points": 5,
+    "bond_critical_points": 2,
+    "attractors": 3,
+    "paths": 4
+  },
+  "total_seconds": 9.79493210000146
+}

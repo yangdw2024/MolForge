@@ -36,7 +36,11 @@ def run_igmh_workflow(
     frag2_range: str = "31-60",
     functional_basis: str = "wb97xd/6-31g(d,p)",
     solvent: str = "chloroform",
+    memory_gb: int = 12,
+    nproc_shared: int = 8,
 ) -> Path:
+    if memory_gb < 1 or nproc_shared < 1:
+        raise ValueError("Gaussian 内存与核数必须为正整数")
     p = Path(input_file).resolve()
     if not p.is_file():
         raise ValueError(f"输入文件不存在: {p}")
@@ -80,8 +84,8 @@ def run_igmh_workflow(
     scrf_str = f" scrf(smd,solvent={solvent})" if solvent and solvent.lower() != "none" else ""
     gjf_content = (
         f"%chk={p.stem}-igmh.chk\n"
-        f"%nprocshared=24\n"
-        f"%mem=24GB\n"
+        f"%nprocshared={int(nproc_shared)}\n"
+        f"%mem={int(memory_gb)}GB\n"
         f"#p {functional_basis} sp IOp(7/33=1){scrf_str} pop=full\n\n"
         f"D-A Dimer Single-Point for Multiwfn IGMH ({p.stem})\n\n"
         f"0 1\n"

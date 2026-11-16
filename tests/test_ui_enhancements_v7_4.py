@@ -14,7 +14,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from molforge.domain.custom_fragments import (
-    load_custom_fragments, add_custom_fragment, remove_custom_fragment
+    load_custom_fragments, add_custom_fragment, remove_custom_fragment,
+    get_custom_groups, get_grouped_custom_fragments, delete_custom_group, rename_custom_group
 )
 from molforge.domain.document import MoleculeDocument
 from molforge.domain.ids import AtomId, BondId
@@ -42,6 +43,22 @@ def test_custom_fragments_crud(tmp_path, monkeypatch):
     del_ok = remove_custom_fragment("测试咔唑")
     assert del_ok is True
     assert "测试咔唑" not in [f["name"] for f in load_custom_fragments()]
+
+    # 测试自定义分组与管理
+    add_custom_fragment("高受体单元", "c1sc2c(c1)sc1ccsc12", group="🌟 OSC 受体专区")
+    grps = get_custom_groups()
+    assert "🌟 OSC 受体专区" in grps
+    grouped = get_grouped_custom_fragments()
+    assert "🌟 OSC 受体专区" in grouped
+    assert any(x["name"] == "高受体单元" for x in grouped["🌟 OSC 受体专区"])
+
+    # 重命名分组
+    rename_custom_group("🌟 OSC 受体专区", "🌟 经典受体")
+    assert "🌟 经典受体" in get_custom_groups()
+
+    # 删除分组
+    delete_custom_group("🌟 经典受体")
+    assert "🌟 经典受体" not in get_custom_groups()
 
 
 def test_command_bus_interactive_timeline():

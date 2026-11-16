@@ -47,3 +47,8 @@ class TestGaussianJobSpecAndEngines(unittest.TestCase):
     def test_calchem_engine_is_registered(self):
         names = [e.name for e in _all_engines()]
         self.assertIn("CalChem", names)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
