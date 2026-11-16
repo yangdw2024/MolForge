@@ -19,8 +19,22 @@ from pathlib import Path
 
 from ..io.calculators import GromacsAdapter
 
-# RTX 5060 Ti 为 sm120，默认用 CUDA-sm120 版本
-DEFAULT_GMX = r"D:\YDW\Trae_Gromacs\gromacs\gromacs-2026.3-AVX512-CUDA-sm120-final2\bin\gmx.exe"
+# 优先使用本机实测通过的 AVX2-CPU 构建（避免部分主机上 AVX512/CUDA 触发 0xC0000005），不存在时回退至 CUDA-sm120 或 PATH 中的 gmx
+_GMX_CANDIDATES = (
+    r"D:\YDW\Trae_Gromacs\release_package\GROMACS_GUI_v4.3.0_AVX2_CPU\gromacs\gromacs-2026.1-AVX2-CPU\bin\gmx.exe",
+    r"D:\YDW\Trae_Gromacs\gromacs\gromacs-2026.3-AVX512-CUDA-sm120-final2\bin\gmx.exe",
+)
+
+
+def resolve_default_gmx() -> str:
+    for cand in _GMX_CANDIDATES:
+        if Path(cand).is_file():
+            return cand
+    found = shutil.which("gmx") or shutil.which("gmx.exe")
+    return found or _GMX_CANDIDATES[0]
+
+
+DEFAULT_GMX = resolve_default_gmx()
 SUBMIT_WRAPPER = r"E:\YDW\Scheduling_System\scripts\submit-wrapper.ps1"
 
 
@@ -93,6 +107,8 @@ def build_gromacs_job(
 
     # 3. 写 Windows 包装脚本（CRLF、gmx 路径写死、用 & 调用运算符）
     runner = work / "run_md.ps1"
+    nb_flag = "-nb gpu" if "CUDA" in str(gmx_path).upper() else "-nb auto"
+    gpu_flag = " -gpu_id 0" if "CUDA" in str(gmx_path).upper() else ""
     lines = [
         "# MolForge 自动生成的 GROMACS 运行包装脚本（受 Pueue 队列管控）",
         "$ErrorActionPreference = 'Stop'",
@@ -100,11 +116,11 @@ def build_gromacs_job(
         "$gmx = '" + str(gmx_path).replace("'", "''") + "'",
         # Preserve the supplied periodic box; box preparation is a separate scientific decision.
         f'& $gmx grompp -f minim.mdp -c {input_gro.name} -p topol.top -o em.tpr',
-        '& $gmx mdrun -v -deffnm em -nb gpu',
+        f'& $gmx mdrun -v -deffnm em {nb_flag}',
         '& $gmx grompp -f nvt.mdp -c em.gro -r em.gro -p topol.top -o nvt.tpr',
-        '& $gmx mdrun -deffnm nvt -nb gpu',
+        f'& $gmx mdrun -deffnm nvt {nb_flag}',
         '& $gmx grompp -f md.mdp -c nvt.gro -p topol.top -o md_0_1.tpr',
-        '& $gmx mdrun -deffnm md_0_1 -nb gpu -gpu_id 0',
+        f'& $gmx mdrun -deffnm md_0_1 {nb_flag}{gpu_flag}',
         'Write-Host "MolForge GROMACS job finished in ' + str(work) + '"',
     ]
     checked = []

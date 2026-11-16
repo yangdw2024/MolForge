@@ -392,6 +392,8 @@ class Editor2DWidget(QWidget):
 
     def recompute_2d_layout(self):
         if self._document is not None:
+            if self._document.topology.num_atoms > 1500:
+                return
             self._document.coords_2d.clear()
             self._ensure_world_coords_2d()
         self._zoom = 1.0

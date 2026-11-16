@@ -73,6 +73,8 @@ class CCLibAdapter:
         filepath = Path(filepath)
         try:
             head = filepath.read_text(encoding="utf-8", errors="ignore")[:4000].lower()
+            if filepath.suffix.lower() in (".fchk", ".fch") or "alpha orbital energies" in head:
+                return "gaussian_fchk"
             if "gaussian" in head:
                 return "gaussian"
             if "orca" in head:
@@ -92,6 +94,9 @@ class CCLibAdapter:
 
         sw = self.detect_software(filepath)
         text = filepath.read_text(encoding="utf-8", errors="replace")
+
+        if sw == "gaussian_fchk":
+            return self._parse_fchk_text(text)
 
         # 1. 若是复旦 REST 日志，走专用 REST 解析器
         if sw == "rest":
@@ -350,4 +355,68 @@ class CCLibAdapter:
                 res.n_atoms = len(at_nums)
 
         res.converged = ("Normal termination" in text) or ("THE OPTIMIZATION HAS CONVERGED" in text) or bool(scf)
+        return res
+
+    def _parse_fchk_text(self, text: str) -> QuantumResult:
+        """解析 Gaussian .fchk 格式化检查点文件中的能量、前线轨道 (HOMO/LUMO) 与偶极矩。"""
+        res = QuantumResult(software="gaussian_fchk", converged=True)
+        lines = text.splitlines()
+        if len(lines) >= 2:
+            parts = lines[1].split()
+            if len(parts) >= 3:
+                res.method = parts[1]
+                res.basis = parts[2]
+
+        def _read_scalar_int(key: str) -> int | None:
+            m = re.search(rf"^{re.escape(key)}\s+I\s+(-?\d+)", text, re.M)
+            return int(m.group(1)) if m else None
+
+        def _read_scalar_real(key: str) -> float | None:
+            m = re.search(rf"^{re.escape(key)}\s+R\s+([-+]?\d+\.\d+(?:[Ee][+-]?\d+)?)", text, re.M)
+            return float(m.group(1)) if m else None
+
+        def _read_real_array(key: str) -> list[float]:
+            for idx, ln in enumerate(lines):
+                if ln.startswith(key) and " R " in ln and "N=" in ln:
+                    m_n = re.search(r"N=\s*(\d+)", ln)
+                    if not m_n:
+                        return []
+                    count = int(m_n.group(1))
+                    vals: list[float] = []
+                    j = idx + 1
+                    while j < len(lines) and len(vals) < count:
+                        for tok in lines[j].split():
+                            try:
+                                vals.append(float(tok))
+                            except ValueError:
+                                pass
+                        j += 1
+                    return vals[:count]
+            return []
+
+        charge = _read_scalar_int("Charge")
+        mult = _read_scalar_int("Multiplicity")
+        n_alpha = _read_scalar_int("Number of alpha electrons")
+        e_hartree = _read_scalar_real("Total Energy")
+        if charge is not None:
+            res.charge = charge
+        if mult is not None:
+            res.multiplicity = mult
+        if e_hartree is not None:
+            res.energy_hartree = e_hartree
+            res.energy = e_hartree * HARTREE_TO_EV
+
+        mo_energies = _read_real_array("Alpha Orbital Energies")
+        if mo_energies and n_alpha and 1 <= n_alpha < len(mo_energies):
+            res.homo = round(mo_energies[n_alpha - 1] * HARTREE_TO_EV, 4)
+            res.lumo = round(mo_energies[n_alpha] * HARTREE_TO_EV, 4)
+            res.gap = round(res.lumo - res.homo, 4)
+
+        dipole = _read_real_array("Dipole Moment")
+        if len(dipole) == 3:
+            au_to_debye = 2.541746473
+            dx, dy, dz = (v * au_to_debye for v in dipole)
+            res.dipole_vector = (round(dx, 4), round(dy, 4), round(dz, 4))
+            res.dipole_debye = round(float(np.linalg.norm([dx, dy, dz])), 4)
+
         return res

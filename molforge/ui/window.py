@@ -407,7 +407,16 @@ class Workspace(QFrame):
             self.select_active_element(dlg.selected_element.atomic_number)
 
     def set_mode(self, index: int):
+        large_3d_only = self.document is not None and self.document.topology.num_atoms > 3000
+        if large_3d_only and index in (0, 2):
+            index = 1
         for i, b in enumerate(self.view_mode_buttons):
+            if large_3d_only and i in (0, 2):
+                b.setEnabled(False)
+                b.setToolTip("超大体系 (>3000 原子) 已硬熔断 2D 画布，仅支持 3D 视口以防止卡死")
+            else:
+                b.setEnabled(True)
+                b.setToolTip("")
             refresh_button_visual(b, active=(i == index))
         self.view2d.setVisible(index in (0, 2))
         self.view3d_real.setVisible(index in (1, 2))

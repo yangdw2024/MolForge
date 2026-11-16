@@ -8,12 +8,24 @@ calculators/orca_engine.py - ORCA 受控引擎
 """
 from __future__ import annotations
 
+import os
 import re
+import shutil
 from pathlib import Path
 
 from .base import CalculationEngine, JobRequest, PreparedJob, EngineNotFound
 
 _DEFAULT_ORCA = r"E:\ORCA\software\ORCA6.1.1\orca.exe"
+_DEFAULT_MSMPI_BIN = r"D:\Microsoft_MPI\Bin"
+
+
+def find_mpiexec() -> str | None:
+    """探测本机可用的 MS-MPI / OpenMPI mpiexec 可执行文件。"""
+    found = shutil.which("mpiexec") or shutil.which("mpiexec.exe")
+    if found:
+        return found
+    cand = Path(_DEFAULT_MSMPI_BIN) / "mpiexec.exe"
+    return str(cand) if cand.is_file() else None
 
 
 class OrcaEngine(CalculationEngine):
@@ -24,6 +36,20 @@ class OrcaEngine(CalculationEngine):
 
     def probe(self) -> bool:
         return bool(self._executable) and Path(self._executable).is_file()
+
+    def has_mpi(self) -> bool:
+        return find_mpiexec() is not None
+
+    def mpi_env(self) -> dict[str, str]:
+        """返回包含 mpiexec 所在目录的环境变量副本，供并行 ORCA 子进程使用。"""
+        env = os.environ.copy()
+        mpi = find_mpiexec()
+        if mpi:
+            mpi_dir = str(Path(mpi).parent)
+            cur_path = env.get("PATH", "")
+            if mpi_dir.lower() not in cur_path.lower():
+                env["PATH"] = f"{mpi_dir}{os.pathsep}{cur_path}" if cur_path else mpi_dir
+        return env
 
     def version(self) -> str:
         # ORCA 版本从目录名推断；实际版本可在运行输出里取

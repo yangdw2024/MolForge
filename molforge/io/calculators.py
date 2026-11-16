@@ -367,7 +367,12 @@ class EngineToolRegistry:
                 "GROMACS (gmx)",
                 ["MOLFORGE_GROMACS_PATH", "GMXBIN"],
                 ["gmx", "gmx.exe", "gmx_mpi"],
-                [r"D:\\GROMACS\\bin\\gmx.exe", r"E:\\GROMACS\\bin\\gmx.exe"],
+                [
+                    r"D:\YDW\Trae_Gromacs\release_package\GROMACS_GUI_v4.3.0_AVX2_CPU\gromacs\gromacs-2026.1-AVX2-CPU\bin\gmx.exe",
+                    r"D:\YDW\Trae_Gromacs\gromacs\gromacs-2026.3-AVX512-CUDA-sm120-final2\bin\gmx.exe",
+                    r"D:\\GROMACS\\bin\\gmx.exe",
+                    r"E:\\GROMACS\\bin\\gmx.exe",
+                ],
             ),
             "vmd": (
                 "VMD 1.9.4",

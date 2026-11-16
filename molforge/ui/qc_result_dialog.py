@@ -1443,6 +1443,9 @@ class SpectrumAnalysisDialog(BaseAnalysisDialog):
         lay.addWidget(QLabel("展宽线型:"))
         self.cb_line = QComboBox()
         self.cb_line.addItems(["Lorentzian (红外/拉曼标准)", "Gaussian (UV-Vis 电子光谱标准)"])
+        if self.analysis_id in ("SPEC-03", "SPEC-05"):
+            self.cb_line.setCurrentIndex(1)
+        self.cb_line.currentIndexChanged.connect(lambda _: self.refresh_analysis())
         lay.addWidget(self.cb_line)
 
         lay.addWidget(QLabel("半峰宽 FWHM (cm⁻¹ / nm):"))
@@ -1458,6 +1461,7 @@ class SpectrumAnalysisDialog(BaseAnalysisDialog):
     def _collect_workflow_options(self) -> dict:
         return {
             "fwhm": round(self.sp_fwhm.value(), 1) if hasattr(self, "sp_fwhm") else 18.0,
+            "lineshape": "gaussian" if (hasattr(self, "cb_line") and self.cb_line.currentIndex() == 1) else "lorentzian",
         }
 
 

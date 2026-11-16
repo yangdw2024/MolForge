@@ -512,7 +512,11 @@ class CapabilityResolver:
         if analysis_id.startswith("MD-"):
             return CapabilityState.EXPERIMENTAL, "旧注册项共用路径，请使用真实轨迹综合分析工作台"
         if analysis_id.startswith("SPEC-"):
-            return CapabilityState.EXPERIMENTAL, "共用模型估计路径，不等同于独立TD-DFT/实验光谱"
+            if external_file and _Path(str(external_file)).is_file():
+                return CapabilityState.READY, "已加载外部量化计算日志，可执行真实光谱解析与展宽"
+            return CapabilityState.EXPERIMENTAL, "共用模型估计路径，不等同于独立TD-DFT/实验光谱（导入 .log/.out 后切换为 Ready）"
+        if analysis_id in {"WFN-02", "WFN-03", "OSC-01"} and external_file and _Path(str(external_file)).is_file():
+            return CapabilityState.READY, "已加载外部量化输出 (.log/.out/.fchk)，可执行真实 DFT 能级解析"
         implemented = {"CORE-01", "PROP-01", "PROP-04", "PROP-06"}
         if analysis_id not in implemented:
             return CapabilityState.EXPERIMENTAL, "注册入口缺少对应专项算法/可靠输入链；共用估算不能冒充此项。请使用已验证的独立工作流。"
@@ -1022,6 +1026,7 @@ class CapabilityResolver:
         # -------------------- 6. SPEC-01 .. SPEC-08: 真实分子特异性 UV-Vis 与 IR 光谱计算 --------------------
         elif analysis_id.startswith("SPEC-"):
             fwhm = float(opts.get("fwhm", 18.0))
+            lineshape = str(opts.get("lineshape", "")).lower()
             headers = ("峰序号 / 跃迁", "波长 (nm) / 频率 (cm⁻¹)", "振子强度 f / 强度", "分子特异性归属")
             parsed_qc = None
             if external_file and _Path(str(external_file)).is_file():
@@ -1029,6 +1034,7 @@ class CapabilityResolver:
                 parsed_qc = CCLibAdapter().parse(external_file)
 
             if analysis_id in ("SPEC-03", "SPEC-05"):
+                use_lorentz = (lineshape == "lorentzian")
                 if parsed_qc is not None and parsed_qc.excited_states:
                     method_desc = f"Parsed TD-DFT ({parsed_qc.software}) UV-Vis Electronic Spectrum"
                     transitions = [
@@ -1052,12 +1058,16 @@ class CapabilityResolver:
                 for idx_t, tr in enumerate(transitions):
                     wl = float(tr["wavelength_nm"])
                     osc = float(tr["oscillator_f"])
-                    ys += osc * _np.exp(-0.5 * ((xs - wl) / sigma) ** 2)
+                    if use_lorentz:
+                        ys += osc / (1.0 + ((xs - wl) / sigma) ** 2)
+                    else:
+                        ys += osc * _np.exp(-0.5 * ((xs - wl) / sigma) ** 2)
                     rows.append((f"Transition #{idx_t + 1}", f"{wl:.2f} nm ({tr['energy_ev']:.3f} eV)", f"f = {osc:.4f}", tr["label"]))
                 plot_x, plot_y = xs.tolist(), ys.tolist()
                 xlabel, ylabel = "波长 Wavelength (nm)", "相对摩尔吸光强度 ε (a.u.)"
                 metrics["principal_wavelength_nm"] = transitions[0]["wavelength_nm"] if transitions else 0.0
             else:
+                use_gauss = (lineshape == "gaussian")
                 if parsed_qc is not None and parsed_qc.frequencies:
                     method_desc = f"Parsed Vibrational Frequencies ({parsed_qc.software})"
                     modes = [{"frequency_cm1": f, "intensity_km_mol": 60.0, "label": f"Ab Initio Mode #{i+1}"} for i, f in enumerate(parsed_qc.frequencies)]
@@ -1072,7 +1082,10 @@ class CapabilityResolver:
                 for idx_m, m in enumerate(modes):
                     freq = float(m["frequency_cm1"])
                     inten = float(m["intensity_km_mol"])
-                    ys += inten / (1.0 + ((xs - freq) / gamma) ** 2)
+                    if use_gauss:
+                        ys += inten * _np.exp(-0.5 * ((xs - freq) / gamma) ** 2)
+                    else:
+                        ys += inten / (1.0 + ((xs - freq) / gamma) ** 2)
                     rows.append((f"Mode #{idx_m + 1}", f"{freq:.1f} cm⁻¹", f"{inten:.1f} km/mol", m["label"]))
                 plot_x, plot_y = xs.tolist(), ys.tolist()
                 xlabel, ylabel = "波数 Wavenumber (cm⁻¹)", "IR 吸收强度 (km/mol)"
