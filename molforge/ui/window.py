@@ -469,6 +469,11 @@ class MolForgeWindow(QMainWindow):
 
         self.document = initial_document if initial_document is not None else create_instant_caffeine_document()
         self.setWindowTitle(f"[{self.group_tag}] {self.document.name} — MolForge {__version__} · AI-Native Molecular & OSC Workbench")
+        from ..ai.deepseek_harness import get_custom_icon_path
+        _win_icon = get_custom_icon_path()
+        if _win_icon is not None:
+            from PyQt6.QtGui import QIcon
+            self.setWindowIcon(QIcon(str(_win_icon)))
         self.resize(1620, 930)
         self.setMinimumSize(960, 580)
         self.setAcceptDrops(True)
@@ -3105,6 +3110,11 @@ class MolForgeWindow(QMainWindow):
         self.workspace.view3d_real.set_selection_service(self.selection)
         self.workspace.view3d_real.set_command_bus(self.command_bus)
         self.setWindowTitle(f"[{self.group_tag}] {self.document.name} — MolForge {__version__} · AI-Native Molecular & OSC Workbench")
+        from ..ai.deepseek_harness import get_custom_icon_path
+        _win_icon = get_custom_icon_path()
+        if _win_icon is not None:
+            from PyQt6.QtGui import QIcon
+            self.setWindowIcon(QIcon(str(_win_icon)))
         self.workspace.title_label.setText(f"[{self.group_tag}] {self.document.name}  ·  2D/3D 实时联动工作台")
         self._refresh_current_molecule_info()
         self.top_bar.set_project(f"{self.group_tag}  /  {self.document.name}")

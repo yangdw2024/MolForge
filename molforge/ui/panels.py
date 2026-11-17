@@ -2352,10 +2352,43 @@ class RightPanel(QFrame):
         input_row.addWidget(standalone_btn)
 
         c_lay.addLayout(input_row)
+
+        dsh_row = QHBoxLayout()
+        self.dsh_launch_btn = QPushButton("🚀 在 DeepSeek Harness 中打开 (联动当前分子)")
+        self.dsh_launch_btn.setToolTip(
+            "自动开启桌面 MCP 服务并写入 MolForge 专属 Skill 与自定义图标快捷方式，\n"
+            "启动 DeepSeek Harness 直接读取与搭建/修改当前工作台分子"
+        )
+        from ..ai.deepseek_harness import get_custom_icon_path
+        _dsh_icon = get_custom_icon_path()
+        if _dsh_icon is not None:
+            from PyQt6.QtGui import QIcon
+            self.dsh_launch_btn.setIcon(QIcon(str(_dsh_icon)))
+        self.dsh_launch_btn.clicked.connect(self._launch_deepseek_harness)
+        dsh_row.addWidget(self.dsh_launch_btn)
+        c_lay.addLayout(dsh_row)
         box.addWidget(chat_card)
 
         box.addStretch(1)
         return page
+
+    def _launch_deepseek_harness(self):
+        from ..ai.deepseek_harness import launch_deepseek_harness
+        win = getattr(self, "_window_ref", None)
+        svc = getattr(win, "_desktop_mcp_service", None) if win is not None else None
+        res = launch_deepseek_harness(desktop_mcp_service=svc)
+        if res.get("ok"):
+            self.chat_history.append(
+                "<div style='color:#66DEC9; font-size:12px; margin-top:4px;'>"
+                "<b>🚀 已启动 DeepSeek Harness 并开启 MolForge 桌面 MCP 联动</b><br>"
+                f"Skill 已同步: <code>{res.get('skill_path', '')}</code><br>"
+                f"MCP 配置: <code>{res.get('mcp_config_path', '')}</code>"
+                "</div>"
+            )
+            if win is not None and hasattr(win, "statusBar"):
+                win.statusBar().showMessage("已启动 DeepSeek Harness（已开启桌面 MCP 当前分子联动）", 8000)
+        else:
+            QMessageBox.warning(self, "DeepSeek Harness 联动提示", str(res.get("error", "启动失败")))
 
     def _show_prompt_examples_menu(self):
         menu = QMenu(self)

@@ -60,6 +60,14 @@ class MolForgeMCPServer:
         self._tools["generate_hpc_slurm_script"] = self._tool_generate_hpc_slurm_script
         self._tools["run_planarity"] = self._tool_run_planarity
         self._tools["run_rest_scf"] = self._tool_run_rest_scf
+        self._tools["build_from_smiles"] = self._tool_build_from_smiles
+        self._tools["add_ring"] = self._tool_add_ring
+        self._tools["change_element"] = self._tool_change_element
+        self._tools["change_bond_order"] = self._tool_change_bond_order
+        self._tools["clean_geometry_3d"] = self._tool_clean_geometry_3d
+        self._tools["set_atom_charge"] = self._tool_set_atom_charge
+        self._tools["undo_last"] = self._tool_undo_last
+        self._tools["redo_last"] = self._tool_redo_last
 
     def get_tool_definitions(self) -> List[Dict[str, Any]]:
         return [
@@ -203,6 +211,82 @@ class MolForgeMCPServer:
                     },
                 },
             },
+            {
+                "name": "build_from_smiles",
+                "description": "根据 SMILES 字符串一键生成带 3D 构象的分子或片段，追加到当前画布（通过命令总线执行，支持可撤销）。",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "smiles": {"type": "string", "description": "有效 SMILES，如 c1ccccc1、CC(=O)O、O"},
+                        "name": {"type": "string", "description": "可选分子名称"},
+                    },
+                    "required": ["smiles"],
+                },
+            },
+            {
+                "name": "add_ring",
+                "description": "在画布中添加环系（苯环、噻吩、吡啶、环己烷等），可选接枝到已有原子上（可撤销）。",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "size": {"type": "integer", "default": 6, "minimum": 3, "maximum": 12},
+                        "aromatic": {"type": "boolean", "default": True},
+                        "attach_to": {"type": "integer", "description": "可选接枝锚点原子的 1-based 序号", "minimum": 1},
+                    },
+                },
+            },
+            {
+                "name": "change_element",
+                "description": "将指定原子替换为新元素（如将 C 替换为 N/O/S/F 等，可撤销）。",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "atom_index": {"type": "integer", "description": "原子 1-based 序号", "minimum": 1},
+                        "new_atomic_num": {"type": "integer", "description": "新原子序数 (1~118)", "minimum": 1, "maximum": 118},
+                    },
+                    "required": ["atom_index", "new_atomic_num"],
+                },
+            },
+            {
+                "name": "change_bond_order",
+                "description": "修改两个原子之间的键级（1=单键, 2=双键, 3=三键, 4=芳香键），若尚未成键则自动新建（可撤销）。",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "atom_a": {"type": "integer", "minimum": 1},
+                        "atom_b": {"type": "integer", "minimum": 1},
+                        "order": {"type": "integer", "enum": [1, 2, 3, 4], "default": 2},
+                    },
+                    "required": ["atom_a", "atom_b", "order"],
+                },
+            },
+            {
+                "name": "clean_geometry_3d",
+                "description": "执行 3D 分子力场几何弛豫优化 (MMFF94/UFF)，使新搭建或修改后的分子构型合理（可撤销）。",
+                "inputSchema": {"type": "object", "properties": {}},
+            },
+            {
+                "name": "set_atom_charge",
+                "description": "设置指定原子的形式电荷（可撤销）。",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "atom_index": {"type": "integer", "minimum": 1},
+                        "formal_charge": {"type": "integer", "minimum": -4, "maximum": 4},
+                    },
+                    "required": ["atom_index", "formal_charge"],
+                },
+            },
+            {
+                "name": "undo_last",
+                "description": "撤销上一步分子编辑操作。",
+                "inputSchema": {"type": "object", "properties": {}},
+            },
+            {
+                "name": "redo_last",
+                "description": "重做上一步被撤销的分子编辑操作。",
+                "inputSchema": {"type": "object", "properties": {}},
+            },
         ]
 
     # ---------- 具体工具逻辑实现 ----------
@@ -294,6 +378,88 @@ class MolForgeMCPServer:
             "message": getattr(res, "message", ""),
             "num_bonds": self.document.topology.num_bonds,
         }
+
+    def _ensure_bus(self):
+        if self.command_bus is not None:
+            return self.command_bus
+        from ...application.command_bus import CommandBus
+        return CommandBus(self.document)
+
+    def _tool_build_from_smiles(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        if not self.document:
+            return {"error": "未找到当前分子"}
+        smiles = str(args.get("smiles", "")).strip()
+        if not smiles:
+            return {"error": "SMILES 不能为空"}
+        from ...io.rdkit_adapter import create_molecule_from_smiles
+        from ...application.builtin_commands import AppendMoleculeCommand
+        sub_doc = create_molecule_from_smiles(smiles, name=str(args.get("name") or smiles))
+        res = self._ensure_bus().execute(AppendMoleculeCommand(sub_doc))
+        return {"success": getattr(res, "success", True), "message": getattr(res, "message", ""), "num_atoms": self.document.num_atoms, "num_bonds": self.document.topology.num_bonds}
+
+    def _tool_add_ring(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        if not self.document:
+            return {"error": "未找到当前分子"}
+        from ...application.builtin_commands import AddRingCommand
+        attach_idx = args.get("attach_to")
+        attach_aid = self._aid_at_1based(int(attach_idx)) if attach_idx else None
+        if attach_idx and attach_aid is None:
+            return {"error": f"接枝原子 #{attach_idx} 越界"}
+        res = self._ensure_bus().execute(AddRingCommand(
+            size=int(args.get("size", 6)),
+            aromatic=bool(args.get("aromatic", True)),
+            attach_to=attach_aid,
+        ))
+        return {"success": getattr(res, "success", True), "message": getattr(res, "message", ""), "num_atoms": self.document.num_atoms}
+
+    def _tool_change_element(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        if not self.document:
+            return {"error": "未找到当前分子"}
+        from ...application.builtin_commands import ChangeElementCommand
+        aid = self._aid_at_1based(int(args["atom_index"]))
+        if aid is None:
+            return {"error": f"原子 #{args['atom_index']} 越界"}
+        res = self._ensure_bus().execute(ChangeElementCommand(aid, int(args["new_atomic_num"])))
+        return {"success": getattr(res, "success", True), "message": getattr(res, "message", "")}
+
+    def _tool_change_bond_order(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        if not self.document:
+            return {"error": "未找到当前分子"}
+        from ...application.builtin_commands import ChangeBondOrderCommand, AddBondCommand
+        a = self._aid_at_1based(int(args["atom_a"]))
+        b = self._aid_at_1based(int(args["atom_b"]))
+        if a is None or b is None:
+            return {"error": "原子编号越界"}
+        order = int(args.get("order", 2))
+        bid = self.document.topology.bond_between(a, b)
+        cmd = ChangeBondOrderCommand(bid, order) if bid is not None else AddBondCommand(a, b, order=order)
+        res = self._ensure_bus().execute(cmd)
+        return {"success": getattr(res, "success", True), "message": getattr(res, "message", "")}
+
+    def _tool_clean_geometry_3d(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        if not self.document:
+            return {"error": "未找到当前分子"}
+        from ...application.builtin_commands import CleanGeometry3DCommand
+        res = self._ensure_bus().execute(CleanGeometry3DCommand())
+        return {"success": getattr(res, "success", True), "message": getattr(res, "message", "")}
+
+    def _tool_set_atom_charge(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        if not self.document:
+            return {"error": "未找到当前分子"}
+        from ...application.builtin_commands import ChangeAtomStyleCommand
+        aid = self._aid_at_1based(int(args["atom_index"]))
+        if aid is None:
+            return {"error": f"原子 #{args['atom_index']} 越界"}
+        res = self._ensure_bus().execute(ChangeAtomStyleCommand([aid], formal_charge=int(args["formal_charge"])))
+        return {"success": getattr(res, "success", True), "message": getattr(res, "message", "")}
+
+    def _tool_undo_last(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        res = self._ensure_bus().undo()
+        return {"success": getattr(res, "success", True), "message": getattr(res, "message", ""), "num_atoms": self.document.num_atoms if self.document else 0}
+
+    def _tool_redo_last(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        res = self._ensure_bus().redo()
+        return {"success": getattr(res, "success", True), "message": getattr(res, "message", ""), "num_atoms": self.document.num_atoms if self.document else 0}
 
     def _tool_run_calchem_scf(self, args: Dict[str, Any]) -> Dict[str, Any]:
         if not self.document:

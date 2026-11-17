@@ -424,6 +424,106 @@ class MolForgeMCPBridge:
                     },
                 },
             },
+            {
+                "type": "function",
+                "function": {
+                    "name": "build_from_smiles",
+                    "description": "根据 SMILES 字符串一键生成带 3D 构象的分子或片段并追加到当前画布（支持撤销）。",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "smiles": {"type": "string", "description": "有效 SMILES，如 c1ccccc1、CC(=O)O、O"},
+                            "name": {"type": "string", "description": "可选分子名称"},
+                        },
+                        "required": ["smiles"],
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "add_ring",
+                    "description": "在画布中添加环系（如苯环、环己烷），可选接枝到已有原子（支持撤销）。",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "size": {"type": "integer", "minimum": 3, "maximum": 12},
+                            "aromatic": {"type": "boolean"},
+                            "attach_to": {"type": "integer", "minimum": 1},
+                        },
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "change_element",
+                    "description": "将指定原子替换为新元素（如将 C 替换为 N/O/S/F 等，支持撤销）。",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "atom_index": {"type": "integer", "minimum": 1},
+                            "new_atomic_num": {"type": "integer", "minimum": 1, "maximum": 118},
+                        },
+                        "required": ["atom_index", "new_atomic_num"],
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "change_bond_order",
+                    "description": "修改两个原子之间的键级（1=单键, 2=双键, 3=三键, 4=芳香键），若尚未成键则新建（支持撤销）。",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "atom_a": {"type": "integer", "minimum": 1},
+                            "atom_b": {"type": "integer", "minimum": 1},
+                            "order": {"type": "integer", "enum": [1, 2, 3, 4]},
+                        },
+                        "required": ["atom_a", "atom_b", "order"],
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "clean_geometry_3d",
+                    "description": "执行 3D 分子力场几何弛豫优化 (MMFF94/UFF)（支持撤销）。",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "set_atom_charge",
+                    "description": "设置指定原子的形式电荷（支持撤销）。",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "atom_index": {"type": "integer", "minimum": 1},
+                            "formal_charge": {"type": "integer", "minimum": -4, "maximum": 4},
+                        },
+                        "required": ["atom_index", "formal_charge"],
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "undo_last",
+                    "description": "撤销上一步分子编辑操作。",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "redo_last",
+                    "description": "重做上一步被撤销的分子编辑操作。",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            },
         ]
 
     # ---------- 工具实现 ----------
@@ -589,6 +689,76 @@ class MolForgeMCPBridge:
             return {"ok": False, "error": "未检测到本地 WSL2 REST 虚拟环境 (/home/administrator/miniforge3/envs/rest-py311/bin/rest)"}
         return engine.run_calculation(self.document, xc=xc, basis=basis)
 
+    def _tool_build_from_smiles(self, smiles: str, name: str = "") -> dict:
+        if self.command_bus is None:
+            return {"ok": False, "error": "未连接命令总线"}
+        from ..io.rdkit_adapter import create_molecule_from_smiles
+        from ..application.builtin_commands import AppendMoleculeCommand
+        sub_doc = create_molecule_from_smiles(smiles.strip(), name=name or smiles.strip())
+        res = self.command_bus.execute(AppendMoleculeCommand(sub_doc))
+        return {"ok": getattr(res, "success", True), "message": getattr(res, "message", ""), "num_atoms": self.document.num_atoms, "num_bonds": self.document.topology.num_bonds}
+
+    def _tool_add_ring(self, size: int = 6, aromatic: bool = True, attach_to: int | None = None) -> dict:
+        if self.command_bus is None:
+            return {"ok": False, "error": "未连接命令总线"}
+        from ..application.builtin_commands import AddRingCommand
+        attach_aid = self._aid_at_1based(attach_to) if attach_to else None
+        if attach_to and attach_aid is None:
+            return {"ok": False, "error": f"接枝原子 #{attach_to} 越界"}
+        res = self.command_bus.execute(AddRingCommand(size=int(size), aromatic=bool(aromatic), attach_to=attach_aid))
+        return {"ok": getattr(res, "success", True), "message": getattr(res, "message", ""), "num_atoms": self.document.num_atoms}
+
+    def _tool_change_element(self, atom_index: int, new_atomic_num: int) -> dict:
+        if self.command_bus is None:
+            return {"ok": False, "error": "未连接命令总线"}
+        from ..application.builtin_commands import ChangeElementCommand
+        aid = self._aid_at_1based(atom_index)
+        if aid is None:
+            return {"ok": False, "error": f"原子 #{atom_index} 越界"}
+        res = self.command_bus.execute(ChangeElementCommand(aid, int(new_atomic_num)))
+        return {"ok": getattr(res, "success", True), "message": getattr(res, "message", "")}
+
+    def _tool_change_bond_order(self, atom_a: int, atom_b: int, order: int = 2) -> dict:
+        if self.command_bus is None:
+            return {"ok": False, "error": "未连接命令总线"}
+        from ..application.builtin_commands import ChangeBondOrderCommand
+        a, b = self._aid_at_1based(atom_a), self._aid_at_1based(atom_b)
+        if a is None or b is None:
+            return {"ok": False, "error": "原子编号越界"}
+        bid = self.document.topology.bond_between(a, b)
+        cmd = ChangeBondOrderCommand(bid, int(order)) if bid is not None else AddBondCommand(a, b, order=int(order))
+        res = self.command_bus.execute(cmd)
+        return {"ok": getattr(res, "success", True), "message": getattr(res, "message", "")}
+
+    def _tool_clean_geometry_3d(self) -> dict:
+        if self.command_bus is None:
+            return {"ok": False, "error": "未连接命令总线"}
+        from ..application.builtin_commands import CleanGeometry3DCommand
+        res = self.command_bus.execute(CleanGeometry3DCommand())
+        return {"ok": getattr(res, "success", True), "message": getattr(res, "message", "")}
+
+    def _tool_set_atom_charge(self, atom_index: int, formal_charge: int) -> dict:
+        if self.command_bus is None:
+            return {"ok": False, "error": "未连接命令总线"}
+        from ..application.builtin_commands import ChangeAtomStyleCommand
+        aid = self._aid_at_1based(atom_index)
+        if aid is None:
+            return {"ok": False, "error": f"原子 #{atom_index} 越界"}
+        res = self.command_bus.execute(ChangeAtomStyleCommand([aid], formal_charge=int(formal_charge)))
+        return {"ok": getattr(res, "success", True), "message": getattr(res, "message", "")}
+
+    def _tool_undo_last(self) -> dict:
+        if self.command_bus is None:
+            return {"ok": False, "error": "未连接命令总线"}
+        res = self.command_bus.undo()
+        return {"ok": getattr(res, "success", True), "message": getattr(res, "message", ""), "num_atoms": self.document.num_atoms}
+
+    def _tool_redo_last(self) -> dict:
+        if self.command_bus is None:
+            return {"ok": False, "error": "未连接命令总线"}
+        res = self.command_bus.redo()
+        return {"ok": getattr(res, "success", True), "message": getattr(res, "message", ""), "num_atoms": self.document.num_atoms}
+
     def dispatch(self, name: str, arguments: dict[str, Any]) -> Any:
         try:
             if self.document is None:
@@ -664,6 +834,22 @@ class MolForgeMCPBridge:
             return self._tool_planarity()
         if name == "run_rest_scf":
             return self._tool_run_rest_scf(**arguments)
+        if name == "build_from_smiles":
+            return self._tool_build_from_smiles(**arguments)
+        if name == "add_ring":
+            return self._tool_add_ring(**arguments)
+        if name == "change_element":
+            return self._tool_change_element(**arguments)
+        if name == "change_bond_order":
+            return self._tool_change_bond_order(**arguments)
+        if name == "clean_geometry_3d":
+            return self._tool_clean_geometry_3d()
+        if name == "set_atom_charge":
+            return self._tool_set_atom_charge(**arguments)
+        if name == "undo_last":
+            return self._tool_undo_last()
+        if name == "redo_last":
+            return self._tool_redo_last()
         return {"error": f"未知工具: {name}"}
 
     # ---------- 对话循环（OpenAI 兼容） ----------

@@ -107,6 +107,50 @@ class V76EnhancementTests(unittest.TestCase):
         ws.deleteLater()
         app.processEvents()
 
+    def test_mcp_rich_molecule_building_and_editing_tools(self):
+        import json
+        from molforge.ai.mcp.mcp_server import MolForgeMCPServer
+        from molforge.ai.mcp_bridge import MolForgeMCPBridge
+        from molforge.application.command_bus import CommandBus
+
+        doc = MoleculeDocument(name="empty_mcp")
+        bus = CommandBus(doc)
+        srv = MolForgeMCPServer(doc, bus)
+        self.assertGreaterEqual(len(srv.get_tool_definitions()), 18)
+
+        # Build benzene from SMILES -> 12 atoms
+        r1 = srv.handle_request({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "build_from_smiles", "arguments": {"smiles": "c1ccccc1"}}})
+        d1 = json.loads(r1["result"]["content"][0]["text"])
+        self.assertTrue(d1["success"])
+        self.assertEqual(doc.num_atoms, 12)
+
+        # Change atom 1 (C) -> N (atomic_num=7)
+        r2 = srv.handle_request({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "change_element", "arguments": {"atom_index": 1, "new_atomic_num": 7}}})
+        self.assertTrue(json.loads(r2["result"]["content"][0]["text"])["success"])
+        self.assertEqual(doc.topology.get_atom(list(doc.topology.atom_ids)[0]).atomic_num, 7)
+
+        # Undo via MCP
+        r3 = srv.handle_request({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "undo_last", "arguments": {}}})
+        self.assertTrue(json.loads(r3["result"]["content"][0]["text"])["success"])
+        self.assertEqual(doc.topology.get_atom(list(doc.topology.atom_ids)[0]).atomic_num, 6)
+
+        # Bridge also exposes matching tools
+        bridge = MolForgeMCPBridge(doc, bus)
+        tool_names = {d["function"]["name"] for d in bridge.tool_definitions()}
+        for expected in ("build_from_smiles", "add_ring", "change_element", "change_bond_order", "clean_geometry_3d", "set_atom_charge", "undo_last", "redo_last"):
+            self.assertIn(expected, tool_names)
+
+    def test_deepseek_harness_bundle_and_custom_icon(self):
+        from molforge.ai.deepseek_harness import prepare_deepseek_harness_bundle, get_custom_icon_path
+        self.assertIsNotNone(get_custom_icon_path())
+        with tempfile.TemporaryDirectory() as td:
+            bundle = prepare_deepseek_harness_bundle(dsh_home=Path(td))
+            self.assertTrue(Path(bundle["skill_path"]).is_file())
+            self.assertTrue(Path(bundle["mcp_config_path"]).is_file())
+            skill_txt = Path(bundle["skill_path"]).read_text(encoding="utf-8")
+            self.assertIn("build_from_smiles", skill_txt)
+            self.assertIn("molforge.ai.mcp.mcp_server", skill_txt)
+
 
 if __name__ == "__main__":
     unittest.main()
