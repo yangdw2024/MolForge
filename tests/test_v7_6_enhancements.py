@@ -200,6 +200,97 @@ class V76EnhancementTests(unittest.TestCase):
             self.assertAlmostEqual(doc.coords_2d[aid][0], new_2d_map[aid][0], places=4)
             self.assertTrue(np.allclose(doc.get_atom_3d_pos(aid), new_3d_map[aid], atol=1e-4))
 
+    def test_stick_vs_wireframe_representation_distinct_radii_and_ui(self):
+        os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+        import numpy as np
+        import pyvista as pv
+        from PyQt6.QtWidgets import QApplication
+        from molforge.rendering.contracts import RenderSnapshot, RepresentationMode
+        from molforge.rendering.vtk_backend import VtkRendererBackend
+        from molforge.ui.panels import RightPanel
+
+        app = QApplication.instance() or QApplication(["molforge_test"])
+        doc = create_sample_molecule("咖啡因")
+        pl = pv.Plotter(off_screen=True, window_size=(400, 300))
+        be = VtkRendererBackend()
+        be.attach(pl)
+        aids, id2idx = doc.topology.atom_index_map()
+        z_arr = np.array([doc.topology.get_atom(a).atomic_num for a in aids], dtype=np.int32)
+        bonds = [(id2idx[b.begin], id2idx[b.end], int(b.order)) for b in (doc.topology.get_bond(bid) for bid in doc.topology.bond_ids)]
+        be.set_snapshot(RenderSnapshot(atom_ids=aids, atomic_numbers=z_arr, bonds=bonds, coordinates=doc.coordinates.current.coords))
+
+        be.set_mode(RepresentationMode.STICK)
+        stick_atom_r = be.get_effective_atom_radius(0)
+        stick_bond_r = be.get_effective_bond_radius(0)
+        be.set_mode(RepresentationMode.LINE)
+        line_atom_r = be.get_effective_atom_radius(0)
+        line_bond_r = be.get_effective_bond_radius(0)
+        self.assertGreater(stick_bond_r, line_bond_r * 3.0)
+        self.assertGreater(stick_atom_r, line_atom_r * 1.5)
+
+        panel = RightPanel()
+        codes = [code for code, _ in panel.repr_buttons]
+        self.assertIn("stick", codes)
+        self.assertIn("wireframe", codes)
+
+    def test_pdb_centered_box_origin_wraps_atoms_and_massive_gpu_path(self):
+        import numpy as np
+        import pyvista as pv
+        from molforge.domain.periodic import UnitCell
+        from molforge.io.rdkit_adapter import build_document_from_3d_atoms
+        from molforge.rendering.contracts import RenderSnapshot, RepresentationMode
+        from molforge.rendering.vtk_backend import VtkRendererBackend
+
+        # Simulate Packmol [0, 50]^3 coordinates with CRYST1 52x52x52
+        n = 2500
+        rng = np.random.default_rng(7)
+        raw_coords = rng.uniform(1.0, 50.0, size=(n, 3))
+        z_arr = np.full(n, 6, dtype=np.int32)
+        cryst1 = {"a": 52.0, "b": 52.0, "c": 52.0, "alpha": 90.0, "beta": 90.0, "gamma": 90.0}
+        doc = build_document_from_3d_atoms(
+            "pack_box", z_arr.tolist(), raw_coords, explicit_bonds=[], properties={"cryst1": cryst1}
+        )
+        box_origin = np.asarray(doc.properties["box_origin"], dtype=np.float64)
+        coords = doc.coordinates.current.coords
+        self.assertTrue(np.all(coords >= box_origin - 1e-4))
+        self.assertTrue(np.all(coords <= box_origin + np.array([52.0, 52.0, 52.0]) + 1e-4))
+
+        bonds = [(i, i + 1, 1) for i in range(0, n - 1, 2)]
+        bonds.extend((i, i + 1, 1) for i in range(1, n - 1, 2))  # > 2000 bonds triggers GPU massive path
+        pl = pv.Plotter(off_screen=True, window_size=(400, 300))
+        be = VtkRendererBackend()
+        be.attach(pl)
+        uc = UnitCell(**cryst1)
+        aids, _ = doc.topology.atom_index_map()
+        snap = RenderSnapshot(atom_ids=aids, atomic_numbers=z_arr, bonds=bonds, coordinates=coords, cell_matrix=uc.matrix, cell_origin=box_origin)
+        be.set_snapshot(snap, reset_cam=True)
+        corners = np.array([be._cell_points.GetPoint(i) for i in range(8)])
+        self.assertTrue(np.allclose(corners.min(axis=0), box_origin, atol=1e-3))
+
+        be.set_mode(RepresentationMode.STICK)
+        self.assertEqual(type(be._atom_actor.GetMapper()).__name__, "vtkOpenGLSphereMapper")
+        self.assertEqual(type(be._bond_actor.GetMapper()).__name__, "vtkOpenGLStickMapper")
+        be.set_mode(RepresentationMode.LINE)
+        self.assertEqual(be._atom_actor.GetVisibility(), 0)
+        self.assertEqual(be._bond_actor.GetVisibility(), 1)
+
+    def test_qc_result_dialog_computes_real_mos_without_hardcoded_constants(self):
+        os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+        from PyQt6.QtWidgets import QApplication
+        from molforge.io.calculators import compute_tight_binding_mos
+        from molforge.ui.qc_result_dialog import QcResultDialog
+
+        app = QApplication.instance() or QApplication(["molforge_test"])
+        doc = create_sample_molecule("咖啡因")
+        expected = compute_tight_binding_mos(doc)
+        dlg = QcResultDialog(document=doc, initial_tab=2)
+        self.assertAlmostEqual(dlg.cur_homo_spin.value(), float(expected["homo_ev"]), places=2)
+        self.assertAlmostEqual(dlg.cur_lumo_spin.value(), float(expected["lumo_ev"]), places=2)
+        self.assertNotAlmostEqual(dlg.cur_homo_spin.value(), -5.58, places=2)
+        self.assertTrue(hasattr(dlg, "tab3_tb_btn"))
+        self.assertTrue(hasattr(dlg, "tab3_calchem_btn"))
+        dlg.close()
+
 
 if __name__ == "__main__":
     unittest.main()

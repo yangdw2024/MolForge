@@ -358,7 +358,12 @@ class Render3DWidget(QWidget):
         elem = get_element(self.renderer.current_element)
         sym = elem.symbol if elem else "C"
         info = TOOL_MODE_STATE_TABLE.get(tool, TOOL_MODE_STATE_TABLE["选择"])
-        self.hud_info_label.setText(f"{info['name']} · {sym}")
+        gpu_txt = ""
+        if hasattr(self.renderer, "get_gpu_summary"):
+            g = self.renderer.get_gpu_summary()
+            if g:
+                gpu_txt = f" · {g}"
+        self.hud_info_label.setText(f"{info['name']} · {sym}{gpu_txt}")
         self.hud_info_label.setToolTip(info["hud_short"])
         if self.status_callback is not None:
             try:
@@ -538,6 +543,7 @@ class Render3DWidget(QWidget):
                 pass
 
         cell = cell_from_document(doc)
+        box_origin = doc.properties.get("box_origin") if getattr(doc, "properties", None) else None
         snapshot = RenderSnapshot(
             measure_chain=measure_chain,
             atom_ids=atom_ids,
@@ -561,10 +567,13 @@ class Render3DWidget(QWidget):
             show_axes=self.renderer.show_axes,
             color_scheme=self.renderer._color_scheme,
             cell_matrix=cell.matrix if cell is not None else None,
+            cell_origin=np.asarray(box_origin, dtype=np.float64) if box_origin is not None else None,
         )
 
         self.renderer.set_snapshot(snapshot, reset_cam=reset_cam)
         self._update_hud_text()
+        if hasattr(self.renderer, "get_gpu_summary") and not self.renderer.get_gpu_summary():
+            QTimer.singleShot(150, self._update_hud_text)
 
     # ---------- 异步安全动作派发器（全部在 eventFilter 栈退出后执行！） ----------
 

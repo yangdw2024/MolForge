@@ -19,8 +19,9 @@ from ..domain.ids import AtomId, BondId
 class RepresentationMode(Enum):
     """分子表示模式。"""
     BALL_AND_STICK = "ball_stick"   # 球棍模型
+    STICK = "stick"                 # 棍状模型 (Licorice)
     CPK = "cpk"                     # CPK 大球
-    LINE = "line"                   # 线框
+    LINE = "line"                   # 细线框 (Wireframe)
     SURFACE = "surface"             # 分子表面
     CARTOON = "cartoon"             # 卡通/飘带（蛋白质）
     SPACE_FILL = "space_fill"       # 空间填充
@@ -61,6 +62,7 @@ class RenderSnapshot:
     show_axes: bool = True
     color_scheme: str = "Default Scheme"
     cell_matrix: np.ndarray | None = None  # 可选晶胞向量矩阵，行为 a/b/c 矢量
+    cell_origin: np.ndarray | None = None  # 晶胞原点平移偏移（使居中后分子仍位于晶胞内部）
 
     def __post_init__(self) -> None:
         if self.bond_scales is None and self.bond_widths is not None:

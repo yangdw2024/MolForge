@@ -1553,7 +1553,7 @@ class RightPanel(QFrame):
         for idx, (label, mode_code) in enumerate([
             ("⚽ 球棍模型 (Ball & Stick)", "ball_stick"),
             ("🌐 空间填充 (CPK)", "cpk"),
-            ("🥢 棍状模型 (Stick)", "line"),
+            ("🥢 棍状模型 (Stick)", "stick"),
             ("🧵 细线框 (Wireframe)", "wireframe"),
         ]):
             btn = QPushButton(label)
@@ -1621,6 +1621,7 @@ class RightPanel(QFrame):
             mode_map = {
                 "ball_stick": RepresentationMode.BALL_AND_STICK,
                 "cpk": RepresentationMode.CPK,
+                "stick": RepresentationMode.STICK,
                 "line": RepresentationMode.LINE,
                 "wireframe": RepresentationMode.LINE,
             }

@@ -304,7 +304,7 @@ class QcResultDialog(QDialog):
             self.tabs.setCurrentIndex(initial_tab)
 
         bot = QHBoxLayout()
-        open_log_btn = QPushButton("加载 Gaussian / REST / ORCA 日志...")
+        open_log_btn = QPushButton("加载计算输出 (.log / .out / .fchk)...")
         open_log_btn.clicked.connect(self._browse_and_parse_log)
         bot.addWidget(open_log_btn)
         bot.addStretch()
@@ -319,6 +319,8 @@ class QcResultDialog(QDialog):
         self._refresh_rest_preview()
         if self.result is not None:
             self._populate_result_data(self.result)
+        else:
+            self._init_default_molecule_mos()
 
     # ---------- Tab 1: Gaussian (.gjf) ----------
 
@@ -619,17 +621,17 @@ class QcResultDialog(QDialog):
         right_form.setSpacing(8)
 
         self.cur_homo_spin = QDoubleSpinBox()
-        self.cur_homo_spin.setRange(-12.0, 0.0)
+        self.cur_homo_spin.setRange(-20.0, 5.0)
         self.cur_homo_spin.setSingleStep(0.05)
-        self.cur_homo_spin.setValue(-5.58)
+        self.cur_homo_spin.setValue(0.0)
         self.cur_homo_spin.setSuffix(" eV")
         self.cur_homo_spin.valueChanged.connect(self._update_energy_plot)
         right_form.addRow("当前分子 HOMO:", self.cur_homo_spin)
 
         self.cur_lumo_spin = QDoubleSpinBox()
-        self.cur_lumo_spin.setRange(-10.0, 2.0)
+        self.cur_lumo_spin.setRange(-15.0, 10.0)
         self.cur_lumo_spin.setSingleStep(0.05)
-        self.cur_lumo_spin.setValue(-3.85)
+        self.cur_lumo_spin.setValue(0.0)
         self.cur_lumo_spin.setSuffix(" eV")
         self.cur_lumo_spin.valueChanged.connect(self._update_energy_plot)
         right_form.addRow("当前分子 LUMO:", self.cur_lumo_spin)
@@ -682,13 +684,25 @@ class QcResultDialog(QDialog):
 
         # 友好的空状态卡片
         self.mull_empty_label = QLabel(
-            "💡 <b>暂无量化计算结果</b><br>"
-            "<span style='color:#7E92A2'>可通过左上方「打开输出日志」加载 .log/.out，或点击「运行计算」获取真实 Mulliken 原子净电荷与几何优化轨迹。</span>"
+            "💡 <b>暂无 DFT 量化日志数据</b><br>"
+            "<span style='color:#7E92A2'>可点击左下角「加载计算输出 (.log / .out / .fchk)...」导入真实计算文件，或点击下方「🦀 运行 CalChem 单点能」直接求解前线轨道与 Mulliken 电荷。</span>"
         )
         self.mull_empty_label.setWordWrap(True)
         self.mull_empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.mull_empty_label.setStyleSheet("color: #94A3B8; padding: 20px; font-size: 11px;")
+        self.mull_empty_label.setStyleSheet("color: #94A3B8; padding: 14px; font-size: 11px;")
         rc_lay.addWidget(self.mull_empty_label)
+
+        quick_calc_row = QHBoxLayout()
+        self.tab3_tb_btn = QPushButton("⚡ 实时计算 TB 前线轨道")
+        self.tab3_tb_btn.setToolTip("基于当前分子拓扑与 3D 构型实时求解 Tight-Binding HOMO/LUMO 与吸收峰")
+        self.tab3_tb_btn.clicked.connect(self._init_default_molecule_mos)
+        quick_calc_row.addWidget(self.tab3_tb_btn)
+
+        self.tab3_calchem_btn = QPushButton("🦀 运行 CalChem RHF 单点")
+        self.tab3_calchem_btn.setStyleSheet("background-color: #0E7490; color: white; font-weight: bold; padding: 4px 10px; border-radius: 4px; border:none;")
+        self.tab3_calchem_btn.clicked.connect(self._run_calchem_sp)
+        quick_calc_row.addWidget(self.tab3_calchem_btn)
+        rc_lay.addLayout(quick_calc_row)
 
         # 数据表格与步长列表（初始隐藏空黑框）
         self.mulliken_table = QTableWidget(0, 4)
@@ -807,9 +821,13 @@ class QcResultDialog(QDialog):
             f"<b>能隙 E<sub>g</sub>：</b>{gap:.3f} eV"
             + s1_txt + dip_txt + freq_txt + thermo_txt
         )
-        if homo != 0.0 and lumo != 0.0:
+        if homo != 0.0 or lumo != 0.0:
+            self.cur_homo_spin.blockSignals(True)
+            self.cur_lumo_spin.blockSignals(True)
             self.cur_homo_spin.setValue(homo)
             self.cur_lumo_spin.setValue(lumo)
+            self.cur_homo_spin.blockSignals(False)
+            self.cur_lumo_spin.blockSignals(False)
 
         self.listw.clear()
         for s in steps:
@@ -911,11 +929,52 @@ class QcResultDialog(QDialog):
             self.energy_canvas.export_figure(path)
             QMessageBox.information(self, "导出成功", f"已导出出版级能级图：\n{path}")
 
+    def _init_default_molecule_mos(self):
+        """无外部 DFT 结果时，基于当前活动分子实时计算紧束缚 HOMO/LUMO（拒绝硬编码假常数）。"""
+        if not self.document or self.document.topology.num_atoms == 0:
+            return
+        n_atoms = self.document.topology.num_atoms
+        if n_atoms > 300:
+            self.summary_label.setText(
+                f"<b>当前体系：</b>{self.document.name} ({n_atoms} 原子)<br>"
+                "<span style='color:#8EA3B3'>超大体系跳过实时紧束缚矩阵对角化；可加载外部 DFT/xTB 日志或切片子结构后计算。</span>"
+            )
+            self._update_energy_plot()
+            return
+        try:
+            from ..io.calculators import compute_tight_binding_mos
+            tb = compute_tight_binding_mos(self.document)
+            homo = float(tb.get("homo_ev", 0.0))
+            lumo = float(tb.get("lumo_ev", 0.0))
+            gap = float(tb.get("gap_ev", abs(lumo - homo)))
+            if homo != 0.0 or lumo != 0.0:
+                self.cur_homo_spin.blockSignals(True)
+                self.cur_lumo_spin.blockSignals(True)
+                self.cur_homo_spin.setValue(homo)
+                self.cur_lumo_spin.setValue(lumo)
+                self.cur_homo_spin.blockSignals(False)
+                self.cur_lumo_spin.blockSignals(False)
+            trans = tb.get("transitions") or []
+            s1_info = ""
+            if trans:
+                t0 = trans[0]
+                s1_info = f"<br><b>预测 S₀→S₁ 吸收峰：</b>{t0.get('wavelength_nm', 0):.1f} nm (<i>f</i> = {t0.get('oscillator_f', 0):.3f})"
+            self.summary_label.setText(
+                f"<b>实时预估引擎：</b>{tb.get('method', 'Tight-Binding MO')} ({self.document.name}, {n_atoms} 原子)<br>"
+                f"<b>前线轨道 HOMO：</b>{homo:.3f} eV　<b>LUMO：</b>{lumo:.3f} eV　<b>能隙 E<sub>g</sub>：</b>{gap:.3f} eV"
+                + s1_info
+            )
+        except Exception as exc:
+            self.summary_label.setText(
+                f"<b>实时能级计算提示：</b>未能计算 ({exc})；可手动微调或导入计算输出日志。"
+            )
+        self._update_energy_plot()
+
     def _browse_and_parse_log(self):
         from ..io.cclib_adapter import CCLibAdapter
         path, _ = QFileDialog.getOpenFileName(
-            self, "选择 Gaussian / REST / ORCA 计算输出日志", "",
-            "计算日志 (*.log *.out *.txt);;所有文件 (*)"
+            self, "选择量化计算输出或检查点文件", "",
+            "量化输出与检查点 (*.log *.out *.fchk *.txt);;所有文件 (*)"
         )
         if not path:
             return

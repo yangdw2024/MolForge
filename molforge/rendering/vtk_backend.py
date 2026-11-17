@@ -25,8 +25,10 @@ import numpy as np
 
 try:
     import vtk
+    from vtk.util import numpy_support as _vtk_numpy_support
 except ImportError:  # pragma: no cover
     vtk = None
+    _vtk_numpy_support = None
 
 from .contracts import Renderer3D, RenderSnapshot, RepresentationMode
 from .materials import MaterialPreset, ScientificPreset, StudioPreset, AnalysisPreset
@@ -212,8 +214,11 @@ class VtkRendererBackend(Renderer3D):
 
     BASE_BALL_SCALE = 0.25
     BASE_CPK_SCALE = 1.0
-    BASE_LINE_ATOM_SCALE = 0.08
+    BASE_STICK_RADIUS = 0.165
+    BASE_LINE_ATOM_SCALE = 0.04
     BASE_BOND_RADIUS = 0.088
+    BASE_STICK_BOND_RADIUS = 0.165
+    BASE_LINE_BOND_RADIUS = 0.032
 
     def __init__(self, pick_tolerance: float = 0.48) -> None:
         self._viewer = None
@@ -266,18 +271,23 @@ class VtkRendererBackend(Renderer3D):
         self._atom_colors = None
         self._atom_polydata = None
         self._atom_glyph_mapper = None
+        self._atom_gpu_sphere_mapper = None
         self._atom_actor = None
         self._actor = None  # 兼容引用指向 self._atom_actor
 
-        # 2. 逐键变径/变色 Tube 常驻管线
+        # 2. 逐键变径/变色 Tube 常驻管线 + 超大体系 GPU GLSL Stick 管线
         self._bond_points = None
         self._bond_lines = None
         self._bond_radii = None
         self._bond_colors = None
         self._bond_polydata = None
+        self._bond_stick_polydata = None
         self._bond_tube_filter = None
         self._bond_mapper = None
+        self._bond_gpu_stick_mapper = None
         self._bond_actor = None
+        self._gpu_summary_cache: str | None = None
+        self._massive_vert_count: int = -1
 
         # 3. 常驻选中原子光晕 Glyph Actor
         self._highlight_points = None
@@ -306,6 +316,7 @@ class VtkRendererBackend(Renderer3D):
 
         # 可选晶胞线框（12 条边，只在存在有效 CRYST1 时显示）
         self._cell_matrix = None
+        self._cell_origin = np.zeros(3, dtype=np.float64)
         self._cell_actor = None
         self._cell_points = None
         self._cell_polydata = None
@@ -446,6 +457,15 @@ class VtkRendererBackend(Renderer3D):
         self._atom_glyph_mapper.SetColorModeToDirectScalars()
         self._atom_glyph_mapper.ScalarVisibilityOn()
 
+        if hasattr(vtk, "vtkOpenGLSphereMapper"):
+            self._atom_gpu_sphere_mapper = vtk.vtkOpenGLSphereMapper()
+            self._atom_gpu_sphere_mapper.SetInputData(self._atom_polydata)
+            self._atom_gpu_sphere_mapper.SetScaleArray("atom_radius")
+            self._atom_gpu_sphere_mapper.SetScalarModeToUsePointFieldData()
+            self._atom_gpu_sphere_mapper.SelectColorArray("atom_color")
+            self._atom_gpu_sphere_mapper.SetColorModeToDirectScalars()
+            self._atom_gpu_sphere_mapper.ScalarVisibilityOn()
+
         self._atom_actor = vtk.vtkActor()
         self._atom_actor.SetMapper(self._atom_glyph_mapper)
         ap = self._atom_actor.GetProperty()
@@ -500,6 +520,17 @@ class VtkRendererBackend(Renderer3D):
         self._bond_mapper.SelectColorArray("bond_color")
         self._bond_mapper.SetColorModeToDirectScalars()
         self._bond_mapper.ScalarVisibilityOn()
+
+        self._bond_stick_polydata = vtk.vtkPolyData()
+        if hasattr(vtk, "vtkOpenGLStickMapper"):
+            self._bond_gpu_stick_mapper = vtk.vtkOpenGLStickMapper()
+            self._bond_gpu_stick_mapper.SetInputData(self._bond_stick_polydata)
+            self._bond_gpu_stick_mapper.SetOrientationArray("bond_ori")
+            self._bond_gpu_stick_mapper.SetScaleArray("bond_scale")
+            self._bond_gpu_stick_mapper.SetScalarModeToUsePointFieldData()
+            self._bond_gpu_stick_mapper.SelectColorArray("bond_color")
+            self._bond_gpu_stick_mapper.SetColorModeToDirectScalars()
+            self._bond_gpu_stick_mapper.ScalarVisibilityOn()
 
         self._bond_actor = vtk.vtkActor()
         self._bond_actor.SetMapper(self._bond_mapper)
@@ -624,6 +655,35 @@ class VtkRendererBackend(Renderer3D):
 
     # ---------- 计算单个原子的实际显示半径与 RGB 颜色 ----------
 
+    def get_gpu_summary(self) -> str:
+        """查询当前 OpenGL/GPU 硬件渲染器摘要并缓存。"""
+        if self._gpu_summary_cache is not None:
+            return self._gpu_summary_cache
+        if self._viewer is None:
+            return ""
+        try:
+            import os
+            if os.environ.get("QT_QPA_PLATFORM", "").lower() == "offscreen":
+                return ""
+            rw = getattr(self._viewer, "render_window", None) or getattr(self._viewer, "ren_win", None)
+            if rw is None:
+                return ""
+            if hasattr(rw, "GetNeverRendered") and rw.GetNeverRendered():
+                return ""
+            caps = rw.ReportCapabilities() or ""
+            renderer_name = ""
+            for line in caps.splitlines():
+                if "OpenGL renderer string:" in line:
+                    renderer_name = line.split(":", 1)[1].strip()
+                    break
+            if renderer_name:
+                renderer_name = renderer_name.split("/")[0].strip()
+                self._gpu_summary_cache = f"GPU: {renderer_name}"
+                return self._gpu_summary_cache
+        except Exception:
+            pass
+        return ""
+
     def _base_mode_atom_factor(self) -> float:
         if self._mode in (RepresentationMode.CPK, RepresentationMode.SPACE_FILL):
             return self.BASE_CPK_SCALE
@@ -638,8 +698,10 @@ class VtkRendererBackend(Renderer3D):
         z = int(self._atomic_numbers[idx])
         if not self.show_hydrogens and z == 1:
             return 0.0
-        vdw = VDW_RADII.get(z, DEFAULT_VDW)
         ind_scale = float(self._per_atom_scales[idx]) if idx < len(self._per_atom_scales) else 1.0
+        if self._mode == RepresentationMode.STICK:
+            return float(self.BASE_STICK_RADIUS * self._bond_scale * ind_scale)
+        vdw = VDW_RADII.get(z, DEFAULT_VDW)
         return float(vdw * self._base_mode_atom_factor() * self._atom_scale * ind_scale)
 
     def get_effective_atom_color(self, idx: int) -> tuple[float, float, float]:
@@ -657,24 +719,284 @@ class VtkRendererBackend(Renderer3D):
 
     def get_effective_bond_radius(self, b_idx: int) -> float:
         """返回第 b_idx 条键的真实 3D 圆柱半径（融合全局键粗细 + 单键独立粗细）。"""
-        base_r = 0.045 if self._mode == RepresentationMode.LINE else self.BASE_BOND_RADIUS
+        if self._mode == RepresentationMode.STICK:
+            base_r = self.BASE_STICK_BOND_RADIUS
+        elif self._mode == RepresentationMode.LINE:
+            base_r = self.BASE_LINE_BOND_RADIUS
+        else:
+            base_r = self.BASE_BOND_RADIUS
         ind_w = float(self._per_bond_scales[b_idx]) if b_idx < len(self._per_bond_scales) else 1.0
         return float(base_r * self._bond_scale * ind_w)
 
     # ---------- 原地重建逐原子 Glyph 与逐键变径 Tube（零 RemoveActor / 零崩溃！） ----------
+
+    def _build_lut_tables(self) -> tuple[np.ndarray, np.ndarray]:
+        """构建长度为 120 的颜色查找表 (RGBA uint8) 与 VdW 半径表 (float32)。"""
+        color_lut = np.full((120, 4), [140, 158, 178, 255], dtype=np.uint8)
+        vdw_lut = np.full(120, float(DEFAULT_VDW), dtype=np.float32)
+        for z, elem in ELEMENTS.items():
+            if 0 <= z < 120:
+                c = elem.cpk_color
+                color_lut[z, :3] = [int(round(c[0] * 255)), int(round(c[1] * 255)), int(round(c[2] * 255))]
+                vdw_lut[z] = float(elem.vdw_radius)
+        scheme_map = COLOR_SCHEMES.get(self._color_scheme, STUDIO_CPK_COLORS)
+        for z, c in scheme_map.items():
+            if 0 <= z < 120:
+                color_lut[z, :3] = [int(round(c[0] * 255)), int(round(c[1] * 255)), int(round(c[2] * 255))]
+        return color_lut, vdw_lut
+
+    def _rebuild_massive_gpu(self, n: int) -> None:
+        """超大体系（>2000 原子/键）全矢量化 NumPy + GPU GLSL Impostor 极速渲染管线。"""
+        color_lut, vdw_lut = self._build_lut_tables()
+        z_raw = np.asarray(self._atomic_numbers[:n], dtype=np.int32)
+        z_clip = np.clip(z_raw, 0, 119)
+        atom_rgba = color_lut[z_clip].copy()
+        for idx, col in self._per_atom_colors.items():
+            if col is not None and 0 <= idx < n:
+                atom_rgba[idx, 0] = max(0, min(255, int(round(col[0] * 255.0))))
+                atom_rgba[idx, 1] = max(0, min(255, int(round(col[1] * 255.0))))
+                atom_rgba[idx, 2] = max(0, min(255, int(round(col[2] * 255.0))))
+        op = np.clip(np.asarray(self._atom_opacities[:n], dtype=np.float32), 0.0, 1.0)
+        if len(op) == n:
+            atom_rgba[:, 3] = np.round(255.0 * op).astype(np.uint8)
+
+        ind_sc = (
+            self._per_atom_scales[:n].astype(np.float32)
+            if len(self._per_atom_scales) >= n
+            else np.ones(n, dtype=np.float32)
+        )
+        if self._mode == RepresentationMode.LINE:
+            atom_radii_np = np.zeros(n, dtype=np.float32)
+        elif self._mode == RepresentationMode.STICK:
+            atom_radii_np = np.float32(self.BASE_STICK_RADIUS * self._bond_scale) * ind_sc
+        else:
+            atom_radii_np = vdw_lut[z_clip] * np.float32(self._base_mode_atom_factor() * self._atom_scale) * ind_sc
+        if not self.show_hydrogens:
+            atom_radii_np[z_raw == 1] = 0.0
+
+        coords_f32 = np.ascontiguousarray(self._coordinates[:n], dtype=np.float32)
+        self._atom_points.SetData(_vtk_numpy_support.numpy_to_vtk(coords_f32, deep=1))
+        r_vtk = _vtk_numpy_support.numpy_to_vtk(np.ascontiguousarray(atom_radii_np, dtype=np.float32), deep=1)
+        r_vtk.SetName("atom_radius")
+        c_vtk = _vtk_numpy_support.numpy_to_vtk(np.ascontiguousarray(atom_rgba, dtype=np.uint8), deep=1)
+        c_vtk.SetName("atom_color")
+        self._atom_radii = r_vtk
+        self._atom_colors = c_vtk
+        pd = self._atom_polydata.GetPointData()
+        pd.SetScalars(r_vtk)
+        pd.AddArray(c_vtk)
+        if self._massive_vert_count != n:
+            ca = vtk.vtkCellArray()
+            ca.SetData(
+                _vtk_numpy_support.numpy_to_vtk(np.arange(n + 1, dtype=np.int64), deep=1),
+                _vtk_numpy_support.numpy_to_vtk(np.arange(n, dtype=np.int64), deep=1),
+            )
+            self._atom_polydata.SetVerts(ca)
+            self._massive_vert_count = n
+        self._atom_points.Modified()
+        self._atom_polydata.Modified()
+
+        if self._atom_actor is not None:
+            if self._mode == RepresentationMode.LINE:
+                self._atom_actor.VisibilityOff()
+            else:
+                mapper = self._atom_gpu_sphere_mapper or self._atom_glyph_mapper
+                if self._atom_actor.GetMapper() is not mapper:
+                    self._atom_actor.SetMapper(mapper)
+                self._atom_actor.VisibilityOn()
+
+        show_b = self.show_bonds and (self._mode not in (RepresentationMode.CPK, RepresentationMode.SPACE_FILL))
+        if not (show_b and self._bonds):
+            if self._bond_actor is not None:
+                self._bond_actor.VisibilityOff()
+            return
+
+        b_arr = np.asarray(self._bonds, dtype=np.int64)
+        bi_raw = b_arr[:, 0]
+        bj_raw = b_arr[:, 1]
+        mask = (bi_raw >= 0) & (bi_raw < n) & (bj_raw >= 0) & (bj_raw < n) & (bi_raw != bj_raw)
+        if not self.show_hydrogens:
+            mask &= (z_raw[np.clip(bi_raw, 0, n - 1)] != 1) & (z_raw[np.clip(bj_raw, 0, n - 1)] != 1)
+        valid_idx = np.flatnonzero(mask)
+        if len(valid_idx) == 0:
+            self._bond_actor.VisibilityOff()
+            return
+
+        bi = bi_raw[valid_idx]
+        bj = bj_raw[valid_idx]
+        p1 = coords_f32[bi]
+        p2 = coords_f32[bj]
+        d = p2 - p1
+        lens = np.linalg.norm(d, axis=1)
+        len_mask = lens > 1e-4
+        valid_idx = valid_idx[len_mask]
+        nb = len(valid_idx)
+        if nb == 0:
+            self._bond_actor.VisibilityOff()
+            return
+
+        bi = bi[len_mask]
+        bj = bj[len_mask]
+        p1 = p1[len_mask]
+        p2 = p2[len_mask]
+        d = d[len_mask]
+        lens = lens[len_mask]
+
+        c1 = atom_rgba[bi].copy()
+        c2 = atom_rgba[bj].copy()
+        a_pair = np.maximum(atom_rgba[bi, 3], atom_rgba[bj, 3])
+        c1[:, 3] = a_pair
+        c2[:, 3] = a_pair
+        if self._per_bond_colors:
+            idx_to_pos = {int(b_i): pos for pos, b_i in enumerate(valid_idx)}
+            for b_idx, bc in self._per_bond_colors.items():
+                pos = idx_to_pos.get(int(b_idx))
+                if pos is not None and bc is not None:
+                    rgb = (
+                        max(0, min(255, int(round(bc[0] * 255.0)))),
+                        max(0, min(255, int(round(bc[1] * 255.0)))),
+                        max(0, min(255, int(round(bc[2] * 255.0)))),
+                    )
+                    c1[pos, :3] = rgb
+                    c2[pos, :3] = rgb
+
+        if self._mode == RepresentationMode.LINE or self._bond_gpu_stick_mapper is None:
+            pts = np.empty((2 * nb, 3), dtype=np.float32)
+            pts[0::2] = p1
+            pts[1::2] = p2
+            cols = np.empty((2 * nb, 4), dtype=np.uint8)
+            cols[0::2] = c1
+            cols[1::2] = c2
+            self._bond_points.SetData(_vtk_numpy_support.numpy_to_vtk(pts, deep=1))
+            b_col_vtk = _vtk_numpy_support.numpy_to_vtk(cols, deep=1)
+            b_col_vtk.SetName("bond_color")
+            b_rad_vtk = _vtk_numpy_support.numpy_to_vtk(np.full(2 * nb, 0.04, dtype=np.float32), deep=1)
+            b_rad_vtk.SetName("bond_radius")
+            self._bond_colors = b_col_vtk
+            self._bond_radii = b_rad_vtk
+            bpd = self._bond_polydata.GetPointData()
+            bpd.SetScalars(b_rad_vtk)
+            bpd.AddArray(b_col_vtk)
+            self._bond_lines.SetData(
+                _vtk_numpy_support.numpy_to_vtk(np.arange(0, 2 * nb + 1, 2, dtype=np.int64), deep=1),
+                _vtk_numpy_support.numpy_to_vtk(np.arange(2 * nb, dtype=np.int64), deep=1),
+            )
+            if self._bond_mapper.GetInputConnection(0, 0) is not None:
+                self._bond_mapper.SetInputConnection(None)
+            self._bond_mapper.SetInputData(self._bond_polydata)
+            if self._bond_actor.GetMapper() is not self._bond_mapper:
+                self._bond_actor.SetMapper(self._bond_mapper)
+            self._bond_actor.GetProperty().SetLineWidth(4.5 if self._mode == RepresentationMode.STICK else 1.25)
+            self._bond_points.Modified()
+            self._bond_lines.Modified()
+            self._bond_polydata.Modified()
+            self._bond_actor.VisibilityOn()
+        else:
+            u = d / lens[:, None]
+            mid = 0.5 * (p1 + p2)
+            centers = np.ascontiguousarray(np.vstack([0.5 * (p1 + mid), 0.5 * (mid + p2)]), dtype=np.float32)
+            ori = np.ascontiguousarray(np.vstack([u, u]), dtype=np.float32)
+            hl = (0.5 * lens).astype(np.float32)
+            base_r = self.BASE_STICK_BOND_RADIUS if self._mode == RepresentationMode.STICK else self.BASE_BOND_RADIUS
+            b_ind = (
+                self._per_bond_scales[valid_idx].astype(np.float32)
+                if len(self._per_bond_scales) >= len(self._bonds)
+                else np.ones(nb, dtype=np.float32)
+            )
+            r_half = np.float32(base_r * self._bond_scale) * np.concatenate([b_ind, b_ind]).astype(np.float32)
+            sc_arr = np.ascontiguousarray(np.column_stack([np.concatenate([hl, hl]), r_half, r_half]), dtype=np.float32)
+            b_cols = np.ascontiguousarray(np.vstack([c1, c2]), dtype=np.uint8)
+            st_pts = vtk.vtkPoints()
+            st_pts.SetData(_vtk_numpy_support.numpy_to_vtk(centers, deep=1))
+            st_ca = vtk.vtkCellArray()
+            st_ca.SetData(
+                _vtk_numpy_support.numpy_to_vtk(np.arange(2 * nb + 1, dtype=np.int64), deep=1),
+                _vtk_numpy_support.numpy_to_vtk(np.arange(2 * nb, dtype=np.int64), deep=1),
+            )
+            self._bond_stick_polydata.SetPoints(st_pts)
+            self._bond_stick_polydata.SetVerts(st_ca)
+            ori_v = _vtk_numpy_support.numpy_to_vtk(ori, deep=1)
+            ori_v.SetName("bond_ori")
+            sc_v = _vtk_numpy_support.numpy_to_vtk(sc_arr, deep=1)
+            sc_v.SetName("bond_scale")
+            col_v = _vtk_numpy_support.numpy_to_vtk(b_cols, deep=1)
+            col_v.SetName("bond_color")
+            st_pd = self._bond_stick_polydata.GetPointData()
+            st_pd.AddArray(ori_v)
+            st_pd.AddArray(sc_v)
+            st_pd.AddArray(col_v)
+            self._bond_stick_polydata.Modified()
+            if self._bond_actor.GetMapper() is not self._bond_gpu_stick_mapper:
+                self._bond_actor.SetMapper(self._bond_gpu_stick_mapper)
+            self._bond_actor.VisibilityOn()
 
     def _rebuild_vtk_molecule_in_place(self) -> None:
         """
         原地更新常驻 `_atom_polydata` 与 `_bond_polydata`：
           - 每个原子写入独立半径与独立 RGB 颜色
           - 每条化学键写入独立半径与独立 RGB 颜色（或两端原子半键双色）
-          - 拖动原子、改单个原子大小/颜色、改单条键粗细/颜色时耗时 < 0.1 ms，且 100% 实时生效！
+          - 小分子走 18/24 面高清 Cylinder/Sphere；>2000 原子/键自动切换 GPU GLSL Impostor 零拷贝极速管线
         """
         if self._viewer is None or vtk is None:
             return
         self._ensure_scene_initialized()
         if self._atom_points is None or self._bond_points is None:
             return
+
+        if self._coordinates is None or self._atomic_numbers is None or self._n_atoms == 0:
+            self._atom_points.Reset()
+            self._bond_points.Reset()
+            self._bond_lines.Reset()
+            self._atom_polydata.Modified()
+            self._bond_polydata.Modified()
+            if self._atom_actor is not None:
+                self._atom_actor.VisibilityOff()
+            if self._bond_actor is not None:
+                self._bond_actor.VisibilityOff()
+            self._update_glow_layers()
+            self._update_labels_in_place()
+            return
+
+        n = min(self._n_atoms, len(self._coordinates), len(self._atomic_numbers))
+        is_massive = (n > 2000 or len(self._bonds) > 2000)
+        if is_massive and _vtk_numpy_support is not None and self._atom_gpu_sphere_mapper is not None:
+            self._rebuild_massive_gpu(n)
+            self._update_glow_layers()
+            self._update_labels_in_place()
+            return
+
+        # 从超大体系切回经典小分子时，恢复 Glyph3DMapper 与 TubeFilter 原生可增删对象
+        if self._massive_vert_count != -1 or not isinstance(self._atom_radii, vtk.vtkFloatArray):
+            self._atom_polydata.SetVerts(None)
+            self._massive_vert_count = -1
+            self._atom_points = vtk.vtkPoints()
+            self._atom_radii = vtk.vtkFloatArray()
+            self._atom_radii.SetName("atom_radius")
+            self._atom_colors = vtk.vtkUnsignedCharArray()
+            self._atom_colors.SetName("atom_color")
+            self._atom_colors.SetNumberOfComponents(4)
+            self._atom_polydata.SetPoints(self._atom_points)
+            self._atom_polydata.GetPointData().SetScalars(self._atom_radii)
+            self._atom_polydata.GetPointData().AddArray(self._atom_colors)
+            for poly, _r, _c, _a, _f, _af in self._glow_layers:
+                poly.SetPoints(self._atom_points)
+        if not isinstance(self._bond_radii, vtk.vtkFloatArray):
+            self._bond_points = vtk.vtkPoints()
+            self._bond_lines = vtk.vtkCellArray()
+            self._bond_radii = vtk.vtkFloatArray()
+            self._bond_radii.SetName("bond_radius")
+            self._bond_colors = vtk.vtkUnsignedCharArray()
+            self._bond_colors.SetName("bond_color")
+            self._bond_colors.SetNumberOfComponents(4)
+            self._bond_polydata.SetPoints(self._bond_points)
+            self._bond_polydata.SetLines(self._bond_lines)
+            self._bond_polydata.GetPointData().SetScalars(self._bond_radii)
+            self._bond_polydata.GetPointData().AddArray(self._bond_colors)
+
+        if self._atom_actor is not None and self._atom_actor.GetMapper() is not self._atom_glyph_mapper:
+            self._atom_actor.SetMapper(self._atom_glyph_mapper)
+        if self._bond_actor is not None and self._bond_actor.GetMapper() is not self._bond_mapper:
+            self._bond_actor.SetMapper(self._bond_mapper)
 
         self._atom_points.Reset()
         self._atom_radii.Reset()
@@ -690,20 +1012,6 @@ class VtkRendererBackend(Renderer3D):
         self._bond_colors.Reset()
         self._bond_colors.SetName("bond_color")
         self._bond_colors.SetNumberOfComponents(4)
-
-        if self._coordinates is None or self._atomic_numbers is None or self._n_atoms == 0:
-            self._atom_polydata.Modified()
-            self._bond_polydata.Modified()
-            if self._atom_actor is not None:
-                self._atom_actor.VisibilityOff()
-            if self._bond_actor is not None:
-                self._bond_actor.VisibilityOff()
-            self._update_glow_layers()
-            self._update_labels_in_place()
-            return
-
-        n = min(self._n_atoms, len(self._coordinates), len(self._atomic_numbers))
-        is_massive = (n > 2000 or len(self._bonds) > 2000)
 
         # 动态调节原子球多边形细分精度（小分子高保真 24x24；超大体系/动力学盒子 8x8 或 6x6，减少 96.5% 多边形开销与显存压力！）
         if self._atom_sphere is not None:
@@ -910,6 +1218,8 @@ class VtkRendererBackend(Renderer3D):
         self._coordinates = snapshot.coordinates.copy().astype(np.float32) if len(snapshot.coordinates) > 0 else np.zeros((0, 3), dtype=np.float32)
         self._atomic_numbers = snapshot.atomic_numbers.copy()
         self._cell_matrix = None if snapshot.cell_matrix is None else np.asarray(snapshot.cell_matrix, dtype=np.float64).copy()
+        cell_origin = getattr(snapshot, "cell_origin", None)
+        self._cell_origin = np.zeros(3, dtype=np.float64) if cell_origin is None else np.asarray(cell_origin, dtype=np.float64).reshape(3).copy()
 
         values = snapshot.atom_opacities
         self._atom_opacities = np.ones(self._n_atoms) if values is None else np.clip(np.asarray(values,dtype=float),0.,1.)
@@ -1017,7 +1327,7 @@ class VtkRendererBackend(Renderer3D):
                 self._cell_actor.VisibilityOff()
             return
         from itertools import product
-        corners = np.asarray(list(product((0.0, 1.0), repeat=3))) @ matrix
+        corners = (np.asarray(list(product((0.0, 1.0), repeat=3))) @ matrix) + self._cell_origin
         edges = (
             (0, 1), (0, 2), (0, 4), (1, 3), (1, 5), (2, 3),
             (2, 6), (3, 7), (4, 5), (4, 6), (5, 7), (6, 7),
@@ -1592,7 +1902,7 @@ class VtkRendererBackend(Renderer3D):
                 span = max(span, bond_length * 2.4)
             if self._cell_matrix is not None:
                 from itertools import product
-                corners = np.asarray(list(product((0.0, 1.0), repeat=3))) @ self._cell_matrix
+                corners = (np.asarray(list(product((0.0, 1.0), repeat=3))) @ self._cell_matrix) + self._cell_origin
                 span = max(span, float(np.linalg.norm(corners - center, axis=1).max()) * 2.4)
             dist = span / math.tan(math.radians(15.0))
             cam.SetFocalPoint(float(center[0]), float(center[1]), float(center[2]))
@@ -1863,7 +2173,7 @@ class VtkRendererBackend(Renderer3D):
             return
         coords = self._coordinates
         n = self._n_atoms
-        if n == 0:
+        if n == 0 or n > 1500:
             return
         implicit_balls = vtk.vtkImplicitBoolean()
         implicit_balls.SetOperationTypeToUnion()

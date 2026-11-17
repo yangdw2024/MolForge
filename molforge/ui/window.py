@@ -245,7 +245,13 @@ class Workspace(QFrame):
         self.mode_buttons: dict[RepresentationMode, QPushButton] = {}
         self.compact_mode_btn = QPushButton("3D样式 ▾")
         self.compact_mode_menu = QMenu(self)
-        for mode, label in ((RepresentationMode.BALL_AND_STICK, "球棍"), (RepresentationMode.CPK, "CPK"), (RepresentationMode.LINE, "线框"), (RepresentationMode.SURFACE, "表面")):
+        for mode, label in (
+            (RepresentationMode.BALL_AND_STICK, "球棍"),
+            (RepresentationMode.CPK, "CPK"),
+            (RepresentationMode.STICK, "棍状"),
+            (RepresentationMode.LINE, "线框"),
+            (RepresentationMode.SURFACE, "表面"),
+        ):
             action = QAction(label, self)
             action.triggered.connect(lambda checked=False, m=mode: self._on_mode_changed(m))
             self.compact_mode_menu.addAction(action)
@@ -255,6 +261,7 @@ class Workspace(QFrame):
         for i, (mode, name) in enumerate((
             (RepresentationMode.BALL_AND_STICK, "球棍"),
             (RepresentationMode.CPK, "CPK"),
+            (RepresentationMode.STICK, "棍状"),
             (RepresentationMode.LINE, "线框"),
             (RepresentationMode.SURFACE, "表面"),
         )):

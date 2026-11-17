@@ -386,9 +386,11 @@ def build_document_from_3d_atoms(
         return doc
 
     coords_f32 = np.asarray(coords, dtype=np.float32).reshape((n, 3))
-    # 将分子几何中心平移至 (0, 0, 0)，确保 3D 视口居中且旋转中心在分子重心
+    # 将分子几何中心平移至 (0, 0, 0)，确保 3D 视口居中且旋转中心在分子重心；若存在周期晶胞 CRYST1，同步平移晶胞原点使其与分子严格重合
     center_offset = coords_f32.mean(axis=0)
     coords_centered = coords_f32 - center_offset
+    if doc.properties.get("cryst1") is not None and "box_origin" not in doc.properties:
+        doc.properties["box_origin"] = [float(-center_offset[0]), float(-center_offset[1]), float(-center_offset[2])]
 
     if explicit_bonds is not None:
         bonds_list = explicit_bonds
