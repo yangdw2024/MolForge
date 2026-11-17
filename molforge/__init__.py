@@ -15,5 +15,5 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-__version__ = "7.4.2"
+__version__ = "7.4.3"
 __app_name__ = "MolForge"

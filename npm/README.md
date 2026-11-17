@@ -1,6 +1,6 @@
 # @yangdw2024/molforge
 
-> Cross-platform CLI & Node.js wrapper for **MolForge Studio v7.4.0** — Unified molecular science workstation.
+> Cross-platform CLI & Node.js wrapper for **MolForge Studio v7.4.3** — Unified molecular science workstation.
 
 ---
 

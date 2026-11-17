@@ -82,10 +82,15 @@ if (!pyObj) {
   process.exit(1);
 }
 
-// Handle top-level install shortcut: npx @yangdw2024/molforge install
+// Handle top-level shortcuts: install / --bridge
 if (args[0] === 'install') {
   console.log(`[MolForge] Installing or updating molforge-studio via pip (${pyObj.cmd})...`);
   const child = spawn(pyObj.cmd, [...pyObj.args, '-m', 'pip', 'install', '-U', 'molforge-studio'], {
+    stdio: 'inherit'
+  });
+  child.on('exit', (code) => process.exit(code || 0));
+} else if (args[0] === '--bridge' || args[0] === 'bridge') {
+  const child = spawn(pyObj.cmd, [...pyObj.args, '-m', 'molforge.server.api_bridge', ...args.slice(1)], {
     stdio: 'inherit'
   });
   child.on('exit', (code) => process.exit(code || 0));
