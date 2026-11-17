@@ -2037,7 +2037,8 @@ class RightPanel(QFrame):
         self.multi_atom_ids_label.setText(f"✓ 已选中 {len(id_numbers)} 个原子序号：\n{id_str}")
         self.atom_info_label.setText(f"✓ 当前多选：{len(id_numbers)} 个原子（可一键存为砌块或拖拽平移）")
         if doc and doc.has_3d and doc.coordinates.current is not None:
-            coords = [doc.coordinates.current.coords[a.value] for a in sorted_ids if a.value < len(doc.coordinates.current.coords)]
+            import numpy as np
+            coords = [p for a in sorted_ids if (p := doc.get_atom_3d_pos(a)) is not None]
             if coords:
                 mean_pos = np.mean(coords, axis=0)
                 self.multi_atom_pos_label.setText(f"选中片段质心: ({mean_pos[0]:.3f}, {mean_pos[1]:.3f}, {mean_pos[2]:.3f}) Å")
@@ -2375,7 +2376,13 @@ class RightPanel(QFrame):
     def _launch_deepseek_harness(self):
         from ..ai.deepseek_harness import launch_deepseek_harness
         win = getattr(self, "_window_ref", None)
-        svc = getattr(win, "_desktop_mcp_service", None) if win is not None else None
+        if win is not None and hasattr(win, "_toggle_desktop_mcp"):
+            svc_cur = getattr(win, "mcp_service", None)
+            if svc_cur is None or not getattr(svc_cur, "is_active", False):
+                if getattr(win, "mcp_action", None) is not None:
+                    win.mcp_action.setChecked(True)
+                win._toggle_desktop_mcp(True)
+        svc = getattr(win, "mcp_service", None) if win is not None else None
         res = launch_deepseek_harness(desktop_mcp_service=svc)
         if res.get("ok"):
             self.chat_history.append(

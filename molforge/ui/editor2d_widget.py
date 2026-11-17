@@ -1116,7 +1116,16 @@ class Editor2DWidget(QWidget):
                 if self._current_tool == "擦除":
                     self._delete_atom(hit_atom)
                     return
-                if self._selection is not None:
+                already_in_multi = (
+                    not add_mode
+                    and self._current_tool == "选择"
+                    and self._selection is not None
+                    and len(self._selection.selected_atoms) > 1
+                    and hit_atom in self._selection.selected_atoms
+                )
+                self._keep_multi_on_press = already_in_multi
+                self._batch_drag_hit_atom = hit_atom if already_in_multi else None
+                if self._selection is not None and not already_in_multi:
                     if add_mode:
                         self._selection.toggle_atom(hit_atom, origin="2d")
                     else:
@@ -1129,9 +1138,9 @@ class Editor2DWidget(QWidget):
                 if self._current_tool in ("键", "原子"):
                     self._bond_start = hit_atom
                 else:
-                    # 如果点中的原子已经在选中集合里，并且选中了多个原子，就批量拖动
-                    if (self._selection is not None 
-                        and len(self._selection.selected_atoms) > 1 
+                    # 如果点中的原子已经在选中集合里，并且选中了多个原子，就批量拖动整个片段/分子
+                    if (self._selection is not None
+                        and len(self._selection.selected_atoms) > 1
                         and hit_atom in self._selection.selected_atoms):
                         self._batch_dragging = True
                         self._batch_drag_start_screen = QPointF(pos)
@@ -1238,12 +1247,13 @@ class Editor2DWidget(QWidget):
                 q = deque([hit_atom])
                 while q:
                     cur = q.popleft()
-                    for nb in self._document.topology.neighbors(cur):
+                    for nb in self._document.topology.neighbors_of(cur):
                         if nb not in visited:
                             visited.add(nb)
                             q.append(nb)
                 add_mode = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
-                self._selection.select_atoms(list(visited), add=add_mode, origin="2d")
+                final_aids = list(self._selection.selected_atoms | visited) if add_mode else list(visited)
+                self._selection.select_atoms(final_aids, origin="2d")
                 self.update()
                 return
         super().mouseDoubleClickEvent(event)
@@ -1283,7 +1293,20 @@ class Editor2DWidget(QWidget):
         # 2. 批量拖动多个原子释放 -> 同步更新 3D 坐标并提交单步 MoveMultiAtoms3DCommand
         if getattr(self, "_batch_dragging", False):
             self._batch_dragging = False
-            if self._document is not None and self._command_bus is not None and getattr(self, "_batch_drag_start_world", None):
+            keep_multi = getattr(self, "_keep_multi_on_press", False)
+            hit_multi_aid = getattr(self, "_batch_drag_hit_atom", None)
+            self._keep_multi_on_press = False
+            self._batch_drag_hit_atom = None
+            moved_dist = (pos - self._press_pos).manhattanLength()
+            if moved_dist < 4 and keep_multi and hit_multi_aid is not None and self._selection is not None:
+                # 仅点击未拖动：恢复坐标并把多选收敛到所点原子
+                for aid, xy in (getattr(self, "_batch_drag_start_world", None) or {}).items():
+                    if self._document is not None and aid in self._document.coords_2d:
+                        self._document.coords_2d[aid] = xy
+                self._selection.select_atom(hit_multi_aid, add=False, origin="2d")
+                self.update()
+                return
+            if moved_dist >= 4 and self._document is not None and self._command_bus is not None and getattr(self, "_batch_drag_start_world", None):
                 from ..application.builtin_commands import MoveMultiAtoms3DCommand
                 old_3d_map = {}
                 new_3d_map = {}

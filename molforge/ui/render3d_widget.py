@@ -616,13 +616,14 @@ class Render3DWidget(QWidget):
                 q = deque([hit_aid])
                 while q:
                     cur = q.popleft()
-                    for nb in self._document.topology.neighbors(cur):
+                    for nb in self._document.topology.neighbors_of(cur):
                         if nb not in visited:
                             visited.add(nb)
                             q.append(nb)
                 add_mode = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
-                self._defer(lambda aids=list(visited), am=add_mode: (
-                    self._selection.select_atoms(aids, add=am, origin="3d"),
+                final_aids = list(self._selection.selected_atoms | visited) if add_mode else list(visited)
+                self._defer(lambda aids=final_aids: (
+                    self._selection.select_atoms(aids, origin="3d"),
                     self._capture_multi_drag_origins(),
                 ))
                 return True
