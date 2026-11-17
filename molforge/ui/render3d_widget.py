@@ -610,6 +610,22 @@ class Render3DWidget(QWidget):
                     AddAtomCommand(z, x=float(wp[0]), y=float(wp[1]), z=float(wp[2]), auto_bond_nearest=True)
                 ))
                 return True
+            if hit_aid is not None and self._selection is not None:
+                from collections import deque
+                visited = {hit_aid}
+                q = deque([hit_aid])
+                while q:
+                    cur = q.popleft()
+                    for nb in self._document.topology.neighbors(cur):
+                        if nb not in visited:
+                            visited.add(nb)
+                            q.append(nb)
+                add_mode = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
+                self._defer(lambda aids=list(visited), am=add_mode: (
+                    self._selection.select_atoms(aids, add=am, origin="3d"),
+                    self._capture_multi_drag_origins(),
+                ))
+                return True
 
         # 1. 鼠标按下
         if et == QEvent.Type.MouseButtonPress:
@@ -1406,6 +1422,8 @@ class Render3DWidget(QWidget):
     def _do_apply_external_selection(self):
         if self._selection is None:
             return
+        if not getattr(self, "_is_dragging_atom", False):
+            self._capture_multi_drag_origins()
         try:
             measure_chain = None
             if self._document is not None and not self._selection.is_empty:

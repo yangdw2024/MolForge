@@ -151,6 +151,55 @@ class V76EnhancementTests(unittest.TestCase):
             self.assertIn("build_from_smiles", skill_txt)
             self.assertIn("molforge.ai.mcp.mcp_server", skill_txt)
 
+    def test_move_single_and_fragment_undo_redo_2d_and_3d(self):
+        import numpy as np
+        from molforge.application.builtin_commands import MoveAtom3DCommand, MoveMultiAtoms3DCommand
+        from molforge.application.command_bus import CommandBus
+
+        doc = create_sample_molecule("咖啡因")
+        bus = CommandBus(doc)
+        aids = list(doc.topology.atom_ids)
+        a0 = aids[0]
+
+        # 1. Simulate 2D live single-atom drag where doc.coords_2d was mutated before execute()
+        old_3d = doc.get_atom_3d_pos(a0).copy()
+        old_2d = tuple(doc.coords_2d[a0])
+        new_2d = (old_2d[0] + 2.5, old_2d[1] - 1.5)
+        doc.coords_2d[a0] = new_2d
+        res = bus.execute(MoveAtom3DCommand(a0, (new_2d[0], new_2d[1], float(old_3d[2])), old_pos=old_3d, new_pos_2d=new_2d, old_pos_2d=old_2d))
+        self.assertTrue(res.success)
+        self.assertAlmostEqual(doc.coords_2d[a0][0], new_2d[0], places=4)
+
+        self.assertTrue(bus.undo().success)
+        self.assertAlmostEqual(doc.coords_2d[a0][0], old_2d[0], places=4)
+        self.assertAlmostEqual(doc.coords_2d[a0][1], old_2d[1], places=4)
+        self.assertTrue(np.allclose(doc.get_atom_3d_pos(a0), old_3d, atol=1e-4))
+
+        self.assertTrue(bus.redo().success)
+        self.assertAlmostEqual(doc.coords_2d[a0][0], new_2d[0], places=4)
+
+        # 2. Simulate batch/fragment move & undo/redo across all atoms
+        bus.undo()
+        old_3d_map = {aid: doc.get_atom_3d_pos(aid).copy() for aid in aids}
+        old_2d_map = {aid: tuple(doc.coords_2d[aid]) for aid in aids}
+        new_3d_map = {aid: old_3d_map[aid] + np.array([3.0, -2.0, 1.0], dtype=np.float32) for aid in aids}
+        new_2d_map = {aid: (old_2d_map[aid][0] + 3.0, old_2d_map[aid][1] - 2.0) for aid in aids}
+        doc.coords_2d.update(new_2d_map)
+
+        res2 = bus.execute(MoveMultiAtoms3DCommand(old_3d_map, new_3d_map, old_coords_2d=old_2d_map, new_coords_2d=new_2d_map))
+        self.assertTrue(res2.success)
+        self.assertAlmostEqual(doc.coords_2d[a0][0], new_2d_map[a0][0], places=4)
+
+        self.assertTrue(bus.undo().success)
+        for aid in aids:
+            self.assertAlmostEqual(doc.coords_2d[aid][0], old_2d_map[aid][0], places=4)
+            self.assertTrue(np.allclose(doc.get_atom_3d_pos(aid), old_3d_map[aid], atol=1e-4))
+
+        self.assertTrue(bus.redo().success)
+        for aid in aids:
+            self.assertAlmostEqual(doc.coords_2d[aid][0], new_2d_map[aid][0], places=4)
+            self.assertTrue(np.allclose(doc.get_atom_3d_pos(aid), new_3d_map[aid], atol=1e-4))
+
 
 if __name__ == "__main__":
     unittest.main()

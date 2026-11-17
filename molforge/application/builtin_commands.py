@@ -422,12 +422,13 @@ class MoveAtom3DCommand(Command):
         new_pos: np.ndarray | tuple[float, float, float],
         old_pos: np.ndarray | tuple[float, float, float] | None = None,
         new_pos_2d: tuple[float, float] | None = None,
+        old_pos_2d: tuple[float, float] | None = None,
     ):
         self.atom_id = atom_id
         self.new_pos = np.asarray(new_pos, dtype=np.float32).copy()
         self._old_pos = np.asarray(old_pos, dtype=np.float32).copy() if old_pos is not None else None
         self.new_pos_2d = new_pos_2d
-        self._old_pos_2d: tuple[float, float] | None = None
+        self._old_pos_2d: tuple[float, float] | None = old_pos_2d
 
     def do(self, doc: MoleculeDocument) -> CommandResult:
         if not doc.has_3d or doc.coordinates.current is None:
@@ -1132,6 +1133,8 @@ class MoveAtomsBatch3DCommand(Command):
         self,
         atom_moves: dict[AtomId, tuple[np.ndarray, np.ndarray]],
         description: str = "批量平移选中原子",
+        old_coords_2d: dict[AtomId, tuple[float, float]] | None = None,
+        new_coords_2d: dict[AtomId, tuple[float, float]] | None = None,
     ):
         # atom_moves: {atom_id: (old_pos_3d, new_pos_3d)}
         self.atom_moves = {
@@ -1142,7 +1145,8 @@ class MoveAtomsBatch3DCommand(Command):
             for aid, (old_p, new_p) in atom_moves.items()
         }
         self.description = description
-        self._old_coords_2d: dict[AtomId, tuple[float, float]] | None = None
+        self._old_coords_2d: dict[AtomId, tuple[float, float]] | None = dict(old_coords_2d) if old_coords_2d is not None else None
+        self._new_coords_2d: dict[AtomId, tuple[float, float]] | None = dict(new_coords_2d) if new_coords_2d is not None else None
 
     def do(self, doc: MoleculeDocument) -> CommandResult:
         if not doc.has_3d or doc.coordinates.current is None or not self.atom_moves:
@@ -1159,6 +1163,11 @@ class MoveAtomsBatch3DCommand(Command):
         if moved == 0:
             return CommandResult(success=False, message="未命中可移动原子")
         doc.coordinates.update_current_coords(coords)
+        if self._new_coords_2d is not None:
+            doc.coords_2d.update(self._new_coords_2d)
+        else:
+            for aid, (_, new_p) in self.atom_moves.items():
+                doc.coords_2d[aid] = (float(new_p[0]), float(new_p[1]))
         return CommandResult(
             success=True,
             changed=True,
@@ -1192,6 +1201,7 @@ class MoveMultiAtoms3DCommand(MoveAtomsBatch3DCommand):
         new_positions: dict[AtomId, np.ndarray | tuple[float, float, float]],
         description: str = "批量平移选中原子",
         old_coords_2d: dict[AtomId, tuple[float, float]] | None = None,
+        new_coords_2d: dict[AtomId, tuple[float, float]] | None = None,
     ):
         atom_moves: dict[AtomId, tuple[np.ndarray, np.ndarray]] = {}
         for aid, new_p in new_positions.items():
@@ -1204,9 +1214,12 @@ class MoveMultiAtoms3DCommand(MoveAtomsBatch3DCommand):
                 np.asarray(old_p, dtype=np.float32),
                 np.asarray(new_p, dtype=np.float32),
             )
-        super().__init__(atom_moves=atom_moves, description=description)
-        if old_coords_2d is not None:
-            self._old_coords_2d = dict(old_coords_2d)
+        super().__init__(
+            atom_moves=atom_moves,
+            description=description,
+            old_coords_2d=old_coords_2d,
+            new_coords_2d=new_coords_2d,
+        )
 
 
 class AppendMoleculeCommand(Command):

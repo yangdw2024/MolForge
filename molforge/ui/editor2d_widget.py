@@ -1227,6 +1227,27 @@ class Editor2DWidget(QWidget):
         if (self._hover_atom != old_ha) or (self._hover_bond != old_hb):
             self.update()
 
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
+        if self._document is None or self._selection is None or self._document.topology.num_atoms > 1500:
+            return super().mouseDoubleClickEvent(event)
+        if event.button() == Qt.MouseButton.LeftButton:
+            hit_atom = self._find_atom_at(event.position())
+            if hit_atom is not None:
+                from collections import deque
+                visited = {hit_atom}
+                q = deque([hit_atom])
+                while q:
+                    cur = q.popleft()
+                    for nb in self._document.topology.neighbors(cur):
+                        if nb not in visited:
+                            visited.add(nb)
+                            q.append(nb)
+                add_mode = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
+                self._selection.select_atoms(list(visited), add=add_mode, origin="2d")
+                self.update()
+                return
+        super().mouseDoubleClickEvent(event)
+
     def mouseReleaseEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.MiddleButton:
             self._panning = False
@@ -1274,12 +1295,18 @@ class Editor2DWidget(QWidget):
                         old_3d_map[aid] = p3 if p3 is not None else np.array([ox, oy, cz], dtype=np.float32)
                         new_3d_map[aid] = np.array([nx, ny, cz], dtype=np.float32)
                 if old_3d_map:
+                    new_2d_map = {
+                        aid: self._document.coords_2d[aid]
+                        for aid in self._batch_drag_start_world
+                        if aid in self._document.coords_2d
+                    }
                     self._command_bus.execute(
                         MoveMultiAtoms3DCommand(
                             old_3d_map,
                             new_3d_map,
                             description="批量平移选中原子",
                             old_coords_2d=self._batch_drag_start_world,
+                            new_coords_2d=new_2d_map,
                         )
                     )
             self.update()
@@ -1288,7 +1315,9 @@ class Editor2DWidget(QWidget):
         # 3. 拖动原子释放 -> 同步更新 3D 坐标并入撤销栈
         if self._drag_atom is not None:
             aid = self._drag_atom
+            old_2d = self._drag_start_wpos
             self._drag_atom = None
+            self._drag_start_wpos = None
             if (pos - self._press_pos).manhattanLength() >= 3 and self._document is not None:
                 wx, wy = self.screen_to_world(pos.x(), pos.y())
                 old_3d = self._document.get_atom_3d_pos(aid)
@@ -1296,7 +1325,7 @@ class Editor2DWidget(QWidget):
                 if self._command_bus is not None and old_3d is not None:
                     from ..application.builtin_commands import MoveAtom3DCommand
                     self._command_bus.execute(
-                        MoveAtom3DCommand(aid, (wx, wy, cur_z), old_pos=old_3d, new_pos_2d=(wx, wy))
+                        MoveAtom3DCommand(aid, (wx, wy, cur_z), old_pos=old_3d, new_pos_2d=(wx, wy), old_pos_2d=old_2d)
                     )
             self.update()
             return
