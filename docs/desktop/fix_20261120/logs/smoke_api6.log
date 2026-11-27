@@ -1,0 +1,16 @@
+s01 PASS 基线文档 :: atoms=24 bonds=25
+s02 PASS R11 五砌块在目录 :: all 5 present
+s03 PASS R11 插入苯真坐标 :: 12 atoms added
+s04 PASS R8 设键级4=芳香 :: order=1 aromatic=True
+s05 PASS Y6 设原子电荷+撤销 :: 1/0/1 ok
+s06 PASS Y2 2D拖动 pos_2d 对象 :: x2=5
+s07 PASS R7 delete_atoms ids 真删+撤销 :: 36->35->36
+s08 PASS R10 噻吩杂原子+点击位 :: 1 S, center~5
+s09 PASS Y3 xtb/orca 输入导出 :: xtb+orca ok
+s10 PASS R9 CalChem 真 SCF :: E=-662.103913149081
+s11 PASS Y4 xTB 真能量 :: E=-37.463354538164
+s12 PASS R1 gaussian 真spawn真能量或诚实失败 :: real gaussian success E=-662.103913332
+s13 PASS R3 Multiwfn 真散点+门禁 :: pts=133458; WFN-01 gated
+s14 PASS R2 后台真算 orca_sp + md_rdf 拒绝 :: md_rdf failed honest; orca completed
+s15 PASS R6 AI 离线显式标注 :: offline+prefix ok
+s16 PASS Y9 md-rdf 规划 blocked :: runnable=False; missing=capability 'trajectory.rdf' 尚未接入执行适配器

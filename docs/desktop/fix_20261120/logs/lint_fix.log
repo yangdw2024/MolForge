@@ -1,0 +1,24 @@
+
+E:\YDW\Trae_Chemdraw\desktop\scripts\audit-e2e-20261119.mjs
+  23:130  error  'Buffer' is not defined      no-undef
+  31:42   error  'setTimeout' is not defined  no-undef
+
+E:\YDW\Trae_Chemdraw\desktop\scripts\audit-micro-20261119.mjs
+  9:42  error  'setTimeout' is not defined  no-undef
+
+E:\YDW\Trae_Chemdraw\desktop\scripts\audit-retest-20261119.mjs
+  12:42   error  'setTimeout' is not defined  no-undef
+  16:153  error  'Buffer' is not defined      no-undef
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\CalculationSetupModal.tsx
+  155:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  184:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\FragmentsLayer.tsx
+  230:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\OrbitalLadderModal.tsx
+  39:6  warning  React Hook useEffect has a missing dependency: 'data'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 9 problems (5 errors, 4 warnings)
+

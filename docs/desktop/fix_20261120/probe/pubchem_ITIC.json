@@ -1,0 +1,36 @@
+{
+  "PropertyTable": {
+    "Properties": [
+      {
+        "CID": 136212909,
+        "MolecularFormula": "C94H82N4O2S4",
+        "ConnectivitySMILES": "CCCCCCC1=CC=C(C=C1)C2(C3=CC4=C(C=C3C5=C2C6=C(S5)C=C(S6)C=C7C(=C(C#N)C#N)C8=CC=CC=C8C7=O)C(C9=C4SC1=C9SC(=C1)C=C1C(=C(C#N)C#N)C2=CC=CC=C2C1=O)(C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC"
+      },
+      {
+        "CID": 126843541,
+        "MolecularFormula": "C94H82N4O2S4",
+        "ConnectivitySMILES": "CCCCCCC1=CC=C(C=C1)C2(C3=CC4=C(C=C3C5=C2C6=C(S5)C=C(S6)C=C7C(=C(C#N)C#N)C8=CC=CC=C8C7=O)C(C9=C4SC1=C9SC(=C1)C=C1C(=C(C#N)C#N)C2=CC=CC=C2C1=O)(C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC"
+      },
+      {
+        "CID": 138911320,
+        "MolecularFormula": "C94H82N4O2S4",
+        "ConnectivitySMILES": "CCCCCCC1=CC=C(C=C1)C2(C3=CC4=C(C=C3C5=C2C6=C(S5)C=C(S6)C=C7C(=C(C#N)C#N)C8=CC=CC=C8C7=O)C(C9=C4SC1=C9SC(=C1)C=C1C(=C(C#N)C#N)C2=CC=CC=C2C1=O)(C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC"
+      },
+      {
+        "CID": 101901004,
+        "MolecularFormula": "C94H82N4O2S4",
+        "ConnectivitySMILES": "CCCCCCC1=CC=C(C=C1)C2(C3=CC4=C(C=C3C5=C2C6=C(S5)C=C(S6)C=C7C(=C(C#N)C#N)C8=CC=CC=C8C7=O)C(C9=C4SC1=C9SC(=C1)C=C1C(=C(C#N)C#N)C2=CC=CC=C2C1=O)(C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC"
+      },
+      {
+        "CID": 145709575,
+        "MolecularFormula": "C94H82N4O2S4",
+        "ConnectivitySMILES": "CCCCCCC1=CC=C(C=C1)C2(C3=CC4=C(C=C3C5=C2C6=C(S5)C=C(S6)C=C7C(=C(C#N)C#N)C8=CC=CC=C8C7=O)C(C9=C4SC1=C9SC(=C1)C=C1C(=C(C#N)C#N)C2=CC=CC=C2C1=O)(C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC"
+      },
+      {
+        "CID": 178255464,
+        "MolecularFormula": "C94H82N4O2S4",
+        "ConnectivitySMILES": "CCCCCCC1=CC=C(C=C1)C2(C3=CC4=C(C=C3C5=C2C6=C(S5)C=C(S6)C=C7C(=C(C#N)C#N)C8=CC=CC=C8C7=O)C(C9=C4SC1=C9SC(=C1)C=C1C(=C(C#N)C#N)C2=CC=CC=C2C1=O)(C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC)C1=CC=C(C=C1)CCCCCC"
+      }
+    ]
+  }
+}

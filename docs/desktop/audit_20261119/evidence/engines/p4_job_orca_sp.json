@@ -1,0 +1,1 @@
+{"job":{"created_at":1795098890.0076966,"document_name":"CC(=O)Oc1ccccc1C(=O)O","error":"","finished_at":null,"input_revision":2,"job_id":"job-0003","kind":"orca_sp","logs":["Queued in MolForge Rust JobQueue"],"name":"AUDIT ORCA SP","params":{"keywords":"! HF STO-3G"},"result":null,"started_at":null,"status":"pending"},"ok":true}

@@ -1,0 +1,11 @@
+{
+  "command": "gaussian #p HF/STO-3G",
+  "energy_hartree": -662.103913332,
+  "engine": "gaussian",
+  "exit_code": 0,
+  "ok": true,
+  "status": "completed",
+  "stdout_tail": " 456,3.214,-0.101|N,0,1.224,1.662,-0.049|C,0,2.192,2.747,-0.088|C,0,1.6\n 29,0.342,-0.009|O,0,2.828,0.072,0.002|N,0,0.648,-0.642,0.022|C,0,-4.32\n 6,-0.583,0.015|H,0,-1.964,-2.108,0.065|H,0,0.431,-2.299,0.072|H,0,1.39\n 1,-0.946,0.593|H,0,0.478,-0.935,-1.011|H,0,3.194,2.318,-0.069|H,0,2.04\n 3,3.31,-1.012|H,0,2.062,3.412,0.768|H,0,-4.941,0.318,-0.009|H,0,-4.544\n ,-1.163,0.914|H,0,-4.563,-1.186,-0.863||Version=EM64W-G16RevA.03|State\n =1-A|HF=-662.1039133|RMSD=6.969e-009|Dipole=0.5880293,-3.3371212,0.434\n 3251|Quadrupole=-3.1605185,2.4619412,0.6985773,6.8518612,0.3707609,-1.\n 3829018|PG=C01 [X(C8H10N4O2)]||@\n\n\n IT IS THE BEHAVIOR AND DISTRIBUTION OF THE ELECTRONS \n AROUND THE NUCLEUS THAT GIVES THE FUNDAMENTAL \n CHARACTER OF AN ATOM:  IT MUST BE THE SAME FOR MOLECULES.\n\n                               -- C. A. COULSON, 1951\n Job cpu time:       0 days  0 hours  0 minutes  5.0 seconds.\n Elapsed time:       0 days  0 hours  0 minutes  4.3 seconds.\n File lengths (MBytes):  RWF=      6 Int=      0 D2E=      0 Chk=      2 Scr=      1\n Normal termination of Gaussian 16 at Fri Nov 20 08:57:22 2026.",
+  "timed_out": false,
+  "workdir": "D:\\YDW\\MolForge_Scratch\\molforge_gaussian_mf-18e99ae4daa0c18c-1"
+}

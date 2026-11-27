@@ -1,0 +1,19 @@
+{
+  "created_at": 1795136244.236373,
+  "document_name": "Caffeine",
+  "error": "capability 'trajectory.rdf' 尚未接入执行适配器，拒绝假完成",
+  "finished_at": 1795136244.2364564,
+  "input_revision": 0,
+  "job_id": "job-0001",
+  "kind": "md_rdf",
+  "logs": [
+    "Queued in MolForge Rust JobQueue",
+    "Running on Rust worker thread",
+    "Failed: capability 'trajectory.rdf' 尚未接入执行适配器，拒绝假完成"
+  ],
+  "name": "md rdf smoke",
+  "params": null,
+  "result": null,
+  "started_at": 1795136244.2364519,
+  "status": "failed"
+}

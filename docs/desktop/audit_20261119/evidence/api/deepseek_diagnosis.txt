@@ -1,0 +1,15 @@
+DeepSeek API 直连诊断（2026-11-19，审计 Phase1/Phase5 证据）
+
+命令：curl.exe -s -X POST https://api.deepseek.com/v1/chat/completions -H "Authorization: Bearer sk-****1660" --max-time 20 -d '{"model":"deepseek-chat",...}'
+耗时：230 ms（网络链路真实可达，无需代理）
+curl 退出码：0
+真实响应：
+{"error":{"message":"Authentication Fails, Your api key: ****1660 is invalid (request_id: f4d9f086-7b0a-4d6e-894f-4ff581ccaca0)","type":"authentication_error","param":null,"code":"invalid_request_error"}}
+
+结论：
+1. molforge-server 内置默认 Key（main.rs:1309 硬编码 sk-9baf...1660）已失效。
+2. python_worker.rs ai_chat_request() 收到 authentication_error 返回 Err；
+   main.rs:1322-1337 捕获后【静默】改用紧束缚模板文案，不向用户标注"AI 离线/降级"。
+3. 佐证：/api/ai/chat 实测仅 347.5 ms 返回，reply 与 main.rs:1328 模板逐字一致。
+4. run_external 工作目录核查：evidence/engines/ 目录为空（0 个文件）——
+   /api/qc/run_external 声称 status=completed 但未产生任何输入/输出文件，未 spawn 任何进程。

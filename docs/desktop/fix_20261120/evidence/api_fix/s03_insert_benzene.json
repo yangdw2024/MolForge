@@ -1,0 +1,37 @@
+{
+  "document": {
+    "box_origin": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "can_redo": false,
+    "can_undo": true,
+    "cell": null,
+    "charge": 0,
+    "document_id": "mf-18e99ae3fd76c34c-0",
+    "formula": "C14H16N4O2",
+    "geometry_label": "3D Non-Planar",
+    "has_2d": true,
+    "has_3d": true,
+    "molecular_weight": 272.308,
+    "multiplicity": 1,
+    "name": "Caffeine",
+    "num_atoms": 36,
+    "num_bonds": 37,
+    "point_group": "C1",
+    "presets": [
+      "caffeine",
+      "benzene",
+      "water",
+      "methane",
+      "ethanol",
+      "aspirin"
+    ],
+    "revision": 1,
+    "source_path": null,
+    "spin_label": "Singlet"
+  },
+  "message": "已成功插入基团: Benzene (苯环)",
+  "ok": true
+}

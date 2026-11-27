@@ -1,0 +1,16 @@
+﻿{
+    "carrier":  "hole",
+    "e_i_i":  -99.81,
+    "e_i_n":  -99.805,
+    "e_n_i":  -100.005,
+    "e_n_n":  -100.01,
+    "lambda1_ev":  0.13605693123020296,
+    "lambda1_hartree":  0.005000000000009663,
+    "lambda2_ev":  0.13605693122981624,
+    "lambda2_hartree":  0.0049999999999954525,
+    "lambda_total_ev":  0.2721138624600192,
+    "lambda_total_hartree":  0.010000000000005116,
+    "lambda_total_kcal":  6.27509474063421,
+    "lambda_total_mev":  272.11386246001916,
+    "ok":  true
+}

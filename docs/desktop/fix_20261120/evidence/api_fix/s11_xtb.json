@@ -1,0 +1,12 @@
+{
+  "converged": null,
+  "energy_hartree": -37.463354538164,
+  "engine": "xtb",
+  "error": null,
+  "exit_code": 0,
+  "message": "GFN-xTB 实算完成：E = -37.463355 Hartree",
+  "ok": true,
+  "stdout_tail": "\n\n           -------------------------------------------------\n          | TOTAL ENERGY              -37.463354538164 Eh   |\n          | GRADIENT NORM              15.930310731191 Eh/α |\n          | HOMO-LUMO GAP               0.405970463436 eV   |\n           -------------------------------------------------\n\n------------------------------------------------------------------------\n * finished run on 2026/11/20 at 08:57:17.019     \n------------------------------------------------------------------------\n total:\n * wall-time:     0 d,  0 h,  0 min,  0.397 sec\n *  cpu-time:     0 d,  0 h,  0 min,  0.109 sec\n * ratio c/w:     0.276 speedup\n SCF:\n * wall-time:     0 d,  0 h,  0 min,  0.011 sec\n *  cpu-time:     0 d,  0 h,  0 min,  0.109 sec\n * ratio c/w:     9.943 speedup\n",
+  "timed_out": false,
+  "workdir": "D:\\YDW\\MolForge_Scratch\\molforge_xtb_mf-18e99ae4daa0c18c-1"
+}

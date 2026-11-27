@@ -1,0 +1,5 @@
+[AUDIT] FATAL: page.waitForFunction: Timeout 15000ms exceeded.
+    at run (E:\YDW\Trae_Chemdraw\desktop\scripts\fix-retest-e2e-20261120.mjs:60:15) {
+  log: [],
+  name: 'TimeoutError'
+}

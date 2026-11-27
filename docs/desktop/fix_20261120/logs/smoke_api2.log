@@ -1,0 +1,16 @@
+s01 PASS 基线文档 :: atoms=41 bonds=42
+s02 FAIL R11 五砌块在目录 :: missing: benzene pentacene itic y6 c60
+s03 PASS R11 插入苯真坐标 :: 12 atoms added
+s04 PASS R8 设键级4=芳香 :: order=1 aromatic=True
+s05 PASS Y6 设原子电荷+撤销 :: 1/0/1 ok
+s06 PASS Y2 2D拖动 pos_2d 对象 :: x2=5
+s07 PASS R7 delete_atoms ids 真删+撤销 :: 53->52->53
+s08 PASS R10 噻吩杂原子+点击位 :: 1 S, center~5
+s09 PASS Y3 xtb/orca 输入导出 :: xtb+orca ok
+s10 FAIL R9 CalChem 真 SCF :: 响应状态代码未指示成功: 400 (Bad Request)。
+s11 FAIL Y4 xTB 真能量 :: ok=False err=xtb 退出码 128，未解析到总能量
+s12 FAIL R1 gaussian 缺失诚实报错 :: ok=False status=failed
+s13 PASS R3 Multiwfn 真散点+门禁 :: pts=138852; WFN-01 gated
+s14 FAIL R2 后台真算 orca_sp + md_rdf 拒绝 :: status=failed err=orca 退出码 1
+s15 PASS R6 AI 离线显式标注 :: offline+prefix ok
+s16 PASS Y9 md-rdf 规划 blocked :: blocked steps=0

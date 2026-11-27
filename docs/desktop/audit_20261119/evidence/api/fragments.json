@@ -1,0 +1,213 @@
+{
+  "fragments": [
+    {
+      "attachment_bond_order": 1,
+      "category": "Alkyl",
+      "description": "Methyl (-CH3)",
+      "formula": "CH3",
+      "id": "methyl",
+      "name_cn": "Methyl (-CH3)",
+      "name_en": "Methyl (-CH3)",
+      "num_atoms": 4,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Polar",
+      "description": "Hydroxyl (-OH)",
+      "formula": "OH",
+      "id": "hydroxyl",
+      "name_cn": "Hydroxyl (-OH)",
+      "name_en": "Hydroxyl (-OH)",
+      "num_atoms": 2,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Acid",
+      "description": "Carboxyl (-COOH)",
+      "formula": "CHO2",
+      "id": "carboxyl",
+      "name_cn": "Carboxyl (-COOH)",
+      "name_en": "Carboxyl (-COOH)",
+      "num_atoms": 4,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Aromatic",
+      "description": "Phenyl (-C6H5)",
+      "formula": "C6H5",
+      "id": "phenyl",
+      "name_cn": "Phenyl (-C6H5)",
+      "name_en": "Phenyl (-C6H5)",
+      "num_atoms": 6,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Nitrogen",
+      "description": "Amino (-NH2)",
+      "formula": "NH2",
+      "id": "amino",
+      "name_cn": "Amino (-NH2)",
+      "name_en": "Amino (-NH2)",
+      "num_atoms": 3,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Nitrogen",
+      "description": "Nitro (-NO2)",
+      "formula": "NO2",
+      "id": "nitro",
+      "name_cn": "Nitro (-NO2)",
+      "name_en": "Nitro (-NO2)",
+      "num_atoms": 3,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Nitrogen",
+      "description": "Cyano (-CN)",
+      "formula": "CN",
+      "id": "cyano",
+      "name_cn": "Cyano (-CN)",
+      "name_en": "Cyano (-CN)",
+      "num_atoms": 2,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Oxygen",
+      "description": "Methoxy (-OCH3)",
+      "formula": "CH3O",
+      "id": "methoxy",
+      "name_cn": "Methoxy (-OCH3)",
+      "name_en": "Methoxy (-OCH3)",
+      "num_atoms": 5,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Alkyl",
+      "description": "Vinyl (-CH=CH2)",
+      "formula": "C2H3",
+      "id": "vinyl",
+      "name_cn": "Vinyl (-CH=CH2)",
+      "name_en": "Vinyl (-CH=CH2)",
+      "num_atoms": 5,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Alkyl",
+      "description": "Ethynyl (-C#CH)",
+      "formula": "C2H",
+      "id": "ethynyl",
+      "name_cn": "Ethynyl (-C#CH)",
+      "name_en": "Ethynyl (-C#CH)",
+      "num_atoms": 3,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Halogen",
+      "description": "Fluoro (-F)",
+      "formula": "F",
+      "id": "fluoro",
+      "name_cn": "Fluoro (-F)",
+      "name_en": "Fluoro (-F)",
+      "num_atoms": 1,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Halogen",
+      "description": "Chloro (-Cl)",
+      "formula": "Cl",
+      "id": "chloro",
+      "name_cn": "Chloro (-Cl)",
+      "name_en": "Chloro (-Cl)",
+      "num_atoms": 1,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Halogen",
+      "description": "Bromo (-Br)",
+      "formula": "Br",
+      "id": "bromo",
+      "name_cn": "Bromo (-Br)",
+      "name_en": "Bromo (-Br)",
+      "num_atoms": 1,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Heterocycle",
+      "description": "Thiophene (噻吩环)",
+      "formula": "C4H3S",
+      "id": "thiophene",
+      "name_cn": "Thiophene (噻吩环)",
+      "name_en": "Thiophene (噻吩环)",
+      "num_atoms": 5,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Heterocycle",
+      "description": "Pyrrole (吡咯环)",
+      "formula": "C4H4N",
+      "id": "pyrrole",
+      "name_cn": "Pyrrole (吡咯环)",
+      "name_en": "Pyrrole (吡咯环)",
+      "num_atoms": 6,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "Heterocycle",
+      "description": "Furan (呋喃环)",
+      "formula": "C4H3O",
+      "id": "furan",
+      "name_cn": "Furan (呋喃环)",
+      "name_en": "Furan (呋喃环)",
+      "num_atoms": 5,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "OSC",
+      "description": "Carbazole (咔唑核心)",
+      "formula": "C12H8N",
+      "id": "carbazole",
+      "name_cn": "Carbazole (咔唑核心)",
+      "name_en": "Carbazole (咔唑核心)",
+      "num_atoms": 14,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "OSC",
+      "description": "BDT Core (苯并二噻吩)",
+      "formula": "C10H4S2",
+      "id": "bdt",
+      "name_cn": "BDT Core (苯并二噻吩)",
+      "name_en": "BDT Core (苯并二噻吩)",
+      "num_atoms": 12,
+      "smiles": ""
+    },
+    {
+      "attachment_bond_order": 1,
+      "category": "OSC",
+      "description": "Fluorene (芴核心)",
+      "formula": "C13H9",
+      "id": "fluorene",
+      "name_cn": "Fluorene (芴核心)",
+      "name_en": "Fluorene (芴核心)",
+      "num_atoms": 13,
+      "smiles": ""
+    }
+  ]
+}

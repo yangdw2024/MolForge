@@ -1,0 +1,609 @@
+{
+  "product": "MolForge",
+  "version": "7.4.2",
+  "timestamp": "2026-11-17 11:04:55",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "python_executable": "D:\\YDW\\Trae_Gromacs\\miniconda3\\envs\\molforge-webengine\\python.exe",
+  "delivery_zip": {
+    "path": "E:\\YDW\\Trae_Chemdraw\\MolForge_v7.4.2_delivery.zip",
+    "size_mb": 7.31,
+    "bytes": 7661990,
+    "sha256": "d18dc6f98b555c8cb17bd69b53acfbb8631bc717e4e0536b989d748f0cd22729",
+    "file_count": 433
+  },
+  "gates": {
+    "regression_suite": "PASS",
+    "native_gui_acceptance": "PASS_REVIEWED_EXTERNAL_EVIDENCE",
+    "real_external_engines": "PARTIAL_GAUSSIAN_MULTIWFN_XTB_ORCA_SERIAL_PASS_GROMACS_FAIL",
+    "clean_environment_install": "PASS_REVIEWED_EXTERNAL_EVIDENCE",
+    "delivery_packaging_integrity": "PASS"
+  },
+  "evidence_scope": {
+    "mock_or_sample_tests": [
+      "Linux HPC remote runner",
+      "Multiwfn sample-output parsing"
+    ],
+    "external_acceptance_not_rerun_by_builder": true,
+    "not_certified": [
+      "All 79 research entries as independent production algorithms",
+      "GROMACS end-to-end MD execution",
+      "ORCA MPI parallel execution",
+      "Real HPC credentials, remote submission or queue",
+      "Real external LLM request",
+      "100M-atom rendering or 60 FPS",
+      "Native 321554-atom FPS or every export format"
+    ]
+  },
+  "acceptance_evidence": {
+    "generated_at": "2026-11-16T18:07:29+08:00",
+    "version": "7.4.2",
+    "method": "Consolidated from direct engine results, native desktop evidence, file readback and isolated installation; these tests are not rerun by the ZIP builder.",
+    "native_mouse_acceptance": {
+      "status": "PASS",
+      "desktop": "isolated Windows PIP desktop; independent QSettings and MOLFORGE_DATA_DIR",
+      "actions": [
+        "Ctrl+N",
+        "mouse atom creation and drag bond creation",
+        "3D mouse rotation",
+        "Ctrl+S",
+        "Ctrl+O"
+      ],
+      "font_size_px": 22,
+      "window_size": [
+        960,
+        774
+      ],
+      "saved_atoms": 2,
+      "saved_bonds": 1,
+      "saved_project_bytes": 843,
+      "initial_screenshot": "docs/repair_20261116/evidence/native_22_initial.png",
+      "reopened_screenshot": "docs/repair_20261116/evidence/native_two_atoms_reopened.png",
+      "saved_project": "docs/repair_20261116/evidence/native_two_atoms.mforge",
+      "scope": "Real mouse/keyboard evidence for the listed actions, not every GUI feature or a frame-rate benchmark."
+    },
+    "external_engines": {
+      "gaussian": {
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 9.345210400002543,
+        "normal_termination": true,
+        "output_exists": true,
+        "output_bytes": 75218,
+        "stationary_point_found": true
+      },
+      "multiwfn": {
+        "status": "PASS",
+        "mayer": {
+          "seconds": 0.1529009000005317,
+          "bond_orders": {
+            "1-2": 0.96416243,
+            "1-3": 0.96416243
+          },
+          "total_valences": {
+            "1": 1.92832485,
+            "2": 0.97266994,
+            "3": 0.97266994
+          }
+        },
+        "qtaim": {
+          "seconds": 0.09548770000037621,
+          "critical_points": 5,
+          "bond_critical_points": 2,
+          "attractors": 3,
+          "paths": 4
+        }
+      },
+      "xtb": {
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 0.07268249999833643,
+        "log": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\external_engines\\xtb\\xtb.log",
+        "normal_termination": true,
+        "optimized_xyz": true
+      },
+      "orca": {
+        "status": "PASS_SERIAL_ONLY",
+        "returncode": 0,
+        "seconds": 27.786821400000917,
+        "log": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\external_engines\\orca\\water.out",
+        "normal_termination": true,
+        "optimized_xyz": true,
+        "parallel_status": "NOT_AVAILABLE: 8-process launch could not find mpiexec; serial run passed"
+      },
+      "gromacs": {
+        "status": "FAIL_OUTPUT_FILE_IO",
+        "versions_observed": [
+          "2025.1",
+          "2026.1",
+          "2026.3"
+        ],
+        "detail": "Version commands and input reading worked, but pdb2gmx/editconf failed to create output files; no MD pass claimed.",
+        "last_result": {
+          "status": "failed",
+          "steps": {
+            "editconf": {
+              "returncode": 1,
+              "seconds": 0.009454399998503504
+            }
+          },
+          "error": "RuntimeError: editconf failed; see E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\external_engines\\gromacs_direct\\editconf_console.log"
+        }
+      },
+      "hpc_remote": {
+        "status": "NOT_TESTED",
+        "detail": "Only mock runner tests; no real credentials or remote queue verification."
+      },
+      "external_llm": {
+        "status": "NOT_TESTED",
+        "detail": "No real external LLM request was sent."
+      }
+    },
+    "large_system_main_window": {
+      "status": "passed",
+      "input": "E:\\YDW\\test_wsl\\ydw-PM6-ClFFCl.pdb",
+      "platform": "Qt offscreen",
+      "stages": {
+        "open_main_window": {
+          "ok": true,
+          "seconds": 8.602213400001347,
+          "atoms": 321554,
+          "bonds": 275500
+        },
+        "offscreen_render": {
+          "frames": 12,
+          "p50_ms": 0.09554999996908009,
+          "p95_ms": 0.15950000306474976,
+          "note": "Offscreen software/backend timing; not native GUI FPS"
+        },
+        "select_one": {
+          "seconds": 0.0008951999989221804,
+          "selected": true
+        },
+        "delete_one": {
+          "success": true,
+          "seconds": 13.672023800001625,
+          "atoms_after": 321552,
+          "deleted_count": 2,
+          "cascade_terminal_hydrogens": 1
+        },
+        "undo_one": {
+          "success": true,
+          "seconds": 4.638530599997466,
+          "atoms_after": 321554,
+          "atom_restored": true
+        }
+      },
+      "memory": {
+        "rss_mb": 1281.60546875,
+        "peak_working_set_mb": 1584.4140625
+      },
+      "renderer": {
+        "type": "VtkRendererBackend"
+      }
+    },
+    "clean_install": {
+      "status": "passed",
+      "python": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Scripts\\python.exe",
+      "installed": {
+        "version": "7.4.2",
+        "package": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Lib\\site-packages\\molforge\\__init__.py",
+        "main": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Lib\\site-packages\\main.py",
+        "entry_point_callable": true
+      },
+      "offscreen_window": {
+        "atoms": 24,
+        "bonds": 25,
+        "title": "[G1:M1:V1] 咖啡因 — MolForge 7.4.2 · AI-Native Molecular & OSC Workbench"
+      },
+      "console_entry_point": {
+        "path": "E:\\YDW\\Trae_Chemdraw\\_repair_20261116\\clean_venv\\Scripts\\molforge.exe",
+        "running_after_8_seconds": true,
+        "seconds": 8.025050999996893
+      }
+    },
+    "credential_scan": {
+      "status": "REVIEWED",
+      "files_scanned": 366,
+      "candidate_count": 1,
+      "review": "The sole candidate is the explicit fake value sk-custom-test-key-999 in tests/test_llm_config_sync.py; no production credential or private key was found."
+    },
+    "artifacts": {
+      "gaussian_multiwfn": "docs/repair_20261116/evidence/gaussian_multiwfn_result.json",
+      "xtb_orca": "docs/repair_20261116/evidence/xtb_orca_result.json",
+      "gromacs_editconf_log": "docs/repair_20261116/evidence/gromacs_editconf_failure.txt",
+      "large_gui": "docs/repair_20261116/evidence/large_gui_result.json",
+      "clean_install": "docs/repair_20261116/evidence/clean_install_result.json",
+      "secret_scan": "docs/repair_20261116/evidence/secret_scan.json",
+      "full_regression": "docs/repair_20261116/evidence/full_regression_result.json"
+    },
+    "gates": {
+      "native_gui_acceptance": "PASS_REVIEWED_EXTERNAL_EVIDENCE",
+      "real_external_engines": "PARTIAL_GAUSSIAN_MULTIWFN_XTB_ORCA_SERIAL_PASS_GROMACS_FAIL",
+      "clean_environment_install": "PASS_REVIEWED_EXTERNAL_EVIDENCE"
+    },
+    "not_certified": [
+      "All 79 research entries as independent production algorithms",
+      "GROMACS end-to-end MD execution",
+      "ORCA MPI parallel execution",
+      "Real HPC credentials, remote submission or queue",
+      "Real external LLM request",
+      "100M-atom rendering or 60 FPS",
+      "Native 321554-atom FPS or every export format"
+    ]
+  },
+  "gate_tests": {
+    "all_passed": true,
+    "test_results": [
+      {
+        "name": "Invariant & CommandBus Integrity",
+        "command": "scripts/check_invariants.py",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 17,
+        "evidence_kind": "marker",
+        "evidence_error": "",
+        "elapsed_seconds": 0.312,
+        "stdout_tail": [
+          "================================================================",
+          "结果：17 通过, 0 失败",
+          "================================================================"
+        ],
+        "stderr_tail": [
+          "[11:04:07] Molecule does not have explicit Hs. Consider calling AddHs()",
+          "[11:04:07] Molecule does not have explicit Hs. Consider calling AddHs()",
+          "[11:04:07] Molecule does not have explicit Hs. Consider calling AddHs()"
+        ]
+      },
+      {
+        "name": "Trajectory Kabsch & Welford RMSF",
+        "command": "tests/test_trajectory_analysis.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 4,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.227,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 4 tests in 0.038s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Multiwfn QTAIM & Mayer Driver (sample parsing)",
+        "command": "tests/test_multiwfn_driver.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 4,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.179,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 4 tests in 0.040s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Document Session Multi-View",
+        "command": "tests/test_document_session_multi_view.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 2,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.353,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 2 tests in 0.001s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Fragment Transactions",
+        "command": "tests/test_fragment_transactions.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 2,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.574,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 2 tests in 0.355s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Gaussian Job Spec Generator",
+        "command": "tests/test_gaussian_job_spec.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 3,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.322,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 3 tests in 0.044s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Internal Coordinate Commands",
+        "command": "tests/test_internal_coordinate_commands.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 3,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.181,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 3 tests in 0.018s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Measurement Target Resolution",
+        "command": "tests/test_measurement_target_resolution.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 7,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 1.041,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 7 tests in 0.765s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Gaussian 16 Geometry & Dihedral Benchmark",
+        "command": "tests/test_gaussian_geometry_benchmark.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 4,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.195,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 4 tests in 0.006s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "2D-3D Bidirectional Sync & Projection",
+        "command": "tests/test_bidirectional_2d3d_sync.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 4,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.268,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 4 tests in 0.083s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Linux HPC Remote Execution & Squeue (mock runner)",
+        "command": "tests/test_hpc_remote_execution.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 7,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 11.777,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 7 tests in 11.546s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Model Context Protocol (MCP) Server & Bridge",
+        "command": "tests/test_mcp_server_protocol.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 7,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.301,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 7 tests in 0.053s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "LLM Unified Config & In-Place Chat Sync",
+        "command": "tests/test_llm_config_sync.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 2,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.256,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 2 tests in 0.022s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "UI Typography, Custom Fragments & Timeline",
+        "command": "tests/test_ui_enhancements_v7_4.py",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": null,
+        "evidence_kind": "marker",
+        "evidence_error": "",
+        "elapsed_seconds": 0.35,
+        "stdout_tail": [
+          "All UI enhancements tests passed successfully!"
+        ],
+        "stderr_tail": []
+      },
+      {
+        "name": "Massive System Data Structures (not main-GUI certification)",
+        "command": "tests/test_massive_system_architecture.py",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": null,
+        "evidence_kind": "marker",
+        "evidence_error": "",
+        "elapsed_seconds": 4.178,
+        "stdout_tail": [
+          "[PASS] test_adaptive_interaction_controller_budget",
+          "[PASS] test_large_pdb_fixed_column_conect_parsing",
+          "All massive system architecture tests passed successfully!"
+        ],
+        "stderr_tail": []
+      },
+      {
+        "name": "Scientific Summary Counterexamples",
+        "command": "tests/test_scientific_summary.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 5,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.194,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 5 tests in 0.006s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Periodic Cell & CRYST1 Roundtrip",
+        "command": "tests/test_periodic.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 5,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.295,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 5 tests in 0.116s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Repair Regressions",
+        "command": "tests/test_repair_regressions.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 6,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.649,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 6 tests in 0.252s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Responsive Layout Geometry (offscreen)",
+        "command": "tests/test_typography_responsive.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 4,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 6.914,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 4 tests in 5.412s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Native Qt Logic (offscreen, not mouse acceptance)",
+        "command": "tests/test_win10_native_gui.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 8,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 12.12,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 8 tests in 10.720s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Desktop MCP Current Document (real stdio subprocess)",
+        "command": "tests/test_desktop_mcp.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 1,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 0.565,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 1 test in 0.329s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "Workflow Bundle & Resource Defaults",
+        "command": "tests/test_v4_true_style_and_storage.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 34,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 1.415,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 34 tests in 0.779s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "name": "v7.5 Regression Candidates",
+        "command": "tests/test_bugfixes_v7_5.py -v",
+        "passed": true,
+        "exit_code": 0,
+        "test_count": 8,
+        "evidence_kind": "unittest",
+        "evidence_error": "",
+        "elapsed_seconds": 3.784,
+        "stdout_tail": [],
+        "stderr_tail": [
+          "Ran 8 tests in 3.153s",
+          "",
+          "OK"
+        ]
+      }
+    ]
+  }
+}

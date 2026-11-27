@@ -1,0 +1,51 @@
+{
+  "name": "molforge-studio",
+  "version": "8.1.0",
+  "description": "MolForge Studio — Scientific Precision Electron Desktop Workstation for Molecular Modeling, Quantum Chemistry & Organic Semiconductors",
+  "author": "MolForge Team",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev:renderer": "vite --host 127.0.0.1 --port 5178 --strictPort",
+    "build:electron": "tsc -p tsconfig.node.json && node -e \"require('fs').copyFileSync('electron/preload.cjs','dist-electron/preload.cjs')\"",
+    "build:renderer": "tsc -p tsconfig.json --noEmit && vite build",
+    "build": "npm run build:electron && npm run build:renderer",
+    "start": "npm run build && electron .",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:e2e": "node scripts/run-electron-e2e.mjs",
+    "pack:win": "npm run build && electron-builder --win --x64"
+  },
+  "dependencies": {
+    "@types/katex": "^0.16.8",
+    "katex": "^0.19.1",
+    "lucide-react": "^0.511.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.26.0",
+    "@tailwindcss/vite": "^4.1.6",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "@webgpu/types": "^0.1.74",
+    "electron": "^35.2.0",
+    "electron-builder": "^26.0.12",
+    "eslint": "^9.26.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "jsdom": "^26.1.0",
+    "playwright": "^1.52.0",
+    "tailwindcss": "^4.1.6",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.31.1",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.3"
+  }
+}

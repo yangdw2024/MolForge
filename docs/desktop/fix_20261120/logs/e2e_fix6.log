@@ -1,0 +1,54 @@
+[AUDIT] PASS A1 顶栏高度38px :: height=37.99107360839844
+[AUDIT] PASS A2 10大科研菜单 :: found=文件/编辑/构建/结构/计算/分析/结果/视图/图层/帮助
+[AUDIT] PASS A3 活动分子式徽章 :: C8H10N4O2
+[AUDIT] PASS A4 菜单点击展开级联 :: 计算菜单展开截图 audit_A_menu_cascade.png
+[AUDIT] PASS A5 Ctrl+K Spotlight :: palette visible=true
+[AUDIT] PASS B1 工具轨宽度44px :: width=43.98809814453125
+[AUDIT] PASS B2 元素抽屉展开(磨砂) :: w-56 backdrop-blur 抽屉
+[AUDIT] PASS B3 选中后抽屉自动收起 :: closed=true badge=N
+[AUDIT] PASS B4 环系抽屉展开 :: w-52 抽屉
+[RENDERER] [HK] skip Escape ring null
+[AUDIT] PASS B5 片段抽屉展开 :: w-64 抽屉
+[AUDIT] PASS C0 2D画布原子可定位 :: atoms=24
+[AUDIT] PASS C1 原子右键元素速换 :: menu=原子 #0 (C)|Z=6|替换元素|C|N|O|S|P|F|Cl|Br|H|形式电荷|当前 0|-2|-1|0|+1|+2|更多元素 (118 周期表)...|局部/全分子 3D 力场优化|删除此原子 (Del)
+[AUDIT] PASS C2 原子右键电荷设置 :: 存在电荷项
+[AUDIT] PASS C3 右键删除原子生效 :: before=24 after=23 (相等=静默失效)
+[RENDERER] [HK] skip Escape fragment null
+[AUDIT] PASS C4 键右键单/双/三/芳香 :: menu=化学键 #0|0 ↔ 1|单键 (Single Bond, 1.0)|双键 (Double Bond, 2.0)|三键 (Triple Bond, 3.0)|芳香键 (Aromatic, 1.5)|删除化学键
+[AUDIT] PASS C5 右键设三键精确生效 :: 实际变为 order=3 (期望3)
+[RENDERER] [HK] skip Escape fragment null
+[AUDIT] DIAG C6: {"at":"circle r=10","focus":"BODY."}
+[RENDERER] [HK] skip o fragment 0
+[AUDIT] FAIL C6 悬停热键O瞬时置换 :: before=C after=C
+[RENDERER] [HK] skip b fragment 1
+[AUDIT] FAIL C7 悬停热键B置换硼 :: atom1=N (期望B；App.tsx:87与画布:91双重映射b键→建键工具抢占,元素置换不可靠)
+[AUDIT] PASS D1 五大HUD同时呼出 :: open=5/5
+[AUDIT] PASS D2 HUD磨砂玻璃质感 :: backdrop-blur-2xl 浮窗数=5
+[AUDIT] PASS D3 HUD标题栏拖拽 :: before=(255.98216247558594,93.98809814453125) after={"x":435.982177734375,"y":213.9881134033203}
+[AUDIT] PASS D4 HUD最小化折叠 :: minimized height=37.99107360839844
+[AUDIT] PASS D5 多层z-index状态 :: [{"z":"46","title":"砌块库与 GaussView 片段"},{"z":"41","title":"笛卡尔空间坐标表 · Caffeine "},{"z":"42","title":"量子化学与材料计算设置 · Caffei"},{"z":"43","title":"前线分子轨道与能级阶梯 · Caffei"},{"z":"44","title":"MolForge AI 科学计算副驾驶 "}]
+[RENDERER] [HK] skip Control bond null
+[RENDERER] [HK] skip b bond null
+[AUDIT] PASS E1 Ctrl+B隐藏主导航 :: navBefore.w=191.9940643310547 navAfter=null editor.w=1440.0001220703125
+[RENDERER] [HK] skip Control bond null
+[RENDERER] [HK] skip b bond null
+[AUDIT] PASS E2 三向投影按钮截图 :: front/top/side 三张截图已保存（相机 yaw/pitch 源码 camera.ts:16-29 正确）
+[RENDERER] [HK] skip v bond null
+[RENDERER] [HK] skip Shift select null
+[AUDIT] PASS F1 2原子距离测量 :: 距离 (C#0-N#1): 1.396 Å
+[RENDERER] [HK] skip Shift select null
+[AUDIT] PASS F2 3原子键角测量 :: 键角 (C#0-N#1-C#2): 120.9°
+[RENDERER] [HK] skip Shift select null
+[AUDIT] PASS F3 4原子二面角真实计算 :: 二面角 (C#0-N#1-C#2-N#3): 179.95° (共平面) (硬编码0.00°共平面=Mock, EditorView.tsx:152)
+[AUDIT] PASS G1 SMILES阿司匹林生成 :: formula=C9H8O4 atoms=21
+[AUDIT] PASS G2 Clean3D真实弛豫 :: 最大原子位移=0.2708 Å
+[AUDIT] PASS H1 并五苯插入 :: before=21 after=57 errToast=false (后端 fragments 目录无 pentacene)
+[AUDIT] PASS H2 BDT给体接枝递增 :: before=57 after=69
+[AUDIT] PASS I1 AI自动捕获上下文 :: 上下文: | Caffeine · C8H10N4O2 | 24 原子 / 25 键 | Singlet |  | 欢迎使用 MolForge Studio。我已挂载本地化学引擎与实时紧束缚轨道求解器，可直接为您解析分子结构、搭建体系或生成 Gaussian / REST 计算输入。 |  | 化学计算内核在线 (:18765) | Caffeine
+[RENDERER] [HK] skip Enter select null
+[AUDIT] PASS I2 AI回答诚实性(真AI或显式离线标注) :: 显式离线降级标注(无有效Key时的诚实行为)
+[AUDIT] PASS I3 公式KaTeX真渲染 :: katex节点=3 裸$公式=0
+[AUDIT] PASS Z1 渲染进程零未捕获异常 :: 0 errors
+
+[AUDIT] TOTAL=36 PASS=34 FAIL=2
+[AUDIT] FAIL items: C6, C7

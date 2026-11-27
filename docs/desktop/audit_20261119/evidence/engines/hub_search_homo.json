@@ -1,0 +1,73 @@
+{
+  "items": [
+    {
+      "author": "MolForge Team",
+      "category": "AI 科研技能 (SKILL.md)",
+      "description": "Guide frontier molecular orbital (HOMO/LUMO/gap) analysis using Tight-Binding, CalChem HF/DFT, or Gaussian/ORCA log parsing.",
+      "favorite": false,
+      "id": "org.molforge.skill.qc_frontier_orbital",
+      "installed": true,
+      "kind": "skill",
+      "license": "AgentSkills-MD",
+      "missing_dependencies": [],
+      "name": "qc-frontier-orbital",
+      "permissions": [
+        "read-only-guidance"
+      ],
+      "pinned": false,
+      "provides_capabilities": [],
+      "requires_capabilities": [
+        "qc.tight_binding",
+        "qc.calchem_scf",
+        "qc.calchem_opt"
+      ],
+      "runnable": true,
+      "security_warnings": [],
+      "sha256": "7e041cac3824b4285eb2c61a802b477e21d1a7284a723044e7e6dddc94c6b9c2",
+      "source": "builtin://molforge-official",
+      "status_reason": "已装载 · 只读技能规范",
+      "tags": [
+        "agent-skill"
+      ],
+      "title": "qc-frontier-orbital",
+      "trusted": true,
+      "version": "1.0.0"
+    },
+    {
+      "author": "MolForge Team",
+      "category": "量子化学",
+      "description": "校验当前分子结构后，使用内置杂原子紧束缚模型计算 HOMO/LUMO 与 π-能隙，并生成能级数据。",
+      "favorite": true,
+      "id": "org.molforge.workflow.frontier-mo",
+      "installed": true,
+      "kind": "workflow",
+      "license": "Apache-2.0",
+      "missing_dependencies": [],
+      "name": "org.molforge.workflow.frontier-mo",
+      "permissions": [
+        "in-process:read-only"
+      ],
+      "pinned": true,
+      "provides_capabilities": [],
+      "requires_capabilities": [
+        "qc.tight_binding"
+      ],
+      "runnable": true,
+      "security_warnings": [],
+      "sha256": null,
+      "source": "builtin://workflows",
+      "status_reason": "可运行 · 所有依赖能力已就绪",
+      "tags": [
+        "homo",
+        "lumo",
+        "gap",
+        "tight-binding",
+        "轨道"
+      ],
+      "title": "前线分子轨道与能隙分析 (Tight-Binding)",
+      "trusted": true,
+      "version": "1.0.0"
+    }
+  ],
+  "ok": true
+}

@@ -1,0 +1,28 @@
+(node:43328) ESLintEnvWarning: /* eslint-env */ comments are no longer recognized when linting with flat config and will be reported as errors as of v10.0.0. Replace them with /* global */ comments or define globals in your config file. See https://eslint.org/docs/latest/use/configure/migration-guide#eslint-env-configuration-comments for details. Found in E:\YDW\Trae_Chemdraw\desktop\scripts\audit-retest-20261119.mjs at line 1.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:43328) ESLintEnvWarning: /* eslint-env */ comments are no longer recognized when linting with flat config and will be reported as errors as of v10.0.0. Replace them with /* global */ comments or define globals in your config file. See https://eslint.org/docs/latest/use/configure/migration-guide#eslint-env-configuration-comments for details. Found in E:\YDW\Trae_Chemdraw\desktop\scripts\audit-e2e-20261119.mjs at line 1.
+(node:43328) ESLintEnvWarning: /* eslint-env */ comments are no longer recognized when linting with flat config and will be reported as errors as of v10.0.0. Replace them with /* global */ comments or define globals in your config file. See https://eslint.org/docs/latest/use/configure/migration-guide#eslint-env-configuration-comments for details. Found in E:\YDW\Trae_Chemdraw\desktop\scripts\audit-micro-20261119.mjs at line 1.
+
+E:\YDW\Trae_Chemdraw\desktop\scripts\audit-e2e-20261119.mjs
+  24:130  error  'Buffer' is not defined      no-undef
+  32:42   error  'setTimeout' is not defined  no-undef
+
+E:\YDW\Trae_Chemdraw\desktop\scripts\audit-micro-20261119.mjs
+  10:42  error  'setTimeout' is not defined  no-undef
+
+E:\YDW\Trae_Chemdraw\desktop\scripts\audit-retest-20261119.mjs
+  13:42   error  'setTimeout' is not defined  no-undef
+  17:153  error  'Buffer' is not defined      no-undef
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\CalculationSetupModal.tsx
+  155:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  184:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\FragmentsLayer.tsx
+  230:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\OrbitalLadderModal.tsx
+  39:6  warning  React Hook useEffect has a missing dependency: 'data'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 9 problems (5 errors, 4 warnings)
+

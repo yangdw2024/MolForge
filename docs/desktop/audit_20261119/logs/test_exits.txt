@@ -1,0 +1,4 @@
+typecheck_exit=0
+lint_exit=1
+vitest_exit=0
+e2e_exit=0

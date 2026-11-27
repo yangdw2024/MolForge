@@ -1,0 +1,40 @@
+﻿{
+    "analysis_id":  "WFN-06",
+    "input_file":  "D:\\YDW\\MolForge_Scratch\\probe_mwfn_20261127\\ch2o.fchk",
+    "message":  "Multiwfn 实算完成（Mayer 键级）：共 3 条键，最大键级 2.0175",
+    "metrics":  {
+                    "bond_count":  3,
+                    "exit_code":  0,
+                    "max_bond_order":  2.0175,
+                    "mean_bond_order":  1.2566,
+                    "mode":  "Mayer 键级实算 (9-\u003e1)",
+                    "top_bonds":  [
+                                      {
+                                          "bond_order":  2.01746213,
+                                          "entry":  "#    1:         1(C )    2(O )    2.01746213"
+                                      },
+                                      {
+                                          "bond_order":  0.87614027,
+                                          "entry":  "#    2:         1(C )    3(H )    0.87614027"
+                                      },
+                                      {
+                                          "bond_order":  0.87614027,
+                                          "entry":  "#    3:         1(C )    4(H )    0.87614027"
+                                      }
+                                  ]
+                },
+    "ok":  true,
+    "plot_x":  [
+                   1.0,
+                   2.0,
+                   3.0
+               ],
+    "plot_y":  [
+                   2.01746213,
+                   0.87614027,
+                   0.87614027
+               ],
+    "stdout_tail":  " \"q\": Exit program gracefully          \"r\": Load a new file\n                    ************ Main function menu ************\n 0 Show molecular structure and view orbitals\n 1 Output all properties at a point       2 Topology analysis\n 3 Output and plot specific property in a line\n 4 Output and plot specific property in a plane\n 5 Output and plot specific property within a spatial region (calc. grid data)\n 6 Check \u0026 modify wavefunction\n 7 Population analysis and calculation of atomic charges\n 8 Orbital composition analysis           9 Bond order analysis\n 10 Plot total DOS, PDOS, OPDOS, local DOS, COHP and photoelectron spectrum\n 11 Plot IR/Raman/UV-Vis/ECD/VCD/ROA/NMR spectrum\n 12 Quantitative analysis of molecular surface\n 13 Process grid data (No grid data is presented currently)\n 14 Adaptive natural density partitioning (AdNDP) analysis\n 15 Fuzzy atomic space analysis\n 16 Charge decomposition analysis (CDA) and plot orbital interaction diagram\n 17 Basin analysis                       18 Electron excitation analysis\n 19 Orbital localization analysis        20 Visual study of weak interaction\n 21 Energy decomposition analysis        22 Conceptual DFT (CDFT) analysis\n 23 ETS-NOCV analysis                    24 (Hyper)polarizability analysis\n 25 Electron delocalization and aromaticity analyses\n 26 Structure and geometry related analyses\n 100 Other functions (Part 1)            200 Other functions (Part 2)\n 300 Other functions (Part 3)",
+    "x_label":  "Bond Pair Index",
+    "y_label":  "Mayer Bond Order"
+}

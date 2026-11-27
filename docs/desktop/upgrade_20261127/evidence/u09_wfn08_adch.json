@@ -1,0 +1,47 @@
+﻿{
+    "analysis_id":  "WFN-08",
+    "input_file":  "D:\\YDW\\MolForge_Scratch\\probe_mwfn_20261127\\ch2o.fchk",
+    "message":  "Multiwfn 实算完成（ADCH 电荷）：4 原子，区间 [-0.2724, 0.1065] e",
+    "metrics":  {
+                    "atom_charges":  [
+                                         {
+                                             "charge":  0.05937135,
+                                             "entry":  "Atom    1(C ):     0.05937135"
+                                         },
+                                         {
+                                             "charge":  -0.27241169,
+                                             "entry":  "Atom    2(O ):    -0.27241169"
+                                         },
+                                         {
+                                             "charge":  0.10652017,
+                                             "entry":  "Atom    3(H ):     0.10652017"
+                                         },
+                                         {
+                                             "charge":  0.10652017,
+                                             "entry":  "Atom    4(H ):     0.10652017"
+                                         }
+                                     ],
+                    "atom_count":  4,
+                    "exit_code":  0,
+                    "max_charge_e":  0.1065,
+                    "min_charge_e":  -0.2724,
+                    "mode":  "ADCH 原子偶极校正 Hirshfeld 电荷 (7-\u003e11)",
+                    "sum_charge_e":  0.0
+                },
+    "ok":  true,
+    "plot_x":  [
+                   1.0,
+                   2.0,
+                   3.0,
+                   4.0
+               ],
+    "plot_y":  [
+                   0.05937135,
+                   -0.27241169,
+                   0.10652017,
+                   0.10652017
+               ],
+    "stdout_tail":  " \"q\": Exit program gracefully          \"r\": Load a new file\n                    ************ Main function menu ************\n 0 Show molecular structure and view orbitals\n 1 Output all properties at a point       2 Topology analysis\n 3 Output and plot specific property in a line\n 4 Output and plot specific property in a plane\n 5 Output and plot specific property within a spatial region (calc. grid data)\n 6 Check \u0026 modify wavefunction\n 7 Population analysis and calculation of atomic charges\n 8 Orbital composition analysis           9 Bond order analysis\n 10 Plot total DOS, PDOS, OPDOS, local DOS, COHP and photoelectron spectrum\n 11 Plot IR/Raman/UV-Vis/ECD/VCD/ROA/NMR spectrum\n 12 Quantitative analysis of molecular surface\n 13 Process grid data (No grid data is presented currently)\n 14 Adaptive natural density partitioning (AdNDP) analysis\n 15 Fuzzy atomic space analysis\n 16 Charge decomposition analysis (CDA) and plot orbital interaction diagram\n 17 Basin analysis                       18 Electron excitation analysis\n 19 Orbital localization analysis        20 Visual study of weak interaction\n 21 Energy decomposition analysis        22 Conceptual DFT (CDFT) analysis\n 23 ETS-NOCV analysis                    24 (Hyper)polarizability analysis\n 25 Electron delocalization and aromaticity analyses\n 26 Structure and geometry related analyses\n 100 Other functions (Part 1)            200 Other functions (Part 2)\n 300 Other functions (Part 3)",
+    "x_label":  "Atom Index",
+    "y_label":  "ADCH Charge (e)"
+}

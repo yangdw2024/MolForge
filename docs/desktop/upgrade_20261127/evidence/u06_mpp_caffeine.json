@@ -1,0 +1,54 @@
+﻿{
+    "ok":  true,
+    "result":  {
+                   "analysis_id":  "PROP-MPP",
+                   "metrics":  {
+                                   "heavy_atom_count":  14,
+                                   "max_deviation_angstrom":  0.00369,
+                                   "mpp_angstrom":  0.0016,
+                                   "plane_normal":  [
+                                                        -0.0009288526832365745,
+                                                        0.03194426524293846,
+                                                        0.9994892201273518
+                                                    ],
+                                   "sdp_angstrom":  0.00589
+                               },
+                   "plot_x":  [
+                                  1,
+                                  2,
+                                  3,
+                                  4,
+                                  5,
+                                  6,
+                                  7,
+                                  8,
+                                  9,
+                                  10,
+                                  11,
+                                  12,
+                                  13,
+                                  14
+                              ],
+                   "plot_y":  [
+                                  0.0022,
+                                  -0.00029,
+                                  -0.00066,
+                                  -0.00196,
+                                  0.00109,
+                                  0.00203,
+                                  0.00148,
+                                  0.0007,
+                                  0.00153,
+                                  -0.00369,
+                                  -0.00103,
+                                  0.00023,
+                                  -0.00057,
+                                  -0.00106
+                              ],
+                   "status":  "completed",
+                   "summary":  "MPP = 0.0016 Å, SDP = 0.0059 Å, 最大离面 0.0037 Å (14 重原子)",
+                   "title":  "分子平面性 SVD/Jacobi 实算 (PROP-MPP)",
+                   "x_label":  "Heavy Atom Index",
+                   "y_label":  "Plane Deviation d_s (Å)"
+               }
+}

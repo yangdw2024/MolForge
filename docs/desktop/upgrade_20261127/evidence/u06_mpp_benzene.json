@@ -1,0 +1,38 @@
+﻿{
+    "ok":  true,
+    "result":  {
+                   "analysis_id":  "PROP-MPP",
+                   "metrics":  {
+                                   "heavy_atom_count":  6,
+                                   "max_deviation_angstrom":  0.0,
+                                   "mpp_angstrom":  0.0,
+                                   "plane_normal":  [
+                                                        0.0,
+                                                        0.0,
+                                                        1.0
+                                                    ],
+                                   "sdp_angstrom":  0.0
+                               },
+                   "plot_x":  [
+                                  1,
+                                  2,
+                                  3,
+                                  4,
+                                  5,
+                                  6
+                              ],
+                   "plot_y":  [
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0
+                              ],
+                   "status":  "completed",
+                   "summary":  "MPP = 0.0000 Å, SDP = 0.0000 Å, 最大离面 0.0000 Å (6 重原子)",
+                   "title":  "分子平面性 SVD/Jacobi 实算 (PROP-MPP)",
+                   "x_label":  "Heavy Atom Index",
+                   "y_label":  "Plane Deviation d_s (Å)"
+               }
+}

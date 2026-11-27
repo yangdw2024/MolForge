@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/* Google Stitch DESIGN.md + Material 3 Expressive Tonal Design Tokens */
+:root,
+[data-theme="dark"] {
+  --md-sys-color-canvas: #070b10;
+  --md-sys-color-surface: #0d141d;
+  --md-sys-color-surface-low: #121c28;
+  --md-sys-color-surface-high: rgba(20, 31, 45, 0.86);
+  --md-sys-color-surface-highest: #1b2a3c;
+  --md-sys-color-primary: #5eead4;
+  --md-sys-color-primary-container: rgba(94, 234, 212, 0.14);
+  --md-sys-color-on-primary: #042f2e;
+  --md-sys-color-secondary: #60a5fa;
+  --md-sys-color-tertiary: #fb923c;
+  --md-sys-color-on-surface: #e6eef6;
+  --md-sys-color-on-surface-muted: #8ea3b8;
+  --md-sys-color-outline: rgba(148, 163, 184, 0.15);
+  --md-sys-color-outline-strong: rgba(94, 234, 212, 0.36);
+  --md-sys-color-stage-radial: radial-gradient(circle at 52% 45%, #122132 0%, #070b10 74%);
+  --md-sys-shadow-floating: 0 18px 42px rgba(2, 6, 14, 0.56);
+}
+
+[data-theme="light"] {
+  --md-sys-color-canvas: #f3f6fa;
+  --md-sys-color-surface: #ffffff;
+  --md-sys-color-surface-low: #f8fafc;
+  --md-sys-color-surface-high: rgba(255, 255, 255, 0.90);
+  --md-sys-color-surface-highest: #e9eff6;
+  --md-sys-color-primary: #0d9488;
+  --md-sys-color-primary-container: rgba(13, 148, 136, 0.12);
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-secondary: #2563eb;
+  --md-sys-color-tertiary: #ea580c;
+  --md-sys-color-on-surface: #0f172a;
+  --md-sys-color-on-surface-muted: #526477;
+  --md-sys-color-outline: rgba(15, 23, 42, 0.11);
+  --md-sys-color-outline-strong: rgba(13, 148, 136, 0.38);
+  --md-sys-color-stage-radial: radial-gradient(circle at 52% 45%, #ffffff 0%, #e7eef6 78%);
+  --md-sys-shadow-floating: 0 14px 36px rgba(15, 23, 42, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--md-sys-color-canvas);
+  color: var(--md-sys-color-on-surface);
+  font-family: "Inter", "Microsoft YaHei UI", "PingFang SC", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono-num {
+  font-family: "JetBrains Mono", "Cascadia Code", ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.glass-pill {
+  background: var(--md-sys-color-surface-high);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--md-sys-color-outline);
+  box-shadow: var(--md-sys-shadow-floating);
+}
+
+.m3-spring {
+  transition: all 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Crisp custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(94, 234, 212, 0.45);
+}

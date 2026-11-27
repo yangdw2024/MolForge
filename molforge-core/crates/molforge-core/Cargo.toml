@@ -1,0 +1,31 @@
+[package]
+name = "molforge-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "MolForge native scientific core: molecule model, undoable edits, file IO, binary scene protocol, engine orchestration"
+
+[features]
+default = []
+# Pure-Rust CalChem quantum chemistry (path dependency on the sibling CalChem workspace).
+calchem = [
+    "dep:calchem-model",
+    "dep:calchem-basis",
+    "dep:calchem-scf",
+    "dep:calchem-opt",
+    "dep:calchem-dft",
+    "dep:calchem-prop",
+]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.10"
+thiserror.workspace = true
+zip = { version = "2", default-features = false, features = ["deflate"] }
+calchem-model = { path = "E:/YDW/Trae_Gaussian/crates/calchem-model", optional = true }
+calchem-basis = { path = "E:/YDW/Trae_Gaussian/crates/calchem-basis", optional = true }
+calchem-scf = { path = "E:/YDW/Trae_Gaussian/crates/calchem-scf", optional = true }
+calchem-opt = { path = "E:/YDW/Trae_Gaussian/crates/calchem-opt", optional = true }
+calchem-dft = { path = "E:/YDW/Trae_Gaussian/crates/calchem-dft", optional = true }
+calchem-prop = { path = "E:/YDW/Trae_Gaussian/crates/calchem-prop", optional = true }

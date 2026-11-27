@@ -1,0 +1,1 @@
+{"available":false,"basis":"STO-3G","converged":false,"gap_ev":null,"homo_hartree":null,"iterations":0,"lumo_hartree":null,"message":"molforge-core built without `--features calchem`","method":"HF","optimized_positions":null,"total_energy_hartree":0.0}

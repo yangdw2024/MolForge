@@ -1,0 +1,164 @@
+     Locking 12 packages to highest compatible versions
+    Updating calchem-basis v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-basis) -> v0.2.2
+    Updating calchem-cuda v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-cuda) -> v0.2.2
+    Updating calchem-dft v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-dft) -> v0.2.2
+    Updating calchem-grad v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-grad) -> v0.2.2
+    Updating calchem-int v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-int) -> v0.2.2
+    Updating calchem-model v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-model) -> v0.2.2
+    Updating calchem-opt v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-opt) -> v0.2.2
+    Updating calchem-prop v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-prop) -> v0.2.2
+    Updating calchem-scf v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-scf) -> v0.2.2
+    Updating calchem-solv v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-solv) -> v0.2.2
+    Updating calchem-tensor v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-tensor) -> v0.2.2
+    Updating calchem-vib v0.2.0 (E:\YDW\Trae_Gaussian\crates\calchem-vib) -> v0.2.2
+   Compiling memchr v2.8.3
+    Checking bytemuck v1.25.2
+    Checking rand_core v0.6.4
+    Checking libm v0.2.16
+    Checking reborrow v0.5.5
+   Compiling windows-link v0.2.1
+    Checking crossbeam-utils v0.8.23
+   Compiling libc v0.2.191
+   Compiling cfg-if v1.0.5
+    Checking bitflags v2.13.2
+    Checking either v1.19.0
+    Checking once_cell v1.21.4
+   Compiling ucd-trie v0.1.7
+    Checking nano-gemm-core v0.1.0
+    Checking windows-sys v0.61.2
+    Checking serde v1.0.229
+    Checking thiserror v1.0.69
+    Checking equator v0.2.2
+    Checking nano-gemm-f64 v0.1.0
+    Checking rand v0.8.8
+    Checking nano-gemm-f32 v0.1.0
+    Checking raw-cpuid v11.6.0
+    Checking coe-rs v0.1.2
+    Checking byteorder v1.5.0
+    Checking matrixcompare-core v0.1.0
+    Checking dyn-stack v0.13.2
+    Checking dyn-stack v0.11.0
+    Checking equator v0.4.2
+    Checking generativity v1.2.1
+    Checking dbgf v0.1.2
+    Checking crossbeam-epoch v0.9.21
+   Compiling calchem-cuda v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-cuda)
+   Compiling object v0.39.1
+    Checking crossbeam-deque v0.8.8
+    Checking rayon-core v1.13.0
+    Checking num-traits v0.2.19
+    Checking calchem-model v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-model)
+    Checking rayon v1.12.0
+    Checking num-complex v0.4.6
+    Checking num-integer v0.1.47
+    Checking matrixcompare v0.3.0
+    Checking rand_distr v0.4.3
+    Checking num-bigint v0.4.8
+    Checking pulp v0.21.5
+    Checking nano-gemm-c32 v0.1.0
+    Checking pulp v0.18.22
+    Checking nano-gemm-c64 v0.1.0
+    Checking calchem-basis v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-basis)
+    Checking faer-entity v0.20.1
+   Compiling ar_archive_writer v0.5.5
+    Checking gemm-common v0.18.2
+   Compiling psm v0.1.32
+    Checking gemm-c64 v0.18.2
+    Checking gemm-f64 v0.18.2
+    Checking gemm-f32 v0.18.2
+    Checking gemm-c32 v0.18.2
+    Checking gemm v0.18.2
+   Compiling stacker v0.1.25
+   Compiling pest_stack_guard v1.0.1
+   Compiling pest v2.9.6
+    Checking nano-gemm v0.1.3
+   Compiling pest_meta v2.9.6
+   Compiling pest_generator v2.9.6
+   Compiling pest_derive v2.9.6
+    Checking py_literal v0.4.0
+    Checking npyz v0.8.4
+    Checking faer v0.20.2
+    Checking calchem-tensor v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-tensor)
+    Checking calchem-int v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-int)
+    Checking calchem-dft v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-dft)
+    Checking calchem-scf v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-scf)
+    Checking calchem-prop v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-prop)
+    Checking calchem-grad v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-grad)
+    Checking calchem-vib v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-vib)
+    Checking calchem-solv v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-solv)
+    Checking calchem-opt v0.2.2 (E:\YDW\Trae_Gaussian\crates\calchem-opt)
+    Checking molforge-core v0.1.0 (E:\YDW\Trae_Chemdraw\molforge-core\crates\molforge-core)
+error[E0308]: mismatched types
+   --> crates\molforge-core\src\commands.rs:558:34
+    |
+558 |                 if old_charge == charge {
+    |                                  ^^^^^^ expected `i8`, found `i32`
+
+error[E0277]: can't compare `i8` with `i32`
+   --> crates\molforge-core\src\commands.rs:558:31
+    |
+558 |                 if old_charge == charge {
+    |                               ^^ no implementation for `i8 == i32`
+    |
+    = help: the trait `PartialEq<i32>` is not implemented for `i8`
+help: `i8` implements trait `PartialEq<Rhs>`
+   --> /rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\core\src\cmp.rs:2103:12
+    |
+    = note: `PartialEq`
+   ::: /rustc/58cf8f9c35b355199727627d07ae34a4e2846d67/library\core\src\cmp.rs:2115:5
+    |
+    = note: in this macro invocation
+    |
+   ::: D:\cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-4dc01642fd091eda\serde_json-1.0.154\src\value\partial_eq.rs:76:13
+    |
+ 76 |               impl PartialEq<Value> for $ty {
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `PartialEq<Value>`
+...
+ 97 | / partialeq_numeric! {
+ 98 | |     eq_i64[i8 i16 i32 i64 isize]
+ 99 | |     eq_u64[u8 u16 u32 u64 usize]
+100 | |     eq_f32[f32]
+101 | |     eq_f64[f64]
+102 | |     eq_bool[bool]
+103 | | }
+    | |_- in this macro invocation
+    = note: this error originates in the macro `impl_partial_eq_for_primitive` which comes from the expansion of the macro `partialeq_numeric` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: mismatched types
+   --> crates\molforge-core\src\commands.rs:561:31
+    |
+561 |                 atom.charge = charge;
+    |                 -----------   ^^^^^^ expected `i8`, found `i32`
+    |                 |
+    |                 expected due to the type of this binding
+
+error[E0308]: mismatched types
+   --> crates\molforge-core\src\commands.rs:566:25
+    |
+566 |                         old_charge,
+    |                         ^^^^^^^^^^ expected `i32`, found `i8`
+    |
+help: you can convert an `i8` to an `i32`
+    |
+566 |                         old_charge: old_charge.into(),
+    |                         +++++++++++           +++++++
+
+error[E0308]: mismatched types
+   --> crates\molforge-core\src\commands.rs:657:32
+    |
+657 |                     a.charge = *old_charge;
+    |                     --------   ^^^^^^^^^^^ expected `i8`, found `i32`
+    |                     |
+    |                     expected due to the type of this binding
+
+error[E0308]: mismatched types
+   --> crates\molforge-core\src\commands.rs:733:32
+    |
+733 |                     a.charge = *new_charge;
+    |                     --------   ^^^^^^^^^^^ expected `i8`, found `i32`
+    |                     |
+    |                     expected due to the type of this binding
+
+Some errors have detailed explanations: E0277, E0308.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `molforge-core` (lib) due to 6 previous errors

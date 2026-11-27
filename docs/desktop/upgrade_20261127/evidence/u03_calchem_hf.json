@@ -1,0 +1,17 @@
+﻿{
+    "basis":  "STO-3G",
+    "converged":  true,
+    "dipole_magnitude_debye":  1.725304942091846,
+    "error":  null,
+    "gap_ev":  27.11366071833689,
+    "homo_ev":  -10.646094813336282,
+    "iterations":  8,
+    "lumo_ev":  16.467565905000612,
+    "message":  "CalChem v0.3.0 SCF converged=true in 8 iterations (dipole=1.7253 D, n_ao=7)",
+    "method":  "hf",
+    "mode":  "sp",
+    "n_ao":  7,
+    "ok":  true,
+    "steps":  8,
+    "total_energy_hartree":  -74.9630230993387
+}

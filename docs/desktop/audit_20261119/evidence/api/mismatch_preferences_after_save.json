@@ -1,0 +1,11 @@
+{
+  "ai_base_url": "https://api.deepseek.com/v1",
+  "ai_model": "deepseek-chat",
+  "ai_provider": "openai-compatible",
+  "api_key": "sk-TEST-AUDIT-KEY",
+  "base_url": "https://api.deepseek.com/v1",
+  "model": "deepseek-chat",
+  "render_mode": "ball_and_stick",
+  "show_hydrogens": true,
+  "theme": "obsidian"
+}

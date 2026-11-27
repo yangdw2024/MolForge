@@ -1,0 +1,13 @@
+
+> molforge-studio@8.1.0 test:e2e
+> node scripts/run-electron-e2e.mjs
+
+[E2E] Launching built Electron desktop app: E:\YDW\Trae_Chemdraw\desktop
+[E2E] Scene 01 Overview (Obsidian) captured
+[E2E] Scene 02 Library captured
+[E2E] Scene 03/04 Periodic Table + Editor (Obsidian) captured
+[E2E] Scene 04b Split View + Floating HUD Layers captured
+[E2E] Scene 05 Analysis Workbench + Multiwfn real execution captured
+[E2E] Scene 05b MolForge Hub + AI Workflow Provenance captured
+[E2E] Scene 06 Jobs Center captured
+[E2E] ALL 10 SCENES & FLOWS PASSED WITH ZERO ERRORS!

@@ -1,0 +1,1 @@
+{"ok":false,"result":{"analysis_id":"WFN-05","input_file":"","message":"Multiwfn 分析项 WFN-05 尚未接入真实菜单序列（当前仅支持 WFN-12 NCI/RDG 弱相互作用实算），拒绝返回模拟数据。","metrics":{"status":"unavailable"},"ok":false,"plot_x":[],"plot_y":[],"stdout_tail":"","x_label":"","y_label":""}}

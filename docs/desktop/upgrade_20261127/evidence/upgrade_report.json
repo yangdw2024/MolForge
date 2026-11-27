@@ -1,0 +1,68 @@
+﻿[
+    {
+        "id":  "U01",
+        "desc":  "/api/health calchem=true",
+        "status":  "PASS",
+        "detail":  "version=0.1.0 calchem=True"
+    },
+    {
+        "id":  "U02",
+        "desc":  "/api/engines/status CalChem 0.3.0",
+        "status":  "PASS",
+        "detail":  "calchem=0.3.0 available=True"
+    },
+    {
+        "id":  "U03",
+        "desc":  "CalChem v0.3.0 HF/STO-3G + dipole + n_ao",
+        "status":  "PASS",
+        "detail":  "E=-74.9630230993387 dip=1.725304942091846 nao=7"
+    },
+    {
+        "id":  "U04",
+        "desc":  "CalChem v0.3.0 rks + B3LYP/STO-3G",
+        "status":  "PASS",
+        "detail":  "E=-75.31252861233484 dip=1.6784381070194418"
+    },
+    {
+        "id":  "U05",
+        "desc":  "jobs/submit calchem_sp 统一契约",
+        "status":  "PASS",
+        "detail":  "ok=True homo_ev=-3.9234046552655153 dip=1.6784381070194418"
+    },
+    {
+        "id":  "U06",
+        "desc":  "PROP-MPP 纯 Rust 平面性 (benzene \u0026 caffeine)",
+        "status":  "PASS",
+        "detail":  "benz_mpp=0.0 caf_mpp=0.0016"
+    },
+    {
+        "id":  "U07",
+        "desc":  "MD-RDF analysis/run + jobs/submit + workflow",
+        "status":  "PASS",
+        "detail":  "peak=1.1469A wf=completed sha=a7548d29cc1a"
+    },
+    {
+        "id":  "U08",
+        "desc":  "OSC 4-char workflow (TB + MPP)",
+        "status":  "PASS",
+        "detail":  "status=completed nodes=4"
+    },
+    {
+        "id":  "U09",
+        "desc":  "Multiwfn 4项能力 (WFN-12/01/06/08 + 裸坐标拒假)",
+        "status":  "PASS",
+        "detail":  "nci_pts=133458 esp_min=-29.50431 mayer_bonds=3 adch_atoms=4"
+    },
+    {
+        "id":  "U10",
+        "desc":  "GROMACS 5文件返回契约 + 四点法重组能",
+        "status":  "PASS",
+        "detail":  "gmx_files=5 lambda_mev=272.11386246001916"
+    },
+    {
+        "id":  "U11",
+        "desc":  "C盘Temp零残留 + D盘Scratch隔离校验",
+        "status":  "PASS",
+        "detail":  "C_temp=0 D_mwfn_dirs=5"
+    }
+]

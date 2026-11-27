@@ -1,0 +1,42 @@
+{
+  appId: "org.yangdw2024.molforgestudio",
+  productName: "MolForge Studio",
+  copyright: "Copyright © 2026 MolForge Team (Apache-2.0)",
+  directories: {
+    output: "release",
+    buildResources: "build",
+  },
+  files: [
+    "dist/**/*",
+    "dist-electron/**/*",
+    "package.json",
+    "../MolForge/LICENSE",
+  ],
+  extraResources: [
+    {
+      from: "resources/core",
+      to: "core",
+      filter: ["**/*"],
+    },
+  ],
+  asar: true,
+  win: {
+    target: [
+      { target: "nsis", arch: ["x64"] },
+      { target: "portable", arch: ["x64"] },
+    ],
+    icon: "build/icon.ico",
+    artifactName: "MolForge-Studio-${version}-win-${arch}.${ext}",
+  },
+  nsis: {
+    oneClick: false,
+    allowToChangeInstallationDirectory: true,
+    perMachine: false,
+    createDesktopShortcut: true,
+    createStartMenuShortcut: true,
+    artifactName: "MolForge-Studio-${version}-win-x64-setup.${ext}",
+  },
+  portable: {
+    artifactName: "MolForge-Studio-${version}-win-x64-portable.exe",
+  },
+}

@@ -1,0 +1,36 @@
+{
+  "document": {
+    "box_origin": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "can_redo": false,
+    "can_undo": true,
+    "cell": null,
+    "charge": 0,
+    "document_id": "mf-18e99ae3fd76c34c-0",
+    "formula": "C18H16N4O2S",
+    "geometry_label": "3D Non-Planar",
+    "has_2d": true,
+    "has_3d": true,
+    "molecular_weight": 352.419,
+    "multiplicity": 1,
+    "name": "Caffeine",
+    "num_atoms": 41,
+    "num_bonds": 42,
+    "point_group": "C1",
+    "presets": [
+      "caffeine",
+      "benzene",
+      "water",
+      "methane",
+      "ethanol",
+      "aspirin"
+    ],
+    "revision": 10,
+    "source_path": null,
+    "spin_label": "Singlet"
+  },
+  "ok": true
+}

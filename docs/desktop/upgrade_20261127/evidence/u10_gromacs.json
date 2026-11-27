@@ -1,0 +1,13 @@
+﻿{
+    "files":  {
+                  "md.mdp":  "; MolForge Studio GROMACS .mdp (npt)\nintegrator  = md\ndt          = 0.002\nnsteps      = 100000\nnstxout-compressed = 500\nnstenergy   = 500\nnstlog      = 500\ncutoff-scheme = Verlet\ncoulombtype = PME\nrcoulomb    = 1.0\nrvdw        = 1.0\ntcoupl      = V-rescale\ntc-grps     = System\ntau_t       = 0.1\nref_t       = 300\npcoupl      = C-rescale\ntau_p       = 2.0\nref_p       = 1.0\ncompressibility = 4.5e-5\n",
+                  "minim.mdp":  "; MolForge Studio Energy Minimization\nintegrator  = steep\nemtol       = 1000.0\nemstep      = 0.01\nnsteps      = 50000\n",
+                  "npt.mdp":  "; MolForge Studio GROMACS .mdp (npt)\nintegrator  = md\ndt          = 0.002\nnsteps      = 50000\nnstxout-compressed = 500\nnstenergy   = 500\nnstlog      = 500\ncutoff-scheme = Verlet\ncoulombtype = PME\nrcoulomb    = 1.0\nrvdw        = 1.0\ntcoupl      = V-rescale\ntc-grps     = System\ntau_t       = 0.1\nref_t       = 300\npcoupl      = C-rescale\ntau_p       = 2.0\nref_p       = 1.0\ncompressibility = 4.5e-5\n",
+                  "nvt.mdp":  "; MolForge Studio GROMACS .mdp (nvt)\nintegrator  = md\ndt          = 0.002\nnsteps      = 50000\nnstxout-compressed = 500\nnstenergy   = 500\nnstlog      = 500\ncutoff-scheme = Verlet\ncoulombtype = PME\nrcoulomb    = 1.0\nrvdw        = 1.0\ntcoupl      = V-rescale\ntc-grps     = System\ntau_t       = 0.1\nref_t       = 300\npcoupl      = no\ntau_p       = 2.0\nref_p       = 1.0\ncompressibility = 4.5e-5\n",
+                  "run_gmx.sh":  "#!/bin/bash\nset -e\nGMX=\"D:\\YDW\\Trae_Gromacs\\gromacs\\gromacs-2026.3-AVX512-CUDA-sm120-final2\\bin\\gmx.exe\"\n$GMX grompp -f minim.mdp -c system.gro -p topol.top -o em.tpr\n$GMX mdrun -v -deffnm em\n$GMX grompp -f nvt.mdp -c em.gro -p topol.top -o nvt.tpr\n$GMX mdrun -v -deffnm nvt\n$GMX grompp -f npt.mdp -c nvt.gro -p topol.top -o npt.tpr\n$GMX mdrun -v -deffnm npt\n$GMX grompp -f md.mdp -c npt.gro -p topol.top -o md.tpr\n$GMX mdrun -v -deffnm md\n"
+              },
+    "gmx_available":  true,
+    "gmx_path":  "D:\\YDW\\Trae_Gromacs\\gromacs\\gromacs-2026.3-AVX512-CUDA-sm120-final2\\bin\\gmx.exe",
+    "mdp":  "; MolForge Studio GROMACS .mdp (npt)\nintegrator  = md\ndt          = 0.002\nnsteps      = 100000\nnstxout-compressed = 500\nnstenergy   = 500\nnstlog      = 500\ncutoff-scheme = Verlet\ncoulombtype = PME\nrcoulomb    = 1.0\nrvdw        = 1.0\ntcoupl      = V-rescale\ntc-grps     = System\ntau_t       = 0.1\nref_t       = 300\npcoupl      = C-rescale\ntau_p       = 2.0\nref_p       = 1.0\ncompressibility = 4.5e-5\n",
+    "ok":  true
+}

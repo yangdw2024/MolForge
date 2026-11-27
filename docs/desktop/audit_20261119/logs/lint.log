@@ -1,0 +1,21 @@
+
+> molforge-studio@8.1.0 lint
+> eslint .
+
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\CalculationSetupModal.tsx
+   76:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  143:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\FragmentsLayer.tsx
+  229:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\OrbitalLadderModal.tsx
+  39:6  warning  React Hook useEffect has a missing dependency: 'data'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\YDW\Trae_Chemdraw\desktop\tests\api_parity_contract.test.ts
+  17:48  error  Unnecessary escape character: \/  no-useless-escape
+
+✖ 6 problems (1 error, 5 warnings)
+

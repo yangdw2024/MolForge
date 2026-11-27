@@ -1,0 +1,16 @@
+[package]
+name = "molforge-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = []
+calchem = ["molforge-core/calchem"]
+
+[dependencies]
+base64 = "0.22"
+molforge-core = { path = "../molforge-core" }
+serde.workspace = true
+serde_json.workspace = true
+tiny_http = "0.12"

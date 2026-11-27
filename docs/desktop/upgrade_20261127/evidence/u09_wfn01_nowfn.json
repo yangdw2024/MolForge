@@ -1,0 +1,21 @@
+﻿{
+    "ok":  false,
+    "result":  {
+                   "analysis_id":  "WFN-01",
+                   "input_file":  "D:\\YDW\\MolForge_Scratch\\molforge_mwfn_mf-18ebcfa482ad677c-3\\input.xyz",
+                   "message":  "Multiwfn WFN-01 需要 .fchk / .wfn / .wfx / .molden 波函数文件（当前仅坐标，拒绝使用模拟数据）。",
+                   "metrics":  {
+                                   "status":  "wavefunction_required"
+                               },
+                   "ok":  false,
+                   "plot_x":  [
+
+                              ],
+                   "plot_y":  [
+
+                              ],
+                   "stdout_tail":  "",
+                   "x_label":  "",
+                   "y_label":  ""
+               }
+}

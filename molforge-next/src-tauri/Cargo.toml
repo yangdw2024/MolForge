@@ -1,0 +1,18 @@
+[package]
+name = "molforge-next"
+version = "8.0.0-alpha.1"
+description = "MolForge Next — Rust + Tauri 2 + WebGPU Molecular & Quantum Chemistry Studio"
+authors = ["MolForge Contributors"]
+edition = "2021"
+
+[lib]
+name = "molforge_next_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

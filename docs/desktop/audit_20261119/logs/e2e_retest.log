@@ -1,0 +1,6 @@
+[RETEST] PASS I1r AI上下文徽章(经UI加载) :: 上下文: | Cn1cnc2c1c(=O)n(C)c(=O)n2C · C8H10N4O2 | 24 原子 / 25 键 | Singlet |  | 欢迎使用 MolForge Studio。我已挂载本地化学引擎与实时紧束缚轨道求解器，可直接为您解析分子结构
+[RETEST] PASS F4r 4原子二面角HUD :: 二面角 (C#0-C#6-N#12-H#18): 0.00° (共平面)
+[RETEST] PASS F4r-mock 二面角为硬编码Mock :: 二面角 (C#0-C#6-N#12-H#18): 0.00° (共平面) → EditorView.tsx:152 硬编码"0.00° (共平面)"，无论选哪4个原子都显示共平面
+[RETEST] FAIL F3r 3原子键角HUD :: (无)
+[RETEST] FAIL H1r 并五苯插入(后端缺项) :: atoms 24→24; toast={"pentacene":null,"notfound":null,"insert":null}
+[RETEST] PASS H1r-api pentacene/benzene片段404 :: pentacene HTTP=404 error=未找到基团/片段: pentacene; benzene HTTP=404 error=未找到基团/片段: benzene

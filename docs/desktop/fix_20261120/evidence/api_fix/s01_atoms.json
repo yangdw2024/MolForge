@@ -1,0 +1,615 @@
+{
+  "atoms": [
+    {
+      "atom_id": 0,
+      "atomic_num": 6,
+      "color": [
+        133,
+        156,
+        179
+      ],
+      "display_id": 1,
+      "formal_charge": 0,
+      "index": 0,
+      "symbol": "C",
+      "x": 0.491,
+      "x2": 0.491,
+      "y": -1.217,
+      "y2": -1.217,
+      "z": 0.043
+    },
+    {
+      "atom_id": 1,
+      "atomic_num": 7,
+      "color": [
+        82,
+        158,
+        250
+      ],
+      "display_id": 2,
+      "formal_charge": 0,
+      "index": 1,
+      "symbol": "N",
+      "x": -0.677,
+      "x2": -0.677,
+      "y": -0.453,
+      "y2": -0.453,
+      "z": 0.015
+    },
+    {
+      "atom_id": 2,
+      "atomic_num": 6,
+      "color": [
+        133,
+        156,
+        179
+      ],
+      "display_id": 3,
+      "formal_charge": 0,
+      "index": 2,
+      "symbol": "C",
+      "x": -1.869,
+      "x2": -1.869,
+      "y": -1.031,
+      "y2": -1.031,
+      "z": 0.032
+    },
+    {
+      "atom_id": 3,
+      "atomic_num": 7,
+      "color": [
+        82,
+        158,
+        250
+      ],
+      "display_id": 4,
+      "formal_charge": 0,
+      "index": 3,
+      "symbol": "N",
+      "x": -2.912,
+      "x2": -2.912,
+      "y": -0.226,
+      "y2": -0.226,
+      "z": 0.004
+    },
+    {
+      "atom_id": 4,
+      "atomic_num": 6,
+      "color": [
+        133,
+        156,
+        179
+      ],
+      "display_id": 5,
+      "formal_charge": 0,
+      "index": 4,
+      "symbol": "C",
+      "x": -2.411,
+      "x2": -2.411,
+      "y": 1.073,
+      "y2": 1.073,
+      "z": -0.034
+    },
+    {
+      "atom_id": 5,
+      "atomic_num": 6,
+      "color": [
+        133,
+        156,
+        179
+      ],
+      "display_id": 6,
+      "formal_charge": 0,
+      "index": 5,
+      "symbol": "C",
+      "x": -1.028,
+      "x2": -1.028,
+      "y": 0.955,
+      "y2": 0.955,
+      "z": -0.028
+    },
+    {
+      "atom_id": 6,
+      "atomic_num": 6,
+      "color": [
+        133,
+        156,
+        179
+      ],
+      "display_id": 7,
+      "formal_charge": 0,
+      "index": 6,
+      "symbol": "C",
+      "x": -0.118,
+      "x2": -0.118,
+      "y": 2.028,
+      "y2": 2.028,
+      "z": -0.062
+    },
+    {
+      "atom_id": 7,
+      "atomic_num": 8,
+      "color": [
+        245,
+        92,
+        97
+      ],
+      "display_id": 8,
+      "formal_charge": 0,
+      "index": 7,
+      "symbol": "O",
+      "x": -0.456,
+      "x2": -0.456,
+      "y": 3.214,
+      "y2": 3.214,
+      "z": -0.101
+    },
+    {
+      "atom_id": 8,
+      "atomic_num": 7,
+      "color": [
+        82,
+        158,
+        250
+      ],
+      "display_id": 9,
+      "formal_charge": 0,
+      "index": 8,
+      "symbol": "N",
+      "x": 1.224,
+      "x2": 1.224,
+      "y": 1.662,
+      "y2": 1.662,
+      "z": -0.049
+    },
+    {
+      "atom_id": 9,
+      "atomic_num": 6,
+      "color": [
+        133,
+        156,
+        179
+      ],
+      "display_id": 10,
+      "formal_charge": 0,
+      "index": 9,
+      "symbol": "C",
+      "x": 2.192,
+      "x2": 2.192,
+      "y": 2.747,
+      "y2": 2.747,
+      "z": -0.088
+    },
+    {
+      "atom_id": 10,
+      "atomic_num": 6,
+      "color": [
+        133,
+        156,
+        179
+      ],
+      "display_id": 11,
+      "formal_charge": 0,
+      "index": 10,
+      "symbol": "C",
+      "x": 1.629,
+      "x2": 1.629,
+      "y": 0.342,
+      "y2": 0.342,
+      "z": -0.009
+    },
+    {
+      "atom_id": 11,
+      "atomic_num": 8,
+      "color": [
+        245,
+        92,
+        97
+      ],
+      "display_id": 12,
+      "formal_charge": 0,
+      "index": 11,
+      "symbol": "O",
+      "x": 2.828,
+      "x2": 2.828,
+      "y": 0.072,
+      "y2": 0.072,
+      "z": 0.002
+    },
+    {
+      "atom_id": 12,
+      "atomic_num": 7,
+      "color": [
+        82,
+        158,
+        250
+      ],
+      "display_id": 13,
+      "formal_charge": 0,
+      "index": 12,
+      "symbol": "N",
+      "x": 0.648,
+      "x2": 0.648,
+      "y": -0.642,
+      "y2": -0.642,
+      "z": 0.022
+    },
+    {
+      "atom_id": 13,
+      "atomic_num": 6,
+      "color": [
+        133,
+        156,
+        179
+      ],
+      "display_id": 14,
+      "formal_charge": 0,
+      "index": 13,
+      "symbol": "C",
+      "x": -4.326,
+      "x2": -4.326,
+      "y": -0.583,
+      "y2": -0.583,
+      "z": 0.015
+    },
+    {
+      "atom_id": 14,
+      "atomic_num": 1,
+      "color": [
+        242,
+        247,
+        252
+      ],
+      "display_id": 15,
+      "formal_charge": 0,
+      "index": 14,
+      "symbol": "H",
+      "x": -1.964,
+      "x2": -1.964,
+      "y": -2.108,
+      "y2": -2.108,
+      "z": 0.065
+    },
+    {
+      "atom_id": 15,
+      "atomic_num": 1,
+      "color": [
+        242,
+        247,
+        252
+      ],
+      "display_id": 16,
+      "formal_charge": 0,
+      "index": 15,
+      "symbol": "H",
+      "x": 0.431,
+      "x2": 0.431,
+      "y": -2.299,
+      "y2": -2.299,
+      "z": 0.072
+    },
+    {
+      "atom_id": 16,
+      "atomic_num": 1,
+      "color": [
+        242,
+        247,
+        252
+      ],
+      "display_id": 17,
+      "formal_charge": 0,
+      "index": 16,
+      "symbol": "H",
+      "x": 1.391,
+      "x2": 1.391,
+      "y": -0.946,
+      "y2": -0.946,
+      "z": 0.593
+    },
+    {
+      "atom_id": 17,
+      "atomic_num": 1,
+      "color": [
+        242,
+        247,
+        252
+      ],
+      "display_id": 18,
+      "formal_charge": 0,
+      "index": 17,
+      "symbol": "H",
+      "x": 0.478,
+      "x2": 0.478,
+      "y": -0.935,
+      "y2": -0.935,
+      "z": -1.011
+    },
+    {
+      "atom_id": 18,
+      "atomic_num": 1,
+      "color": [
+        242,
+        247,
+        252
+      ],
+      "display_id": 19,
+      "formal_charge": 0,
+      "index": 18,
+      "symbol": "H",
+      "x": 3.194,
+      "x2": 3.194,
+      "y": 2.318,
+      "y2": 2.318,
+      "z": -0.069
+    },
+    {
+      "atom_id": 19,
+      "atomic_num": 1,
+      "color": [
+        242,
+        247,
+        252
+      ],
+      "display_id": 20,
+      "formal_charge": 0,
+      "index": 19,
+      "symbol": "H",
+      "x": 2.043,
+      "x2": 2.043,
+      "y": 3.31,
+      "y2": 3.31,
+      "z": -1.012
+    },
+    {
+      "atom_id": 20,
+      "atomic_num": 1,
+      "color": [
+        242,
+        247,
+        252
+      ],
+      "display_id": 21,
+      "formal_charge": 0,
+      "index": 20,
+      "symbol": "H",
+      "x": 2.062,
+      "x2": 2.062,
+      "y": 3.412,
+      "y2": 3.412,
+      "z": 0.768
+    },
+    {
+      "atom_id": 21,
+      "atomic_num": 1,
+      "color": [
+        242,
+        247,
+        252
+      ],
+      "display_id": 22,
+      "formal_charge": 0,
+      "index": 21,
+      "symbol": "H",
+      "x": -4.941,
+      "x2": -4.941,
+      "y": 0.318,
+      "y2": 0.318,
+      "z": -0.009
+    },
+    {
+      "atom_id": 22,
+      "atomic_num": 1,
+      "color": [
+        242,
+        247,
+        252
+      ],
+      "display_id": 23,
+      "formal_charge": 0,
+      "index": 22,
+      "symbol": "H",
+      "x": -4.544,
+      "x2": -4.544,
+      "y": -1.163,
+      "y2": -1.163,
+      "z": 0.914
+    },
+    {
+      "atom_id": 23,
+      "atomic_num": 1,
+      "color": [
+        242,
+        247,
+        252
+      ],
+      "display_id": 24,
+      "formal_charge": 0,
+      "index": 23,
+      "symbol": "H",
+      "x": -4.563,
+      "x2": -4.563,
+      "y": -1.186,
+      "y2": -1.186,
+      "z": -0.863
+    }
+  ],
+  "bonds": [
+    {
+      "aromatic": false,
+      "bond_id": 0,
+      "i": 0,
+      "j": 1,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 1,
+      "i": 1,
+      "j": 2,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 2,
+      "i": 2,
+      "j": 3,
+      "order": 2
+    },
+    {
+      "aromatic": false,
+      "bond_id": 3,
+      "i": 3,
+      "j": 4,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 4,
+      "i": 4,
+      "j": 5,
+      "order": 2
+    },
+    {
+      "aromatic": false,
+      "bond_id": 5,
+      "i": 5,
+      "j": 1,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 6,
+      "i": 5,
+      "j": 6,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 7,
+      "i": 6,
+      "j": 7,
+      "order": 2
+    },
+    {
+      "aromatic": false,
+      "bond_id": 8,
+      "i": 6,
+      "j": 8,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 9,
+      "i": 8,
+      "j": 9,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 10,
+      "i": 8,
+      "j": 10,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 11,
+      "i": 10,
+      "j": 11,
+      "order": 2
+    },
+    {
+      "aromatic": false,
+      "bond_id": 12,
+      "i": 10,
+      "j": 12,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 13,
+      "i": 12,
+      "j": 1,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 14,
+      "i": 3,
+      "j": 13,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 15,
+      "i": 2,
+      "j": 14,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 16,
+      "i": 0,
+      "j": 15,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 17,
+      "i": 0,
+      "j": 16,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 18,
+      "i": 0,
+      "j": 17,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 19,
+      "i": 9,
+      "j": 18,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 20,
+      "i": 9,
+      "j": 19,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 21,
+      "i": 9,
+      "j": 20,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 22,
+      "i": 13,
+      "j": 21,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 23,
+      "i": 13,
+      "j": 22,
+      "order": 1
+    },
+    {
+      "aromatic": false,
+      "bond_id": 24,
+      "i": 13,
+      "j": 23,
+      "order": 1
+    }
+  ],
+  "num_atoms": 24,
+  "truncated": false
+}

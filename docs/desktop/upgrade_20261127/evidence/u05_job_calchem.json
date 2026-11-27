@@ -1,0 +1,38 @@
+﻿{
+    "created_at":  1795757181.5536678,
+    "document_name":  "Water",
+    "error":  "",
+    "finished_at":  1795757181.559347,
+    "input_revision":  0,
+    "job_id":  "job-0001",
+    "kind":  "calchem_sp",
+    "logs":  [
+                 "Queued in MolForge Rust JobQueue",
+                 "Running on Rust worker thread",
+                 "Completed successfully"
+             ],
+    "name":  "CalChem job contract test",
+    "params":  {
+                   "basis":  "STO-3G",
+                   "method":  "b3lyp"
+               },
+    "result":  {
+                   "basis":  "STO-3G",
+                   "converged":  true,
+                   "dipole_magnitude_debye":  1.6784381070194418,
+                   "error":  null,
+                   "gap_ev":  13.593614991770497,
+                   "homo_ev":  -3.9234046552655153,
+                   "iterations":  7,
+                   "lumo_ev":  9.670210336504981,
+                   "message":  "CalChem v0.3.0 SCF converged=true in 7 iterations (dipole=1.6784 D, n_ao=7)",
+                   "method":  "b3lyp",
+                   "mode":  "sp",
+                   "n_ao":  7,
+                   "ok":  true,
+                   "steps":  7,
+                   "total_energy_hartree":  -75.31252861233484
+               },
+    "started_at":  1795757181.5537398,
+    "status":  "completed"
+}

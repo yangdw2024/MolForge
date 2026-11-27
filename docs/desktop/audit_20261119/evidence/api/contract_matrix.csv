@@ -1,0 +1,7 @@
+"Route","HTTP","ContentType","ValidJson","ElapsedMs","Bytes","OkField"
+"/api/health","200","System.String[]","True","43.2","544","True"
+"/api/library/inspect_smiles","200","System.String[]","True","1381.4","19467","True"
+"/api/edit/clean_3d","200","System.String[]","True","385.2","487","True"
+"/api/edit/insert_fragment","200","System.String[]","True","8.3","501","True"
+"/api/qc/run_external","200","System.String[]","True","14.5","283","True"
+"/api/ai/chat","200","System.String[]","True","347.5","1231","True"

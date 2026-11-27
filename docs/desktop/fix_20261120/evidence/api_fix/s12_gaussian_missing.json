@@ -1,0 +1,11 @@
+{
+  "command": "gaussian #p HF/STO-3G",
+  "energy_hartree": null,
+  "engine": "gaussian",
+  "exit_code": 1,
+  "ok": false,
+  "status": "failed",
+  "stdout_tail": "",
+  "timed_out": false,
+  "workdir": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\molforge_gaussian_mf-18e98821b71c97c0-0"
+}

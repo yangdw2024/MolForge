@@ -1,0 +1,9 @@
+T0 benzene atoms=12
+T1 delete_atoms(atom_ids=[0]) -> ok=True atoms=12 (期望删除后5，若仍6=静默失效)
+T2 delete_atoms(ids=[0]) -> ok=True atoms=11
+T3 move_atom(pos_2d) -> ok=False error=pos [x,y,z] required
+T4 export_input(kind=rest) -> engine=gaussian 首行: %nprocshared=4 | %mem=2GB | #p B3LYP/6-31G(d) opt freq (若为 gjf 格式=kind 被忽略)
+T5 run_calchem -> available=False converged=False E=0 msg=molforge-core built without `--features calchem`
+T6 preferences after save: api_key=sk-TEST-AUDIT-KEY ai_api_key= (chat 读取 ai_api_key → 若两者不同=设置页 Key 不生效)
+T7 add_ring(size5,hetero{0:S},center_2d[5,5]) -> 新原子符号=C,C,C,C,C 坐标=(1.18,0) (0.37,1.12) (-0.96,0.7) (-0.96,-0.69) (0.37,-1.12) (若全C且中心在原点=hetero/center_2d 均被忽略)
+T8 键级循环: 初始 order=2 arom=False; cycle1 -> order=3 arom=False; cycle2 -> order=1 arom=False; cycle3 -> order=2 arom=False; cycle4 -> order=3 arom=False (无4=芳香键不可达)

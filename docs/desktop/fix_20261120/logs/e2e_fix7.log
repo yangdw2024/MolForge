@@ -1,0 +1,7 @@
+[AUDIT] DIAG body: MolForge | 文件(F) | 编辑(E) | 构建(B) | 结构(S) | 计算(C) | 分析(A) | 结果(R) | 视图(V) | 图层(L) | 帮助(H) | 未命名工程 | 检索分子、分析、命令... | Ctrl+K | 浅色 | 工作台首页 | 分子库 | 分子编辑器 | 分析中心 | MolForge Hub | 任务中心 | 结果与导出 | 偏好设置 | 收起导航文字 | 检测到上次未提交的自动备份工程：Caffeine (C8H10N4O2) · 保存于 2026/11/20 09:09:22 | 一键恢复会话 | MOLFORGE STUDIO · SCIENTIFIC WORKSTATION | OFFLINE | 2D/3D 分子建模、有机半导体与量化科研工作站 |  | 基于真实 RDKit 拓扑、CommandBus 原子级事务栈、32 万原子 WebGPU 渲染管线及 79 项分析引擎。 |  | 新建体系 | 打开 .mforge 工程 | 导入结构 (.pdb / .xyz / .mol / .cif) | 进入当前编辑器 (咖啡因) | 分析与能级工作台 | 32 万原子 WebGPU 实测体系 | 最近打开的工程与结构 | 0 | 暂无本地最近工程记录。 | 保存 `.mforge` 工程或导入本地 `.pdb`/`.xyz` 文件后，此处会自动显示并支持一键恢复。 | 示例科研分子体系 | 全部分子库 → | 常用科研流水线与记录 | 任务中心 → | OSC 前线轨道紧束缚筛选 | 计算 HOMO / LUM
+[AUDIT] DIAG pageErrors: []
+[AUDIT] FATAL: page.waitForFunction: Timeout 15000ms exceeded.
+    at run (E:\YDW\Trae_Chemdraw\desktop\scripts\fix-retest-e2e-20261120.mjs:62:17) {
+  log: [],
+  name: 'TimeoutError'
+}

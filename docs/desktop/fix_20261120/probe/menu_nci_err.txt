@@ -1,0 +1,12 @@
+forrtl: severe (59): list-directed I/O syntax error, unit -4, file CONIN$
+Image              PC                Routine            Line        Source             
+Multiwfn.exe       00007FF62239B191  Unknown               Unknown  Unknown
+Multiwfn.exe       00007FF62239A5FA  Unknown               Unknown  Unknown
+Multiwfn.exe       00007FF621E5EB6D  Unknown               Unknown  Unknown
+Multiwfn.exe       00007FF6222104F4  Unknown               Unknown  Unknown
+Multiwfn.exe       00007FF621F3F125  Unknown               Unknown  Unknown
+Multiwfn.exe       00007FF622049372  Unknown               Unknown  Unknown
+Multiwfn.exe       00007FF622D0D07B  Unknown               Unknown  Unknown
+Multiwfn.exe       00007FF6230228F0  Unknown               Unknown  Unknown
+KERNEL32.DLL       00007FFEC44C7374  Unknown               Unknown  Unknown
+ntdll.dll          00007FFEC4ADCC91  Unknown               Unknown  Unknown

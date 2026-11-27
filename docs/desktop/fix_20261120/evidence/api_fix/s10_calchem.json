@@ -1,0 +1,15 @@
+{
+  "basis": "STO-3G",
+  "converged": true,
+  "error": null,
+  "gap_ev": 8.646373270197364,
+  "homo_ev": -2.829777018871626,
+  "iterations": 29,
+  "lumo_ev": 5.8165962513257385,
+  "message": "CalChem pure-Rust SCF converged=true in 29 iterations",
+  "method": "HF",
+  "mode": "sp",
+  "ok": true,
+  "steps": 29,
+  "total_energy_hartree": -662.1039131490807
+}

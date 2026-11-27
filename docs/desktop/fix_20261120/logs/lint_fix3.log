@@ -1,0 +1,26 @@
+
+E:\YDW\Trae_Chemdraw\desktop\scripts\audit-e2e-20261119.mjs
+  1:31  error  'process' is already defined as a built-in global variable  no-redeclare
+  1:40  error  'console' is already defined as a built-in global variable  no-redeclare
+
+E:\YDW\Trae_Chemdraw\desktop\scripts\audit-micro-20261119.mjs
+  1:11  error  'Buffer' is defined but never used                          @typescript-eslint/no-unused-vars
+  1:31  error  'process' is already defined as a built-in global variable  no-redeclare
+  1:40  error  'console' is already defined as a built-in global variable  no-redeclare
+
+E:\YDW\Trae_Chemdraw\desktop\scripts\audit-retest-20261119.mjs
+  1:31  error  'process' is already defined as a built-in global variable  no-redeclare
+  1:40  error  'console' is already defined as a built-in global variable  no-redeclare
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\CalculationSetupModal.tsx
+  155:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  184:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\FragmentsLayer.tsx
+  230:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\YDW\Trae_Chemdraw\desktop\src\components\layers\OrbitalLadderModal.tsx
+  39:6  warning  React Hook useEffect has a missing dependency: 'data'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 11 problems (7 errors, 4 warnings)
+

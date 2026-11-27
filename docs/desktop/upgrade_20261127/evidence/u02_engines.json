@@ -1,0 +1,103 @@
+﻿{
+    "calchem_basis_sets":  [
+                               "STO-3G",
+                               "3-21G",
+                               "6-31G",
+                               "6-31G*",
+                               "cc-pVDZ",
+                               "def2-SVP",
+                               "def2-TZVP"
+                           ],
+    "engines":  [
+                    {
+                        "available":  true,
+                        "diagnostic":  "已就绪 · 零 Python 原生分子引擎与 MOLF 二进制流",
+                        "executable_path":  "E:\\YDW\\Trae_Chemdraw\\desktop\\resources\\core\\molforge-server.exe",
+                        "id":  "molforge_core",
+                        "name":  "MolForge Rust Core",
+                        "sha256":  null,
+                        "version_hint":  "0.1.0"
+                    },
+                    {
+                        "available":  true,
+                        "diagnostic":  "已就绪 · CalChem v0.3.0 纯 Rust HF/DFT/Direct-SCF/优化与偶极计算",
+                        "executable_path":  null,
+                        "id":  "calchem",
+                        "name":  "CalChem (纯 Rust 量子化学)",
+                        "sha256":  null,
+                        "version_hint":  "0.3.0"
+                    },
+                    {
+                        "available":  true,
+                        "diagnostic":  "已就绪 · 从头算 / DFT 量子化学引擎",
+                        "executable_path":  "E:\\ORCA\\software\\ORCA6.1.1\\orca.exe",
+                        "id":  "orca",
+                        "name":  "ORCA",
+                        "sha256":  null,
+                        "version_hint":  "detected"
+                    },
+                    {
+                        "available":  true,
+                        "diagnostic":  "已就绪 · Gaussian 电子结构引擎",
+                        "executable_path":  "D:\\G16W\\g16.exe",
+                        "id":  "gaussian",
+                        "name":  "Gaussian 16 (g16)",
+                        "sha256":  null,
+                        "version_hint":  "detected"
+                    },
+                    {
+                        "available":  true,
+                        "diagnostic":  "已就绪 · 半经验紧束缚与结构优化",
+                        "executable_path":  "E:\\ORCA\\software\\ORCA6.1.1\\xtb-6.7.1pre\\xtb.exe",
+                        "id":  "xtb",
+                        "name":  "GFN2-xTB (xtb)",
+                        "sha256":  null,
+                        "version_hint":  "detected"
+                    },
+                    {
+                        "available":  true,
+                        "diagnostic":  "已就绪 · 波函数与实空间电子密度分析",
+                        "executable_path":  "D:\\Multiwfn\\Multiwfn_3.8_bin_Win64\\Multiwfn.exe",
+                        "id":  "multiwfn",
+                        "name":  "Multiwfn 3.8",
+                        "sha256":  null,
+                        "version_hint":  "detected"
+                    },
+                    {
+                        "available":  true,
+                        "diagnostic":  "已就绪 · 分子动力学模拟引擎",
+                        "executable_path":  "D:\\YDW\\Trae_Gromacs\\gromacs\\gromacs-2026.3-AVX512-CUDA-sm120-final2\\bin\\gmx.exe",
+                        "id":  "gromacs",
+                        "name":  "GROMACS (gmx)",
+                        "sha256":  null,
+                        "version_hint":  "detected"
+                    },
+                    {
+                        "available":  true,
+                        "diagnostic":  "已就绪 · 轨迹与生物大分子可视化",
+                        "executable_path":  "D:\\VMD\\vmd.exe",
+                        "id":  "vmd",
+                        "name":  "VMD 1.9.4",
+                        "sha256":  null,
+                        "version_hint":  "detected"
+                    },
+                    {
+                        "available":  true,
+                        "diagnostic":  "已就绪 · 化学格式与构象转换工具",
+                        "executable_path":  "E:\\openbabel-install-msvc\\bin\\obabel.exe",
+                        "id":  "openbabel",
+                        "name":  "OpenBabel (obabel)",
+                        "sha256":  null,
+                        "version_hint":  "detected"
+                    },
+                    {
+                        "available":  true,
+                        "diagnostic":  "已就绪 · 仅按需用于 SMILES/ETKDG/cclib，核心启动不依赖 Python",
+                        "executable_path":  "D:\\YDW\\Trae_Gromacs\\miniconda3\\envs\\molforge-webengine\\python.exe",
+                        "id":  "python_worker",
+                        "name":  "可选 Python 科学扩展 (RDKit/cclib)",
+                        "sha256":  null,
+                        "version_hint":  "optional"
+                    }
+                ]
+}

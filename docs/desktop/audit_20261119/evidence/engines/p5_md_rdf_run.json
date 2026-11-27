@@ -1,0 +1,72 @@
+{
+  "error": "capability 'trajectory.rdf' 尚未接入执行适配器",
+  "missing_dependencies": [],
+  "node_records": [
+    {
+      "capability": null,
+      "duration_ms": 0,
+      "node_id": "validate",
+      "output": {
+        "charge": 0,
+        "multiplicity": 1,
+        "num_atoms": 24
+      },
+      "status": "completed",
+      "summary": "通过校验: 24 原子, 电荷 0, 自旋 Singlet (1)",
+      "title": "体系原子映射与周期盒校验"
+    },
+    {
+      "capability": "md.gromacs_mdp",
+      "duration_ms": 0,
+      "node_id": "mdp",
+      "output": {
+        "mdp": "; MolForge Studio GROMACS .mdp (nvt)\nintegrator  = md\ndt          = 0.002\nnsteps      = 50000\nnstxout-compressed = 500\nnstenergy   = 500\nnstlog      = 500\ncutoff-scheme = Verlet\ncoulombtype = PME\nrcoulomb    = 1.0\nrvdw        = 1.0\ntcoupl      = V-rescale\ntc-grps     = System\ntau_t       = 0.1\nref_t       = 300\npcoupl      = no\ntau_p       = 2.0\nref_p       = 1.0\ncompressibility = 4.5e-5\n"
+      },
+      "status": "completed",
+      "summary": "已生成 nvt (50000 步) GROMACS MDP 参数",
+      "title": "生成 GROMACS MDP 参数"
+    },
+    {
+      "capability": "trajectory.rdf",
+      "duration_ms": 0,
+      "node_id": "rdf",
+      "output": null,
+      "status": "failed",
+      "summary": "capability 'trajectory.rdf' 尚未接入执行适配器",
+      "title": "GROMACS 轨迹 RDF 计算"
+    }
+  ],
+  "outputs": {
+    "mdp": {
+      "mdp": "; MolForge Studio GROMACS .mdp (nvt)\nintegrator  = md\ndt          = 0.002\nnsteps      = 50000\nnstxout-compressed = 500\nnstenergy   = 500\nnstlog      = 500\ncutoff-scheme = Verlet\ncoulombtype = PME\nrcoulomb    = 1.0\nrvdw        = 1.0\ntcoupl      = V-rescale\ntc-grps     = System\ntau_t       = 0.1\nref_t       = 300\npcoupl      = no\ntau_p       = 2.0\nref_p       = 1.0\ncompressibility = 4.5e-5\n"
+    },
+    "validate": {
+      "charge": 0,
+      "multiplicity": 1,
+      "num_atoms": 24
+    }
+  },
+  "provenance": {
+    "approved_by_user": true,
+    "capabilities_used": [
+      "md.gromacs_mdp",
+      "trajectory.rdf"
+    ],
+    "input_molecule_formula": "C8H10N4O2",
+    "input_molecule_name": "Caffeine",
+    "input_molecule_sha256": "a7548d29cc1ad600db93e51a9aa6b76825c0a7fac5dec8fa9bae45dfefc3a645",
+    "matched_skill_ids": [
+      "org.molforge.skill.md_rdf_analysis@1.0.0"
+    ],
+    "run_id": "wfrun-1a1f43c0b4e",
+    "timestamp_unix": 1795098938.1902514,
+    "workflow_id": "org.molforge.workflow.md-rdf",
+    "workflow_sha256": "010c40e5a01e24fb728558e65ac31006777bcea0cecca8853231d2ef5020e544",
+    "workflow_version": "1.0.0"
+  },
+  "requires_approval": true,
+  "run_id": "wfrun-1a1f43c0b4e",
+  "status": "failed",
+  "title": "MD 轨迹 RDF 与动力学分析",
+  "workflow_id": "org.molforge.workflow.md-rdf"
+}

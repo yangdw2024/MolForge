@@ -1,0 +1,5 @@
+初始 order=2 arom=False
+cycle1 -> order=3 arom=False
+cycle2 -> order=1 arom=False
+cycle3 -> order=2 arom=False
+cycle4 -> order=3 arom=False

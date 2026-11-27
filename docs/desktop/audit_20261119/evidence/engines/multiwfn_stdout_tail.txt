@@ -1,0 +1,25 @@
+ 5 Show overlap integral between alpha and beta orbitals
+ 6 Monitor SCF convergence process of Gaussian
+ 7 Auxiliary tools for CP2K (CP2Kmate)
+ 8 Generate Gaussian input file with initial guess from fragment wavefunctions
+ 9 Evaluate interatomic connectivity and atomic coordination number
+ 11 Calculate overlap and centroid distance between two orbitals
+ 12 Biorthogonalization between alpha and beta orbitals
+ 14 Calculate LOLIPOP (LOL Integrated Pi Over Plane)
+ 15 Calculate intermolecular orbital overlap
+ 17 Generate Fock/KS matrix based on orbital energies and coefficients
+ 18 Yoshizawa's electron transport route analysis
+ 19 Generate new wavefunction by combining fragment wavefunctions
+ 20 Calculate Hellmann-Feynman forces
+ 21 Calculate properties based on geometry information for specific atoms
+ 22 Detect pi orbitals, set occupation numbers and calculate pi composition
+ 23 Fit function distribution to atomic value
+             ----------- Available real space functions -----------
+ 1 Promolecular electron density 
+ 8 Electrostatic potential from nuclear charges
+ 14 Reduced density gradient (RDG) with promolecular approximation
+ 16 Sign(lambda2)*rho with promolecular approximation
+ 22 Delta-g (promolecular approximation)
+ 25 van der Waals potential (probe=C )
+ 100 User-defined function (iuserfunc=    0)  See Section 2.7 of manual
+ Select function 1 (as X axis) and function 2 (as Y axis)  e.g. 16,14

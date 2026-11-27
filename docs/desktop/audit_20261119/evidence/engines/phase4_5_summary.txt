@@ -1,0 +1,35 @@
+P4-0 SMILES阿司匹林: status=200 ms=277.7 formula=C9H8O4 atoms=21
+P4-1 TB: ms=1.7 pi_atoms=10 pi_e=10 HOMO=-9.2 LUMO=-5.75137199409631 Eg=3.44862800590368 MO数=10 跃迁数=1
+      S1: λ=359.517445162982nm f=0.25
+P4-2 Clean3D键长: C-C平均=1.4372 Å (期望1.35-1.55), C-O平均=1.3974 Å (期望1.2-1.45)
+P4-2b 测量偏差: 键#0 2D布局距离=1.5093Å vs 真实3D距离=1.5855Å (HUD显示2D值,非真实空间距离)
+P4-3 xTB: ms=124.5 exit=0 E= Eh workdir=C:\Users\Administrator\AppData\Local\Temp\molforge_xtb_mf-18e978ed84c09530-48
+      workdir文件: .xtboptok, charges, input.xyz, wbo, xtbopt.log, xtbopt.xyz, xtbrestart, xtbtopo.mol
+      xtbopt.xyz存在=True (真实优化产物)
+      stdout尾:  *  cpu-time:     0 d,  0 h,  0 min,  1.750 sec |  * ratio c/w:    17.500 speedup |  SCF: |  * wall-time:     0 d,  0 h,  0 min,  0.005 sec |  *  cpu-time:     0 d,  0 h,  0 min,  0.000 sec |  * ratio c/w:     0.000 speedup |  ANC optimizer: |  * wall-time:     0 d,  0 h,  0 min,  0.087 sec |  *  cpu-time:     0 d,  0 h,  0 min,  1.250 sec |  * ratio c/w:    14.368 speedup |  | 
+P4-4 Multiwfn: ms=120.2 ok=True msg=Multiwfn 实算完成 (WFN-12)
+      plot_y前6=6,6,8,8,6,6 (若等于原子序数6,6,6,8...=假散点)
+      x_label=Atom Index y_label=Atomic Number (Z)
+      stdout_tail:  5 Show overlap integral between alpha and beta orbitals |  6 Monitor SCF convergence process of Gaussian |  7 Auxiliary tools for CP2K (CP2Kmate) |  8 Generate Gaussian input file with initial guess from fragment wavefunctions |  9 Evaluate interatomic connectivity and atomic coordination number |  11 Calculate overlap and centroid distance between two orbitals |  12 Biorthogonalization between alpha and beta orbitals |  14 Calculate LOLIPOP (LOL Integrated Pi Over Plane) |  15 Calculate intermolecular orbital overlap |  17 Generate Fock/KS matrix based on orbital energies and coefficients |  18 Yoshizawa's electron transport route analysis |  19 Generate new wavefunction by combining fragment wavefunctions |  20 Calculate Hellmann-Feynman forces |  21 Calculate properties based on geometry information for specific atoms |  22 Detect pi orbitals, set occupation numbers and calculate pi composition |  23 Fit function distribution to atomic value |              ----------- Available real space functions ----------- |  1 Promolecular electron density  |  8 Electrostatic potential from nuclear charges |  14 Reduced density gradient (RDG) with promolecular approximation |  16 Sign(lambda2)*rho with promolecular approximation |  22 Delta-g (promolecular approximation) |  25 van der Waals potential (probe=C ) |  100 User-defined function (iuserfunc=    0)  See Section 2.7 of manual |  Select function 1 (as X axis) and function 2 (as Y axis)  e.g. 16,14
+P4-4b Multiwfn交叉验证: exit=59 完整日志=E:\YDW\Trae_Chemdraw\docs\desktop\audit_20261119\evidence\engines\mwfn_crosscheck\full_stdout.txt
+      关键行:  Multiwfn -- A Multifunctional Wavefunction Analyzer |   Tian Lu, Feiwu Chen, J. Comput. Chem., 33, 580 (2012) DOI: 10.1002/jcc.22885 |                     ************ Main function menu ************ |  6 Check & modify wavefunction
+P4-5 export(gaussian): ms=1.4 行数=30 首行=%nprocshared=4
+P4-5 export(orca): ms=1.1 行数=26 首行=! B3LYP def2-SVP Opt
+P4-5 export(xtb): ms=0.9 行数=30 首行=%nprocshared=4
+P4-5b gjf校验: 电荷自旋行'0 1'=True 坐标行数=21 (阿司匹林21原子)
+P4-6 CalChem: available=False converged=False E=0 msg=molforge-core built without `--features calchem`
+P4-7 后台orca_sp任务: status=completed result={"num_atoms":21,"ok":true} logs=Queued in MolForge Rust JobQueue; Running on Rust worker thread; Completed successfully
+      (若result仅{ok,num_atoms}且无ORCA进程输出=假完成)
+P5-1 Hub搜索HOMO: 命中=2 首项=qc-frontier-orbital runnable=True
+P5-1b Hub搜索MD: 命中=7 首项=molforge_core
+P5-2 规划HOMO/LUMO: wf=org.molforge.workflow.frontier-mo runnable=True skills=1 reason=可运行 · 所有依赖能力已就绪
+P5-2b 规划MD: wf=org.molforge.workflow.md-rdf runnable=True missing=
+P5-3 工作流执行: status=completed run_id=wfrun-1a1f43b58bc
+      分子SHA256=d9cf184d0c2b48297d6e927e954cd5872fba88d273f966a928484a9120123f3d
+      工作流SHA256=9c1832e1748db00e83c53646bb4b1d5a2ae836b675b898ac9563dfada2da8e7a
+      节点耗时: validate=0ms[completed], tb=0ms[completed], viz=0ms[completed]
+      匹配技能: org.molforge.skill.qc_frontier_orbital@1.0.0
+P5-3b SHA256独立复算: d9cf184d0c2b48297d6e927e954cd5872fba88d273f966a928484a9120123f3d 匹配=True
+P5-4 xtb工作流未审批: status=pending_approval (期望pending_approval)
+P5-4b xtb工作流已审批: status=completed 节点=validate:completed:0ms, approve:completed:0ms, xtb:completed:38ms
+P5-5 calchem工作流: status=blocked error=需要安装/配置依赖：qc.calchem_scf (未启用 calchem 特性) (期望blocked/failed,不假成功)
