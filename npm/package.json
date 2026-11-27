@@ -1,0 +1,47 @@
+{
+  "name": "@yangdw2024/molforge",
+  "version": "8.1.0",
+  "description": "Cross-platform CLI & Node.js wrapper for MolForge Studio 8.1.0 (Electron 35 + WebGPU + Rust core + CalChem v0.3.0).",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "bin": {
+    "molforge": "bin/molforge.js"
+  },
+  "files": [
+    "bin/",
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "molforge",
+    "chemistry",
+    "chemdraw",
+    "chem3d",
+    "gaussview",
+    "calchem",
+    "multiwfn",
+    "molecular-editor",
+    "quantum-chemistry",
+    "computational-chemistry",
+    "webgpu"
+  ],
+  "author": "yangdw2024",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yangdw2024/MolForge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yangdw2024/MolForge/issues"
+  },
+  "homepage": "https://github.com/yangdw2024/MolForge#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

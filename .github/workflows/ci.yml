@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  desktop-checks:
+    name: Desktop Typecheck, Lint & Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  package-validation:
+    name: Validate PyPI & npm Distribution Packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install build twine
+      - run: python -m build --outdir /tmp/pypi-dist pypi/ && python -m twine check /tmp/pypi-dist/*
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm --prefix npm pack --dry-run

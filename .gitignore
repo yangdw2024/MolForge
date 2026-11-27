@@ -8,6 +8,7 @@ _smoke_20261116/
 MolForge_v8/
 MolForge_Results/
 molforge_studio.egg-info/
+*.egg-info/
 data/
 def2-universal-jkfit/
 tools/
