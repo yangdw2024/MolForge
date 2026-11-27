@@ -569,14 +569,14 @@
                                    "matched_skill_ids":  [
                                                              "org.molforge.skill.md_rdf_analysis@1.0.0"
                                                          ],
-                                   "run_id":  "wfrun-1a21b780d0d",
-                                   "timestamp_unix":  1795757182.2213244,
+                                   "run_id":  "wfrun-1a21c2b8f67",
+                                   "timestamp_unix":  1795768946.5356634,
                                    "workflow_id":  "org.molforge.workflow.md-rdf",
                                    "workflow_sha256":  "010c40e5a01e24fb728558e65ac31006777bcea0cecca8853231d2ef5020e544",
                                    "workflow_version":  "1.0.0"
                                },
                 "requires_approval":  true,
-                "run_id":  "wfrun-1a21b780d0d",
+                "run_id":  "wfrun-1a21c2b8f67",
                 "status":  "completed",
                 "title":  "MD 轨迹 RDF 与动力学分析",
                 "workflow_id":  "org.molforge.workflow.md-rdf"

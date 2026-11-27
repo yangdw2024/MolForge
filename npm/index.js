@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-export const VERSION = '8.1.0';
+export const VERSION = '8.2.0';
 export const RELEASE_URL = `https://github.com/yangdw2024/MolForge/releases/tag/v${VERSION}`;
 
 function isRunnable(filePath) {

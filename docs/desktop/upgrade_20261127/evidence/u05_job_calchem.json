@@ -1,8 +1,8 @@
 ﻿{
-    "created_at":  1795757181.5536678,
+    "created_at":  1795768945.900733,
     "document_name":  "Water",
     "error":  "",
-    "finished_at":  1795757181.559347,
+    "finished_at":  1795768945.9071531,
     "input_revision":  0,
     "job_id":  "job-0001",
     "kind":  "calchem_sp",
@@ -33,6 +33,6 @@
                    "steps":  7,
                    "total_energy_hartree":  -75.31252861233484
                },
-    "started_at":  1795757181.5537398,
+    "started_at":  1795768945.9008007,
     "status":  "completed"
 }

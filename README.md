@@ -7,7 +7,7 @@
 [![PyPI](https://img.shields.io/pypi/v/molforge-studio)](https://pypi.org/project/molforge-studio/)
 [![npm](https://img.shields.io/npm/v/@yangdw2024/molforge)](https://www.npmjs.com/package/@yangdw2024/molforge)
 
-MolForge Studio (`v8.1.0`) is a lightweight desktop workbench focused on the practical front-half and orchestration steps of computational chemistry: drawing 2D molecules, inspecting synchronized 3D geometries via WebGPU, measuring internal coordinates, converting formats, preparing quantum-chemistry/MD input files, and dispatching local CLI calculations with clean provenance.
+MolForge Studio (`v8.2.0`) is a lightweight desktop workbench focused on the practical front-half and orchestration steps of computational chemistry: drawing 2D molecules, inspecting synchronized 3D geometries via WebGPU, measuring internal coordinates, converting formats, preparing quantum-chemistry/MD input files, and dispatching local CLI calculations with clean provenance.
 
 ---
 
@@ -72,7 +72,7 @@ Every feature listed below is implemented in this repository and can be traced d
 
 ## Quick Start
 
-- **Windows Desktop Binaries (`v8.1.0`)**: Download `MolForge-Studio-8.1.0-win-x64-setup.exe` or `MolForge-Studio-8.1.0-win-x64-portable.exe` from [GitHub Releases](https://github.com/yangdw2024/MolForge/releases/tag/v8.1.0).
+- **Windows Desktop Binaries (`v8.2.0`)**: Download `MolForge-Studio-8.2.0-win-x64-setup.exe` or `MolForge-Studio-8.2.0-win-x64-portable.exe` from [GitHub Releases](https://github.com/yangdw2024/MolForge/releases/tag/v8.2.0).
 - **PyPI Launcher (`molforge-studio`)**:
   ```bash
   pip install -U molforge-studio

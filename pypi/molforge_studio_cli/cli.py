@@ -13,7 +13,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-__version__ = "8.1.0"
+__version__ = "8.2.0"
 GITHUB_REPO = "yangdw2024/MolForge"
 RELEASE_TAG = f"v{__version__}"
 DEFAULT_SERVER_URL = "http://127.0.0.1:18765"

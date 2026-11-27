@@ -2,7 +2,7 @@
     "ok":  true,
     "result":  {
                    "analysis_id":  "WFN-12",
-                   "input_file":  "D:\\YDW\\MolForge_Scratch\\molforge_mwfn_mf-18ebcfa482ad677c-3\\input.xyz",
+                   "input_file":  "D:\\YDW\\MolForge_Scratch\\molforge_mwfn_mf-18ebda579a781ba0-3\\input.xyz",
                    "message":  "Multiwfn 实算完成（Promolecular NCI/RDG）：133458 个真实散点，网格耗时 0 s",
                    "metrics":  {
                                    "engine":  "D:\\Multiwfn\\Multiwfn_3.8_bin_Win64\\Multiwfn.exe",

@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { Download, FileText, FolderDown, Save } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Download, FileText, FolderDown, PackageCheck, Save } from "lucide-react";
 import { molApi } from "../services/api";
 import { useStudioStore } from "../store/useStudioStore";
 
@@ -9,6 +9,21 @@ export const ReportsView: React.FC = () => {
   const lastAnalysisResult = useStudioStore((s) => s.lastAnalysisResult);
   const saveProject = useStudioStore((s) => s.saveProject);
   const pushNotification = useStudioStore((s) => s.pushNotification);
+
+  const [batchInputsText, setBatchInputsText] = useState("");
+  const [referencePath, setReferencePath] = useState("");
+  const [assetDir, setAssetDir] = useState("");
+  const [outputDir, setOutputDir] = useState("D:\\YDW\\MolForge_Scratch\\collaborator_delivery");
+  const [packageName, setPackageName] = useState("MolForge_Collaborator_Delivery");
+  const [allowHalogenSwap, setAllowHalogenSwap] = useState(true);
+  const [runningPack, setRunningPack] = useState(false);
+  const [packResult, setPackResult] = useState<{
+    zip_path: string;
+    zip_verified: boolean;
+    molecule_count: number;
+    total_files: number;
+    manifest_sha256: string;
+  } | null>(null);
 
   const reportMarkdown = useMemo(() => {
     const lines = [
@@ -158,6 +173,130 @@ export const ReportsView: React.FC = () => {
         >
           {reportMarkdown}
         </pre>
+      </section>
+
+      <section className="studio-surface p-4 space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-[13.5px] font-semibold flex items-center gap-2">
+            <PackageCheck size={15} style={{ color: "var(--accent-primary)" }} />
+            <span>批量 MCS 对齐与一键合作者交付打包器（模块 1B + 模块 4）</span>
+          </h2>
+          <button
+            type="button"
+            disabled={runningPack}
+            onClick={async () => {
+              const paths = batchInputsText
+                .split(/\r?\n/)
+                .map((s) => s.trim())
+                .filter(Boolean);
+              if (paths.length === 0) {
+                pushNotification("warning", "请至少填入一个结构文件路径", "支持 .xyz / .pdb / .mol / .sdf / .gjf / .fchk，每行一个");
+                return;
+              }
+              setRunningPack(true);
+              try {
+                const res = await molApi.buildDeliveryPackage({
+                  input_paths: paths,
+                  output_dir: outputDir.trim(),
+                  package_name: packageName.trim() || "MolForge_Collaborator_Delivery",
+                  reference_path: referencePath.trim() || undefined,
+                  asset_dir: assetDir.trim() || undefined,
+                  allow_halogen_swap: allowHalogenSwap,
+                });
+                setPackResult(res);
+                pushNotification("success", "合作者交付压缩包生成并校验通过", res.zip_path);
+              } catch (err) {
+                pushNotification("error", "生成交付包失败", String(err));
+              } finally {
+                setRunningPack(false);
+              }
+            }}
+            className="studio-btn studio-btn-primary"
+          >
+            <PackageCheck size={13} />
+            <span>{runningPack ? "打包并校验中..." : "一键生成合作者交付包 (.zip + .xlsx)"}</span>
+          </button>
+        </div>
+
+        <p className="text-[12px]" style={{ color: "var(--text-secondary)" }}>
+          自动按 `LMO/ · 平面性/ · 二面角/ · 偶极矩/ · 静电势/ · origin_datas/` 平铺归类，输出保留双精度原始值的单次取整 `.xlsx` 总表、《看图与分析说明》及 CRC 校验 UTF-8 `.zip`。
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px]">
+          <label className="space-y-1 md:col-span-2">
+            <span style={{ color: "var(--text-muted)" }}>批量分子路径（每行一个，支持 .xyz / .pdb / .mol / .gjf / .fchk）</span>
+            <textarea
+              rows={3}
+              value={batchInputsText}
+              onChange={(e) => setBatchInputsText(e.target.value)}
+              placeholder={"E:\\data\\A1.fchk\nE:\\data\\A2.fchk"}
+              className="studio-input w-full !h-auto py-1.5 mono-num"
+            />
+          </label>
+          <label className="space-y-1">
+            <span style={{ color: "var(--text-muted)" }}>MCS 刚体对齐基准分子（可选，不填则各自 Core-First 定向）</span>
+            <input
+              type="text"
+              value={referencePath}
+              onChange={(e) => setReferencePath(e.target.value)}
+              placeholder="基准分子 .fchk / .xyz / .gjf 路径"
+              className="studio-input w-full mono-num"
+            />
+          </label>
+          <label className="space-y-1">
+            <span style={{ color: "var(--text-muted)" }}>已有图件目录（可选，自动匹配 *_HOMO.png / *_esp.png 等）</span>
+            <input
+              type="text"
+              value={assetDir}
+              onChange={(e) => setAssetDir(e.target.value)}
+              placeholder="图件目录路径"
+              className="studio-input w-full mono-num"
+            />
+          </label>
+          <label className="space-y-1">
+            <span style={{ color: "var(--text-muted)" }}>输出目录</span>
+            <input
+              type="text"
+              value={outputDir}
+              onChange={(e) => setOutputDir(e.target.value)}
+              className="studio-input w-full mono-num"
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-2 items-end">
+            <label className="space-y-1">
+              <span style={{ color: "var(--text-muted)" }}>交付包名称</span>
+              <input
+                type="text"
+                value={packageName}
+                onChange={(e) => setPackageName(e.target.value)}
+                className="studio-input w-full mono-num"
+              />
+            </label>
+            <label className="flex items-center gap-1.5 h-8 text-[12px]">
+              <input
+                type="checkbox"
+                checked={allowHalogenSwap}
+                onChange={(e) => setAllowHalogenSwap(e.target.checked)}
+              />
+              <span>MCS 允许 F/Cl/Br 卤素互换</span>
+            </label>
+          </div>
+        </div>
+
+        {packResult && (
+          <div
+            className="p-3 rounded-lg text-[12px] mono-num space-y-1"
+            style={{ backgroundColor: "var(--bg-primary)", border: "1px solid var(--border-subtle)" }}
+          >
+            <div>
+              归档路径：<span style={{ color: "var(--accent-primary)" }}>{packResult.zip_path}</span>
+            </div>
+            <div>
+              CRC 校验：{packResult.zip_verified ? "PASSED" : "FAILED"} · 分子数：{packResult.molecule_count} · 打包文件数：{packResult.total_files}
+            </div>
+            <div>MANIFEST SHA-256：{packResult.manifest_sha256}</div>
+          </div>
+        )}
       </section>
     </div>
   );

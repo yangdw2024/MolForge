@@ -10,6 +10,9 @@ export const ALLOWED_READ_EXTENSIONS = new Set([
   ".mol2",
   ".log",
   ".fchk",
+  ".fch",
+  ".cub",
+  ".cube",
   ".wfn",
   ".wfx",
   ".molden",
@@ -31,6 +34,9 @@ export const ALLOWED_WRITE_EXTENSIONS = new Set([
   ".json",
   ".md",
   ".svg",
+  ".png",
+  ".xlsx",
+  ".zip",
 ]);
 
 export function sanitizeFilePath(

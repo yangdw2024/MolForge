@@ -245,6 +245,62 @@ fn fs_main(in: VSOut) -> FSOut {
 }
 `;
 
+export const SURFACE_WGSL = /* wgsl */ `
+struct CameraUniforms {
+  view: mat4x4<f32>,
+  proj: mat4x4<f32>,
+  fog_params: vec4<f32>,
+  viewport: vec4<f32>,
+};
+
+@group(0) @binding(0) var<uniform> cam: CameraUniforms;
+
+struct SurfVSIn {
+  @location(0) pos: vec3<f32>,
+  @location(1) normal: vec3<f32>,
+  @location(2) color: vec4<f32>,
+};
+
+struct SurfVSOut {
+  @builtin(position) clip_pos: vec4<f32>,
+  @location(0) view_pos: vec3<f32>,
+  @location(1) view_normal: vec3<f32>,
+  @location(2) color: vec4<f32>,
+};
+
+@vertex
+fn vs_main(in: SurfVSIn) -> SurfVSOut {
+  var out: SurfVSOut;
+  let vp = (cam.view * vec4<f32>(in.pos, 1.0)).xyz;
+  let vn = (cam.view * vec4<f32>(in.normal, 0.0)).xyz;
+  out.clip_pos = cam.proj * vec4<f32>(vp, 1.0);
+  out.view_pos = vp;
+  out.view_normal = vn;
+  out.color = in.color;
+  return out;
+}
+
+@fragment
+fn fs_main(in: SurfVSOut) -> @location(0) vec4<f32> {
+  var n = normalize(in.view_normal);
+  if (n.z < 0.0) {
+    n = -n;
+  }
+  let light1 = normalize(vec3<f32>(0.52, 0.72, 0.45));
+  let light2 = normalize(vec3<f32>(-0.55, -0.35, 0.35));
+  let view_dir = vec3<f32>(0.0, 0.0, 1.0);
+  let diff1 = max(dot(n, light1), 0.0);
+  let diff2 = max(dot(n, light2), 0.0);
+  let half1 = normalize(light1 + view_dir);
+  let spec = pow(max(dot(n, half1), 0.0), 36.0);
+  let fresnel = pow(1.0 - max(dot(n, view_dir), 0.0), 2.5);
+
+  var rgb = in.color.rgb * (0.42 + 0.56 * diff1 + 0.14 * diff2) + vec3<f32>(0.24) * spec;
+  rgb += vec3<f32>(0.10, 0.14, 0.18) * fresnel;
+  return vec4<f32>(clamp(rgb, vec3<f32>(0.0), vec3<f32>(1.0)), in.color.a);
+}
+`;
+
 export const CELL_LINE_WGSL = /* wgsl */ `
 struct CameraUniforms {
   view: mat4x4<f32>,

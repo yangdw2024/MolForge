@@ -212,6 +212,16 @@ impl HubRegistry {
                 diagnostic: "内置纯 Rust SVD/Jacobi 平面拟合器就绪".into(),
             },
             CapabilitySpec {
+                id: "structure.torsion".into(),
+                title: "拓扑核-翼二面角与构象锁识别 (PROP-TORSION)".into(),
+                category: "结构表征".into(),
+                provider_plugin_id: "org.molforge.plugin.molforge_core".into(),
+                adapter: "molforge-core::topology".into(),
+                permission: "in-process:read-only".into(),
+                available: true,
+                diagnostic: "内置纯 Rust 稠环主核、四路径锐角二面角与非共价弱锁分析就绪".into(),
+            },
+            CapabilitySpec {
                 id: "smiles.etkdg".into(),
                 title: "RDKit SMILES → 3D 构象生成".into(),
                 category: "化学信息学".into(),

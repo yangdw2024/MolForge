@@ -1,6 +1,6 @@
 # @yangdw2024/molforge
 
-> CLI & Node.js launcher for **MolForge Studio 8.1.0** — Lightweight AI-assisted molecular workbench for 2D/3D structure prep, inspection & local engine orchestration (Electron + WebGPU + Rust).
+> CLI & Node.js launcher for **MolForge Studio 8.2.0** — Lightweight AI-assisted molecular workbench for 2D/3D structure prep, inspection & local engine orchestration (Electron + WebGPU + Rust).
 
 ## Instant Usage via `npx`
 
@@ -26,8 +26,8 @@ The wrapper searches:
 3. Local workspace builds (`desktop/release/win-unpacked`, `desktop/resources/core`, `molforge-core/target/release`)
 4. System `PATH`
 
-Download official v8.1.0 Windows installer & portable builds:
-https://github.com/yangdw2024/MolForge/releases/tag/v8.1.0
+Download official v8.2.0 Windows installer & portable builds:
+https://github.com/yangdw2024/MolForge/releases/tag/v8.2.0
 
 ## License
 

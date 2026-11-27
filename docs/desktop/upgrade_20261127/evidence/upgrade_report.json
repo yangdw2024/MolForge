@@ -43,9 +43,9 @@
     },
     {
         "id":  "U08",
-        "desc":  "OSC 4-char workflow (TB + MPP)",
+        "desc":  "OSC 4-char workflow (TB + MPP + Torsion)",
         "status":  "PASS",
-        "detail":  "status=completed nodes=4"
+        "detail":  "status=completed nodes=5"
     },
     {
         "id":  "U09",
@@ -63,6 +63,6 @@
         "id":  "U11",
         "desc":  "C盘Temp零残留 + D盘Scratch隔离校验",
         "status":  "PASS",
-        "detail":  "C_temp=0 D_mwfn_dirs=5"
+        "detail":  "C_temp=0 D_mwfn_dirs=8"
     }
 ]

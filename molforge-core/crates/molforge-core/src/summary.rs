@@ -144,7 +144,7 @@ pub fn analyze_geometry_shape(mol: &Molecule) -> String {
     }
 }
 
-fn jacobi_3x3_eigen(mut a: [[f64; 3]; 3]) -> ([f64; 3], [[f64; 3]; 3]) {
+pub(crate) fn jacobi_3x3_eigen(mut a: [[f64; 3]; 3]) -> ([f64; 3], [[f64; 3]; 3]) {
     let mut v = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
     for _ in 0..40 {
         let mut p = 0;

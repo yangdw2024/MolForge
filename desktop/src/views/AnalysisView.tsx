@@ -238,6 +238,15 @@ export const AnalysisView: React.FC = () => {
             </button>
             <button
               type="button"
+              data-testid="run-torsion-btn"
+              onClick={() => void runAndRecordAnalysis("PROP-TORSION")}
+              className="studio-btn"
+            >
+              <Play size={12.5} style={{ color: "var(--accent-primary)" }} />
+              <span>TORSION 二面角</span>
+            </button>
+            <button
+              type="button"
               data-testid="run-rdf-btn"
               onClick={() => void runAndRecordAnalysis("MD-RDF")}
               className="studio-btn"

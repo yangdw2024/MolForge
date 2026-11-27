@@ -435,6 +435,52 @@
                                          "title":  "分子平面性 MPP/SDP 计算"
                                      },
                                      {
+                                         "capability":  "structure.torsion",
+                                         "duration_ms":  0,
+                                         "node_id":  "torsion",
+                                         "output":  {
+                                                        "axis_used":  "core",
+                                                        "core_atoms":  [
+                                                                           1,
+                                                                           2,
+                                                                           3,
+                                                                           4,
+                                                                           5,
+                                                                           6,
+                                                                           7,
+                                                                           9,
+                                                                           11,
+                                                                           13
+                                                                       ],
+                                                        "short_contacts":  [
+                                                                               {
+                                                                                   "atoms":  [
+                                                                                                 12,
+                                                                                                 17
+                                                                                             ],
+                                                                                   "distance_a":  1.858,
+                                                                                   "kind":  "O···H",
+                                                                                   "threshold_a":  2.6
+                                                                               },
+                                                                               {
+                                                                                   "atoms":  [
+                                                                                                 12,
+                                                                                                 19
+                                                                                             ],
+                                                                                   "distance_a":  2.277,
+                                                                                   "kind":  "O···H",
+                                                                                   "threshold_a":  2.6
+                                                                               }
+                                                                           ],
+                                                        "torsions":  [
+
+                                                                     ]
+                                                    },
+                                         "status":  "completed",
+                                         "summary":  "二面角识别完成：0 条环-环扭转键，2 处分子内弱锁（主核 10 原子）",
+                                         "title":  "核心-侧翼二面角与构象锁提取"
+                                     },
+                                     {
                                          "capability":  null,
                                          "duration_ms":  0,
                                          "node_id":  "viz",
@@ -846,6 +892,44 @@
                                                                }
                                                            ]
                                        },
+                                "torsion":  {
+                                                "axis_used":  "core",
+                                                "core_atoms":  [
+                                                                   1,
+                                                                   2,
+                                                                   3,
+                                                                   4,
+                                                                   5,
+                                                                   6,
+                                                                   7,
+                                                                   9,
+                                                                   11,
+                                                                   13
+                                                               ],
+                                                "short_contacts":  [
+                                                                       {
+                                                                           "atoms":  [
+                                                                                         12,
+                                                                                         17
+                                                                                     ],
+                                                                           "distance_a":  1.858,
+                                                                           "kind":  "O···H",
+                                                                           "threshold_a":  2.6
+                                                                       },
+                                                                       {
+                                                                           "atoms":  [
+                                                                                         12,
+                                                                                         19
+                                                                                     ],
+                                                                           "distance_a":  2.277,
+                                                                           "kind":  "O···H",
+                                                                           "threshold_a":  2.6
+                                                                       }
+                                                                   ],
+                                                "torsions":  [
+
+                                                             ]
+                                            },
                                 "validate":  {
                                                  "charge":  0,
                                                  "multiplicity":  1,
@@ -859,7 +943,8 @@
                                    "approved_by_user":  true,
                                    "capabilities_used":  [
                                                              "structure.planarity",
-                                                             "qc.tight_binding"
+                                                             "qc.tight_binding",
+                                                             "structure.torsion"
                                                          ],
                                    "input_molecule_formula":  "C8H10N4O2",
                                    "input_molecule_name":  "Caffeine",
@@ -867,16 +952,16 @@
                                    "matched_skill_ids":  [
                                                              "org.molforge.skill.qc_frontier_orbital@1.0.0"
                                                          ],
-                                   "run_id":  "wfrun-1a21b780d27",
-                                   "timestamp_unix":  1795757182.247336,
+                                   "run_id":  "wfrun-1a21c2b8f82",
+                                   "timestamp_unix":  1795768946.5628345,
                                    "workflow_id":  "org.molforge.workflow.osc-4char",
-                                   "workflow_sha256":  "411c7a3f7ddfec392dd9c7e249d68a008a0cde08ea8b4ba06305313f8b21ce08",
+                                   "workflow_sha256":  "13dfb00a49b1edd92f3bb795864560548f0506a240dfa9bba715bc5f7f7fc8ae",
                                    "workflow_version":  "1.0.0"
                                },
                 "requires_approval":  false,
-                "run_id":  "wfrun-1a21b780d27",
+                "run_id":  "wfrun-1a21c2b8f82",
                 "status":  "completed",
-                "title":  "OSC 分子平面性与前线轨道快速表征",
+                "title":  "OSC 分子平面性、二面角与前线轨道快速表征",
                 "workflow_id":  "org.molforge.workflow.osc-4char"
             }
 }

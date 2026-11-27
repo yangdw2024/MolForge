@@ -494,4 +494,76 @@ export const molApi = {
       method: "POST",
       body: JSON.stringify(params),
     }),
+  orientMolecule: (apply = false) =>
+    requestJson<{
+      ok: boolean;
+      orientation: {
+        rotation_3x3: [
+          [number, number, number],
+          [number, number, number],
+          [number, number, number],
+        ];
+        center_angstrom: [number, number, number];
+        axis_used: string;
+        core_atoms: number[];
+        core_eig_ratio: [number, number];
+        core_tilt_in_pca_deg: number;
+        core_vs_pca_rot_deg: number;
+      };
+      document: DocumentSummary | null;
+    }>("/api/geometry/orient", {
+      method: "POST",
+      body: JSON.stringify({ apply }),
+    }),
+  alignBatch: (params: {
+    reference_path: string;
+    target_paths: string[];
+    allow_halogen_swap?: boolean;
+  }) =>
+    requestJson<{
+      ok: boolean;
+      reference_name: string;
+      reference_axis: string;
+      core_atoms: number[];
+      items: Array<{
+        path: string;
+        name?: string;
+        ok: boolean;
+        method?: string;
+        matched_count?: number;
+        used_core_count?: number;
+        rmsd_angstrom?: number;
+        max_residual_angstrom?: number;
+        mpp_angstrom?: number | null;
+        sdp_angstrom?: number | null;
+        primary_torsion_deg?: number | null;
+        error?: string;
+      }>;
+    }>("/api/geometry/align_batch", {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
+  buildDeliveryPackage: (params: {
+    input_paths: string[];
+    output_dir: string;
+    package_name?: string;
+    reference_path?: string;
+    asset_dir?: string;
+    allow_halogen_swap?: boolean;
+  }) =>
+    requestJson<{
+      ok: boolean;
+      output_dir: string;
+      package_dir: string;
+      zip_path: string;
+      zip_verified: boolean;
+      zip_entries: number;
+      total_files: number;
+      molecule_count: number;
+      manifest_sha256: string;
+      rows: Array<Record<string, unknown>>;
+    }>("/api/delivery/build_package", {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
 };

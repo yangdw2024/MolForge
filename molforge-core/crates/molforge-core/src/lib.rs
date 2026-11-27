@@ -8,6 +8,7 @@
 
 pub mod binary;
 pub mod commands;
+pub mod delivery;
 pub mod elements;
 pub mod engines;
 pub mod hub;
@@ -19,6 +20,7 @@ pub mod python_worker;
 pub mod qc;
 pub mod skills;
 pub mod summary;
+pub mod topology;
 pub mod workflow;
 
 use thiserror::Error;

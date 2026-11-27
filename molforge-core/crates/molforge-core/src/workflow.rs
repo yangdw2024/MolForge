@@ -13,6 +13,7 @@ use crate::model::Molecule;
 use crate::qc;
 use crate::skills::sha256_hex;
 use crate::summary;
+use crate::topology;
 use crate::{CoreError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -272,11 +273,11 @@ pub fn builtin_workflows() -> Vec<WorkflowSpec> {
             schema_version: "molforge.workflow/v1".into(),
             id: "org.molforge.workflow.osc-4char".into(),
             version: "1.0.0".into(),
-            title: "OSC 分子平面性与前线轨道快速表征".into(),
+            title: "OSC 分子平面性、二面角与前线轨道快速表征".into(),
             category: "有机半导体".into(),
-            description: "内置纯 Rust 零外部依赖流程：结构校验 → Tight-Binding 前线轨道 HOMO/LUMO → 最佳平面拟合 MPP/SDP 指标。".into(),
-            tags: vec!["osc".into(), "planarity".into(), "mpp".into(), "sdp".into(), "homo".into(), "平面性".into()],
-            requires_capabilities: vec!["qc.tight_binding".into(), "structure.planarity".into()],
+            description: "内置纯 Rust 零外部依赖流程：结构校验 → Tight-Binding 前线轨道 HOMO/LUMO → 最佳平面拟合 MPP/SDP → 核-翼锐角二面角与构象锁 (PROP-TORSION)。".into(),
+            tags: vec!["osc".into(), "planarity".into(), "mpp".into(), "sdp".into(), "torsion".into(), "homo".into(), "平面性".into(), "二面角".into()],
+            requires_capabilities: vec!["qc.tight_binding".into(), "structure.planarity".into(), "structure.torsion".into()],
             permissions: vec!["in-process:read-only".into()],
             nodes: vec![
                 WorkflowNode {
@@ -304,11 +305,19 @@ pub fn builtin_workflows() -> Vec<WorkflowSpec> {
                     params: serde_json::json!({}),
                 },
                 WorkflowNode {
+                    id: "torsion".into(),
+                    title: "核心-侧翼二面角与构象锁提取".into(),
+                    kind: NodeKind::Analyze,
+                    capability: Some("structure.torsion".into()),
+                    depends_on: vec!["validate".into()],
+                    params: serde_json::json!({}),
+                },
+                WorkflowNode {
                     id: "viz".into(),
                     title: "汇总 OSC 表征指标".into(),
                     kind: NodeKind::Visualize,
                     capability: None,
-                    depends_on: vec!["tb".into(), "mpp".into()],
+                    depends_on: vec!["tb".into(), "mpp".into(), "torsion".into()],
                     params: serde_json::json!({}),
                 },
             ],
@@ -610,6 +619,7 @@ pub fn capability_has_adapter(cap: &str) -> bool {
             | "md.gromacs_mdp"
             | "trajectory.rdf"
             | "structure.planarity"
+            | "structure.torsion"
             | "structure.export"
     )
 }
@@ -719,6 +729,18 @@ fn run_capability_node(
                 format!(
                     "平面性实算完成：MPP = {:.4} Å, SDP = {:.4} Å ({} 重原子)",
                     res.mpp_angstrom, res.sdp_angstrom, res.heavy_atom_count
+                ),
+                serde_json::to_value(res).unwrap_or_default(),
+            ))
+        }
+        "structure.torsion" => {
+            let res = topology::compute_torsions(mol).map_err(|e| e.to_string())?;
+            Ok((
+                format!(
+                    "二面角识别完成：{} 条环-环扭转键，{} 处分子内弱锁（主核 {} 原子）",
+                    res.torsions.len(),
+                    res.short_contacts.len(),
+                    res.core_atoms.len()
                 ),
                 serde_json::to_value(res).unwrap_or_default(),
             ))

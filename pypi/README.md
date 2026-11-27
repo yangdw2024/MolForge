@@ -1,6 +1,6 @@
-# MolForge Studio (`molforge-studio` 8.1.0)
+# MolForge Studio (`molforge-studio` 8.2.0)
 
-Lightweight Python launcher, binary fetcher, and local HTTP core helper for **MolForge Studio 8.1.0** — a lightweight molecular workbench for 2D/3D structure prep, inspection & local engine orchestration.
+Lightweight Python launcher, binary fetcher, and local HTTP core helper for **MolForge Studio 8.2.0** — a lightweight molecular workbench for 2D/3D structure prep, inspection & local engine orchestration.
 
 ## Installation
 
@@ -36,5 +36,5 @@ print("Health:", server_health())
 
 ## Links
 
-- GitHub Repository & Releases: https://github.com/yangdw2024/MolForge/releases/tag/v8.1.0
+- GitHub Repository & Releases: https://github.com/yangdw2024/MolForge/releases/tag/v8.2.0
 - npm CLI Wrapper: https://www.npmjs.com/package/@yangdw2024/molforge

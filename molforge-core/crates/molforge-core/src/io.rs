@@ -497,6 +497,169 @@ pub fn import_mforge_bytes(bytes: &[u8]) -> Result<Molecule> {
     ))
 }
 
+/// Parse Gaussian `.gjf` / `.com` input coordinates (Cartesian Angstrom).
+pub fn parse_gjf(text: &str, name: &str) -> Result<Molecule> {
+    let lines: Vec<&str> = text.lines().collect();
+    let mut i = 0usize;
+    // Skip link0 (%) and route (#) lines until first blank line
+    while i < lines.len() && !lines[i].trim().is_empty() {
+        i += 1;
+    }
+    while i < lines.len() && lines[i].trim().is_empty() {
+        i += 1;
+    }
+    // Title section (until next blank line)
+    let mut title = String::new();
+    while i < lines.len() && !lines[i].trim().is_empty() {
+        if title.is_empty() {
+            title = lines[i].trim().to_string();
+        }
+        i += 1;
+    }
+    while i < lines.len() && lines[i].trim().is_empty() {
+        i += 1;
+    }
+    // Charge and spin multiplicity line
+    let mut charge = None;
+    let mut mult = None;
+    if i < lines.len() {
+        let cm: Vec<&str> = lines[i].split_whitespace().collect();
+        if cm.len() >= 2 {
+            charge = cm[0].parse::<i32>().ok();
+            mult = cm[1].parse::<u32>().ok();
+        }
+        i += 1;
+    }
+
+    let mol_name = if !name.is_empty() {
+        name.to_string()
+    } else if !title.is_empty() {
+        title
+    } else {
+        "Gaussian Input".to_string()
+    };
+    let mut mol = Molecule::new(&mol_name);
+    mol.charge = charge;
+    mol.multiplicity = mult;
+
+    while i < lines.len() {
+        let t = lines[i].trim();
+        i += 1;
+        if t.is_empty() {
+            break;
+        }
+        let parts: Vec<&str> = t.split_whitespace().collect();
+        if parts.len() < 4 {
+            continue;
+        }
+        let sym_tok = parts[0].split('(').next().unwrap_or(parts[0]);
+        let z = if let Ok(num) = sym_tok.parse::<u8>() {
+            num
+        } else if let Some(el) = elements::by_symbol(sym_tok) {
+            el.z
+        } else {
+            continue;
+        };
+        let (Ok(x), Ok(y), Ok(zc)) = (
+            parts[parts.len() - 3].parse::<f64>(),
+            parts[parts.len() - 2].parse::<f64>(),
+            parts[parts.len() - 1].parse::<f64>(),
+        ) else {
+            continue;
+        };
+        let atom = mol.alloc_atom(z, [x, y, zc], [x, y]);
+        mol.atoms.push(atom);
+    }
+    if mol.atoms.is_empty() {
+        return Err(CoreError::Parse("no valid Cartesian atoms found in GJF".into()));
+    }
+    mol.reindex();
+    mol.has_3d = mol.atoms.iter().any(|a| a.pos[2].abs() > 1e-4);
+    mol.has_2d = true;
+    if mol.atoms.len() <= 80_000 {
+        infer_bonds_spatial(&mut mol);
+    }
+    Ok(mol)
+}
+
+/// Parse Gaussian `.fchk` / `.fch` formatted checkpoint atomic numbers and Cartesian coordinates (Bohr -> Angstrom).
+pub fn parse_fchk(text: &str, name: &str) -> Result<Molecule> {
+    const BOHR_TO_ANG: f64 = 0.529_177_210_903;
+    let lines: Vec<&str> = text.lines().collect();
+    let parse_block = |tag: &str| -> Option<Vec<String>> {
+        for (idx, line) in lines.iter().enumerate() {
+            let head = line.get(..40.min(line.len())).unwrap_or(line).trim();
+            if head == tag && line.len() > 40 {
+                if let Some(after_n) = line[40..].split("N=").nth(1) {
+                    let n: usize = after_n.split_whitespace().next()?.parse().ok()?;
+                    let mut vals = Vec::with_capacity(n);
+                    let mut j = idx + 1;
+                    while vals.len() < n && j < lines.len() {
+                        let nxt = lines[j];
+                        let flag = nxt.get(40..45.min(nxt.len())).unwrap_or("").trim();
+                        if !flag.is_empty() && matches!(flag, "I" | "R" | "C" | "H" | "L") && nxt[40..].contains("N=") {
+                            break;
+                        }
+                        for tok in nxt.split_whitespace() {
+                            vals.push(tok.to_string());
+                            if vals.len() >= n {
+                                break;
+                            }
+                        }
+                        j += 1;
+                    }
+                    return Some(vals);
+                }
+            }
+        }
+        None
+    };
+
+    let z_raw = parse_block("Atomic numbers")
+        .ok_or_else(|| CoreError::Parse("FCHK missing 'Atomic numbers'".into()))?;
+    let c_raw = parse_block("Current cartesian coordinates")
+        .ok_or_else(|| CoreError::Parse("FCHK missing 'Current cartesian coordinates'".into()))?;
+
+    let mut charge = None;
+    let mut mult = None;
+    for line in &lines {
+        if line.starts_with("Charge") && line.contains(" I ") {
+            if let Some(v) = line.split_whitespace().last().and_then(|s| s.parse::<i32>().ok()) {
+                charge = Some(v);
+            }
+        } else if line.starts_with("Multiplicity") && line.contains(" I ") {
+            if let Some(v) = line.split_whitespace().last().and_then(|s| s.parse::<u32>().ok()) {
+                mult = Some(v);
+            }
+        }
+    }
+
+    let n = z_raw.len();
+    if c_raw.len() < n * 3 {
+        return Err(CoreError::Parse("FCHK coordinate array shorter than atomic numbers".into()));
+    }
+    let mol_name = if name.is_empty() { "Gaussian FCHK" } else { name };
+    let mut mol = Molecule::new(mol_name);
+    mol.charge = charge;
+    mol.multiplicity = mult;
+
+    for i in 0..n {
+        let z: u8 = z_raw[i].parse().unwrap_or(6);
+        let x = c_raw[i * 3].parse::<f64>().unwrap_or(0.0) * BOHR_TO_ANG;
+        let y = c_raw[i * 3 + 1].parse::<f64>().unwrap_or(0.0) * BOHR_TO_ANG;
+        let zc = c_raw[i * 3 + 2].parse::<f64>().unwrap_or(0.0) * BOHR_TO_ANG;
+        let atom = mol.alloc_atom(z, [x, y, zc], [x, y]);
+        mol.atoms.push(atom);
+    }
+    mol.reindex();
+    mol.has_3d = mol.atoms.iter().any(|a| a.pos[2].abs() > 1e-4);
+    mol.has_2d = true;
+    if mol.atoms.len() <= 80_000 {
+        infer_bonds_spatial(&mut mol);
+    }
+    Ok(mol)
+}
+
 pub fn open_by_extension(path: &str, content: &[u8]) -> Result<Molecule> {
     let lower = path.to_ascii_lowercase();
     let stem = std::path::Path::new(path)
@@ -512,6 +675,10 @@ pub fn open_by_extension(path: &str, content: &[u8]) -> Result<Molecule> {
             parse_pdb(&text, stem)?
         } else if lower.ends_with(".mol") || lower.ends_with(".sdf") {
             parse_mol_v2000(&text, stem)?
+        } else if lower.ends_with(".fchk") || lower.ends_with(".fch") {
+            parse_fchk(&text, stem)?
+        } else if lower.ends_with(".gjf") || lower.ends_with(".com") {
+            parse_gjf(&text, stem)?
         } else {
             parse_xyz(&text, stem)?
         }

@@ -1,7 +1,7 @@
 {
   "name": "@yangdw2024/molforge",
-  "version": "8.1.0",
-  "description": "CLI & Node.js launcher for MolForge Studio 8.1.0 — lightweight molecular workbench for 2D/3D structure prep & local engine orchestration.",
+  "version": "8.2.0",
+  "description": "CLI & Node.js launcher for MolForge Studio 8.2.0 — lightweight molecular workbench for 2D/3D structure prep & local engine orchestration.",
   "type": "module",
   "main": "index.js",
   "types": "index.d.ts",

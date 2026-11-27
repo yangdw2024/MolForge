@@ -431,7 +431,7 @@ function registerIpcHandlers(): void {
       filters: [
         {
           name: "分子结构与工程",
-          extensions: ["mforge", "pdb", "xyz", "mol", "sdf", "cif", "mol2"],
+          extensions: ["mforge", "pdb", "xyz", "mol", "sdf", "cif", "mol2", "gjf", "fchk"],
         },
         { name: "所有文件", extensions: ["*"] },
       ],
@@ -457,7 +457,7 @@ function registerIpcHandlers(): void {
       title: "打开 Gaussian / ORCA / Multiwfn 量化或波函数文件",
       properties: ["openFile"],
       filters: [
-        { name: "量化与波函数文件", extensions: ["fchk", "fch", "log", "out", "wfn", "wfx", "molden", "mwfn"] },
+        { name: "量化、网格与波函数文件", extensions: ["fchk", "fch", "log", "out", "cub", "cube", "wfn", "wfx", "molden", "mwfn"] },
       ],
     });
     if (res.canceled || res.filePaths.length === 0) return { cancelled: true };

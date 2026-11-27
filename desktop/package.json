@@ -1,6 +1,6 @@
 {
   "name": "molforge-studio",
-  "version": "8.1.0",
+  "version": "8.2.0",
   "description": "MolForge Studio — Lightweight AI-assisted Molecular Workbench for 2D/3D Structure Prep, Inspection & Local Engine Orchestration",
   "author": "MolForge Team",
   "license": "Apache-2.0",

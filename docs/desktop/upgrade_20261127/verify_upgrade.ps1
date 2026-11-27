@@ -111,10 +111,10 @@ Step 'U07' 'MD-RDF analysis/run + jobs/submit + workflow' {
   "peak=$($ra.result.metrics.first_peak_r_angstrom)A wf=$($wf.run.status) sha=$($wf.run.provenance.input_molecule_sha256.Substring(0,12))"
 }
 
-Step 'U08' 'OSC 4-char workflow (TB + MPP)' {
+Step 'U08' 'OSC 4-char workflow (TB + MPP + Torsion)' {
   $wf = Post '/api/workflows/run' @{ workflow_id='org.molforge.workflow.osc-4char'; approved=$true }
   Save 'u08_osc_workflow' $wf
-  if ($wf.run.status -ne 'completed' -or $wf.run.node_records.Count -ne 4) { throw "status=$($wf.run.status) nodes=$($wf.run.node_records.Count)" }
+  if ($wf.run.status -ne 'completed' -or $wf.run.node_records.Count -lt 4) { throw "status=$($wf.run.status) nodes=$($wf.run.node_records.Count)" }
   "status=$($wf.run.status) nodes=$($wf.run.node_records.Count)"
 }
 

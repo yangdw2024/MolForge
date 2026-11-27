@@ -1,8 +1,8 @@
 ﻿{
-    "created_at":  1795757181.917546,
+    "created_at":  1795768946.2326293,
     "document_name":  "Caffeine",
     "error":  "",
-    "finished_at":  1795757181.917619,
+    "finished_at":  1795768946.232692,
     "input_revision":  0,
     "job_id":  "job-0002",
     "kind":  "md_rdf",
@@ -270,6 +270,6 @@
                                "volume_a3":  698.34
                            }
                },
-    "started_at":  1795757181.9176054,
+    "started_at":  1795768946.2326782,
     "status":  "completed"
 }

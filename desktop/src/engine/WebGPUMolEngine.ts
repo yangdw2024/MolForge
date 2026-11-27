@@ -1,5 +1,6 @@
 import { OrbitCamera, rayPickAtom } from "./camera";
-import { CELL_LINE_WGSL, CYLINDER_WGSL, SPHERE_WGSL } from "./shaders";
+import { CELL_LINE_WGSL, CYLINDER_WGSL, SPHERE_WGSL, SURFACE_WGSL } from "./shaders";
+import type { SurfaceMeshData } from "./cubeIsosurface";
 import type { BinaryMoleculeData, RepresentationMode } from "../types/studio";
 
 export interface EngineTelemetry {
@@ -21,15 +22,22 @@ export class WebGPUMolEngine {
   private spherePipeline: GPURenderPipeline | null = null;
   private cylinderPipeline: GPURenderPipeline | null = null;
   private cellPipeline: GPURenderPipeline | null = null;
+  private surfacePipeline: GPURenderPipeline | null = null;
 
   private uniformBuffer: GPUBuffer | null = null;
   private sphereBindGroup: GPUBindGroup | null = null;
   private cylinderBindGroup: GPUBindGroup | null = null;
   private cellBindGroup: GPUBindGroup | null = null;
+  private surfaceBindGroup: GPUBindGroup | null = null;
 
   private atomBuffer: GPUBuffer | null = null;
   private bondBuffer: GPUBuffer | null = null;
   private cellBuffer: GPUBuffer | null = null;
+  private surfaceEntries: Array<{
+    buffer: GPUBuffer | null;
+    vertexCount: number;
+    mesh: SurfaceMeshData;
+  }> = [];
 
   private atomCount = 0;
   private bondCount = 0;
@@ -117,6 +125,7 @@ export class WebGPUMolEngine {
     this.sphereBindGroup = bg;
     this.cylinderBindGroup = bg;
     this.cellBindGroup = bg;
+    this.surfaceBindGroup = bg;
 
     const depthStencil: GPUDepthStencilState = {
       depthWriteEnabled: true,
@@ -194,6 +203,53 @@ export class WebGPUMolEngine {
       primitive: { topology: "line-list" },
       depthStencil,
     });
+
+    const surfMod = device.createShaderModule({ code: SURFACE_WGSL });
+    this.surfacePipeline = device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: surfMod,
+        entryPoint: "vs_main",
+        buffers: [
+          {
+            arrayStride: 40,
+            stepMode: "vertex",
+            attributes: [
+              { shaderLocation: 0, offset: 0, format: "float32x3" },
+              { shaderLocation: 1, offset: 12, format: "float32x3" },
+              { shaderLocation: 2, offset: 24, format: "float32x4" },
+            ],
+          },
+        ],
+      },
+      fragment: {
+        module: surfMod,
+        entryPoint: "fs_main",
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: {
+                srcFactor: "src-alpha",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add",
+              },
+              alpha: {
+                srcFactor: "one",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add",
+              },
+            },
+          },
+        ],
+      },
+      primitive: { topology: "triangle-list", cullMode: "none" },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: "less",
+        format: "depth24plus",
+      },
+    });
   }
 
   setMolecule(data: BinaryMoleculeData, fitCam = true) {
@@ -225,6 +281,52 @@ export class WebGPUMolEngine {
   setSelection(indices: number[]) {
     this.selectedIndices = new Set(indices);
     this.rebuildBuffers();
+  }
+
+  public getMolecule(): BinaryMoleculeData | null {
+    return this.data;
+  }
+
+  public getSurfaceWorldPoints(): Float32Array | undefined {
+    if (this.surfaceEntries.length === 0) return undefined;
+    let total = 0;
+    for (const s of this.surfaceEntries) total += s.mesh.worldPoints.length;
+    if (total === 0) return undefined;
+    const merged = new Float32Array(total);
+    let offset = 0;
+    for (const s of this.surfaceEntries) {
+      merged.set(s.mesh.worldPoints, offset);
+      offset += s.mesh.worldPoints.length;
+    }
+    return merged;
+  }
+
+  public setSurfaceMeshes(meshes: SurfaceMeshData[]) {
+    for (const entry of this.surfaceEntries) {
+      entry.buffer?.destroy();
+    }
+    this.surfaceEntries = [];
+    for (const mesh of meshes) {
+      if (mesh.vertexCount <= 0) continue;
+      let buffer: GPUBuffer | null = null;
+      if (this.device) {
+        buffer = this.device.createBuffer({
+          size: Math.max(40, mesh.vertices.byteLength),
+          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        });
+        this.device.queue.writeBuffer(buffer, 0, mesh.vertices);
+      }
+      this.surfaceEntries.push({ buffer, vertexCount: mesh.vertexCount, mesh });
+    }
+    this.dirty = true;
+  }
+
+  public clearSurfaces() {
+    for (const entry of this.surfaceEntries) {
+      entry.buffer?.destroy();
+    }
+    this.surfaceEntries = [];
+    this.dirty = true;
   }
 
   pickAt(clientX: number, clientY: number): number {
@@ -428,55 +530,16 @@ export class WebGPUMolEngine {
     const t0 = performance.now();
     if (this.device && this.gpuCtx && this.uniformBuffer) {
       this.ensureDepth(w, h);
-      const view = this.camera.viewMatrix();
-      const proj = this.camera.projMatrix(w / Math.max(1, h));
-      const boundR = this.data?.boundingRadius ?? 8.0;
-      const fogNear = Math.max(1.0, this.camera.distance - boundR * 0.2);
-      const fogSpan = Math.max(6.0, boundR * 2.3);
-      const minAtomPx = (this.mode === "wireframe" ? 0.0 : 1.75) * dpr;
-      const minBondPx = (this.mode === "wireframe" ? 1.25 : this.mode === "stick" ? 2.1 : 1.45) * dpr;
-
-      const u = new Float32Array(64);
-      u.set(view, 0);
-      u.set(proj, 16);
-      u.set([fogNear, fogSpan, this.darkBg ? 1 : 0, this.getBondRadius()], 32);
-      u.set([w, h, minAtomPx, minBondPx], 36);
-      this.device.queue.writeBuffer(this.uniformBuffer, 0, u);
-
-      const encoder = this.device.createCommandEncoder();
-      const clearColor = this.darkBg ? { r: 0.043, g: 0.071, b: 0.125, a: 1 } : { r: 0.961, g: 0.969, b: 0.98, a: 1 };
-      const pass = encoder.beginRenderPass({
-        colorAttachments: [{ view: this.gpuCtx.getCurrentTexture().createView(), clearValue: clearColor, loadOp: "clear", storeOp: "store" }],
-        depthStencilAttachment: {
-          view: this.depthTexture!.createView(),
-          depthClearValue: 1.0,
-          depthLoadOp: "clear",
-          depthStoreOp: "store",
-        },
-      });
-
-      if (this.atomCount > 0 && this.atomBuffer && this.spherePipeline && this.sphereBindGroup) {
-        pass.setPipeline(this.spherePipeline);
-        pass.setBindGroup(0, this.sphereBindGroup);
-        pass.setVertexBuffer(0, this.atomBuffer);
-        pass.draw(4, this.atomCount);
-      }
-      if (this.bondCount > 0 && this.bondBuffer && this.cylinderPipeline && this.cylinderBindGroup) {
-        pass.setPipeline(this.cylinderPipeline);
-        pass.setBindGroup(0, this.cylinderBindGroup);
-        pass.setVertexBuffer(0, this.bondBuffer);
-        pass.draw(4, this.bondCount);
-      }
-      if (this.cellVertCount > 0 && this.cellBuffer && this.cellPipeline && this.cellBindGroup) {
-        pass.setPipeline(this.cellPipeline);
-        pass.setBindGroup(0, this.cellBindGroup);
-        pass.setVertexBuffer(0, this.cellBuffer);
-        pass.draw(this.cellVertCount);
-      }
-      pass.end();
-      this.device.queue.submit([encoder.finish()]);
+      this.encodeSceneToTarget(
+        this.gpuCtx.getCurrentTexture().createView(),
+        this.depthTexture!.createView(),
+        w,
+        h,
+        dpr,
+        false
+      );
     } else if (this.ctx2d && this.data) {
-      this.renderCanvas2DFallback(w, h);
+      this.renderCanvas2DFallback(this.ctx2d, w, h, false);
     }
 
     const frameDt = Math.max(0.5, performance.now() - t0);
@@ -492,9 +555,163 @@ export class WebGPUMolEngine {
     }
   }
 
-  private renderCanvas2DFallback(w: number, h: number) {
-    const ctx = this.ctx2d!;
+  private encodeSceneToTarget(
+    colorView: GPUTextureView,
+    depthView: GPUTextureView,
+    w: number,
+    h: number,
+    dpr: number,
+    transparentBg: boolean
+  ) {
+    if (!this.device || !this.uniformBuffer) return;
+    const view = this.camera.viewMatrix();
+    const proj = this.camera.projMatrix(w / Math.max(1, h));
+    const boundR = this.data?.boundingRadius ?? 8.0;
+    const fogNear = Math.max(1.0, this.camera.distance - boundR * 0.2);
+    const fogSpan = Math.max(6.0, boundR * 2.3);
+    const minAtomPx = (this.mode === "wireframe" ? 0.0 : 1.75) * dpr;
+    const minBondPx = (this.mode === "wireframe" ? 1.25 : this.mode === "stick" ? 2.1 : 1.45) * dpr;
+
+    const u = new Float32Array(64);
+    u.set(view, 0);
+    u.set(proj, 16);
+    u.set([fogNear, fogSpan, this.darkBg ? 1 : 0, this.getBondRadius()], 32);
+    u.set([w, h, minAtomPx, minBondPx], 36);
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, u);
+
+    const encoder = this.device.createCommandEncoder();
+    const clearColor = transparentBg
+      ? { r: 0, g: 0, b: 0, a: 0 }
+      : this.darkBg
+        ? { r: 0.043, g: 0.071, b: 0.125, a: 1 }
+        : { r: 0.961, g: 0.969, b: 0.98, a: 1 };
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [{ view: colorView, clearValue: clearColor, loadOp: "clear", storeOp: "store" }],
+      depthStencilAttachment: {
+        view: depthView,
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+      },
+    });
+
+    if (this.atomCount > 0 && this.atomBuffer && this.spherePipeline && this.sphereBindGroup) {
+      pass.setPipeline(this.spherePipeline);
+      pass.setBindGroup(0, this.sphereBindGroup);
+      pass.setVertexBuffer(0, this.atomBuffer);
+      pass.draw(4, this.atomCount);
+    }
+    if (this.bondCount > 0 && this.bondBuffer && this.cylinderPipeline && this.cylinderBindGroup) {
+      pass.setPipeline(this.cylinderPipeline);
+      pass.setBindGroup(0, this.cylinderBindGroup);
+      pass.setVertexBuffer(0, this.bondBuffer);
+      pass.draw(4, this.bondCount);
+    }
+    if (this.cellVertCount > 0 && this.cellBuffer && this.cellPipeline && this.cellBindGroup) {
+      pass.setPipeline(this.cellPipeline);
+      pass.setBindGroup(0, this.cellBindGroup);
+      pass.setVertexBuffer(0, this.cellBuffer);
+      pass.draw(this.cellVertCount);
+    }
+    if (this.surfacePipeline && this.surfaceBindGroup) {
+      pass.setPipeline(this.surfacePipeline);
+      pass.setBindGroup(0, this.surfaceBindGroup);
+      for (const s of this.surfaceEntries) {
+        if (s.buffer && s.vertexCount > 0) {
+          pass.setVertexBuffer(0, s.buffer);
+          pass.draw(s.vertexCount);
+        }
+      }
+    }
+    pass.end();
+    this.device.queue.submit([encoder.finish()]);
+  }
+
+  /** Render full scene into an offscreen high-resolution canvas (e.g. scale=3 for ~300-600 DPI figures). */
+  public async renderHighResCanvas(scale = 3, transparentBg = true): Promise<HTMLCanvasElement> {
+    const baseW = Math.max(320, this.canvas.clientWidth || 1200);
+    const baseH = Math.max(240, this.canvas.clientHeight || 900);
+    const w = Math.min(4096, Math.round(baseW * scale));
+    const h = Math.min(4096, Math.round(baseH * scale));
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = w;
+    outCanvas.height = h;
+    const outCtx = outCanvas.getContext("2d");
+    if (!outCtx) return outCanvas;
+
+    if (this.device) {
+      const colorTex = this.device.createTexture({
+        size: [w, h],
+        format: this.format,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+      });
+      const depthTex = this.device.createTexture({
+        size: [w, h],
+        format: "depth24plus",
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+
+      this.encodeSceneToTarget(colorTex.createView(), depthTex.createView(), w, h, scale, transparentBg);
+
+      const bytesPerRow = Math.ceil((w * 4) / 256) * 256;
+      const readBuf = this.device.createBuffer({
+        size: bytesPerRow * h,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+      });
+
+      const enc = this.device.createCommandEncoder();
+      enc.copyTextureToBuffer({ texture: colorTex }, { buffer: readBuf, bytesPerRow }, [w, h, 1]);
+      this.device.queue.submit([enc.finish()]);
+
+      await readBuf.mapAsync(GPUMapMode.READ);
+      const mapped = new Uint8Array(readBuf.getMappedRange());
+      const imgData = outCtx.createImageData(w, h);
+      const dst = imgData.data;
+      const isBgra = this.format === "bgra8unorm";
+      for (let y = 0; y < h; y++) {
+        const srcRow = y * bytesPerRow;
+        const dstRow = y * w * 4;
+        for (let x = 0; x < w; x++) {
+          const si = srcRow + x * 4;
+          const di = dstRow + x * 4;
+          if (isBgra) {
+            dst[di] = mapped[si + 2];
+            dst[di + 1] = mapped[si + 1];
+            dst[di + 2] = mapped[si];
+            dst[di + 3] = mapped[si + 3];
+          } else {
+            dst[di] = mapped[si];
+            dst[di + 1] = mapped[si + 1];
+            dst[di + 2] = mapped[si + 2];
+            dst[di + 3] = mapped[si + 3];
+          }
+        }
+      }
+      readBuf.unmap();
+      readBuf.destroy();
+      colorTex.destroy();
+      depthTex.destroy();
+      outCtx.putImageData(imgData, 0, 0);
+      return outCanvas;
+    }
+
+    if (this.data) {
+      this.renderCanvas2DFallback(outCtx, w, h, transparentBg);
+    }
+    return outCanvas;
+  }
+
+  private renderCanvas2DFallback(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    transparentBg: boolean
+  ) {
     ctx.clearRect(0, 0, w, h);
+    if (!transparentBg) {
+      ctx.fillStyle = this.darkBg ? "#0B1220" : "#F5F7FA";
+      ctx.fillRect(0, 0, w, h);
+    }
     if (!this.data) return;
     const { numAtoms, coords, atomRgba, bondPairs, numBonds } = this.data;
     const view = this.camera.viewMatrix();
@@ -505,7 +722,7 @@ export class WebGPUMolEngine {
       const vx = view[0] * x + view[4] * y + view[8] * z + view[12];
       const vy = view[1] * x + view[5] * y + view[9] * z + view[13];
       const vz = view[2] * x + view[6] * y + view[10] * z + view[14];
-      const cw = -vz || 1;
+      const cw = this.camera.orthographic ? 1 : -vz || 1;
       const sx = ((proj[0] * vx) / cw + 1) * 0.5 * w;
       const sy = (1 - (proj[5] * vy) / cw) * 0.5 * h;
       return [sx, sy, vz];
@@ -530,7 +747,9 @@ export class WebGPUMolEngine {
       const r = this.effectiveRadii[i];
       if (r <= 0.001) continue;
       const [sx, sy, vz] = project(coords[i * 3], coords[i * 3 + 1], coords[i * 3 + 2]);
-      const px = Math.max(1.5, (r * h) / Math.max(2, -vz * 0.72));
+      const px = this.camera.orthographic
+        ? Math.max(2, r * h * 0.5 * proj[5])
+        : Math.max(1.5, (r * h) / Math.max(2, -vz * 0.72));
       ctx.fillStyle = `rgb(${atomRgba[i * 4]},${atomRgba[i * 4 + 1]},${atomRgba[i * 4 + 2]})`;
       ctx.beginPath();
       ctx.arc(sx, sy, px, 0, Math.PI * 2);
@@ -541,11 +760,31 @@ export class WebGPUMolEngine {
         ctx.stroke();
       }
     }
+
+    // Translucent 2D surface decimated preview when running in Canvas2D fallback
+    for (const s of this.surfaceEntries) {
+      const v = s.mesh.vertices;
+      const triStep = s.vertexCount > 12000 ? Math.ceil(s.vertexCount / 12000) * 3 : 3;
+      for (let k = 0; k + 2 < s.vertexCount; k += triStep) {
+        const i0 = k * 10;
+        const [x0, y0] = project(v[i0], v[i0 + 1], v[i0 + 2]);
+        const rCol = Math.round(v[i0 + 6] * 255);
+        const gCol = Math.round(v[i0 + 7] * 255);
+        const bCol = Math.round(v[i0 + 8] * 255);
+        const alpha = v[i0 + 9] * 0.45;
+        ctx.fillStyle = `rgba(${rCol},${gCol},${bCol},${alpha})`;
+        ctx.fillRect(x0 - 2, y0 - 2, 4, 4);
+      }
+    }
   }
 
   destroy() {
     this.destroyed = true;
     if (this.rafId) cancelAnimationFrame(this.rafId);
+    for (const entry of this.surfaceEntries) {
+      entry.buffer?.destroy();
+    }
+    this.surfaceEntries = [];
     this.atomBuffer?.destroy();
     this.bondBuffer?.destroy();
     this.cellBuffer?.destroy();

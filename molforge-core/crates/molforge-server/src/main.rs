@@ -14,7 +14,7 @@ use molforge_core::qc;
 use molforge_core::skills;
 use molforge_core::summary;
 use molforge_core::workflow::{self, WorkflowRun};
-use molforge_core::{binary, elements, io};
+use molforge_core::{binary, delivery, elements, io, topology};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -229,6 +229,61 @@ fn dispatch_analysis(
                     "plot_y": p.signed_deviations_angstrom,
                     "x_label": "Heavy Atom Index",
                     "y_label": "Plane Deviation d_s (Å)",
+                }
+            }),
+        ));
+    }
+    if aid == "PROP-TORSION" || aid.contains("TORSION") || aid.contains("DIHEDRAL") {
+        let t = topology::compute_torsions(mol).map_err(|e| e.to_string())?;
+        let cw_count = t
+            .torsions
+            .iter()
+            .filter(|x| x.bond_type == "core-wing")
+            .count();
+        let plot_x: Vec<usize> = (1..=t.torsions.len()).collect();
+        let plot_y: Vec<f64> = t.torsions.iter().map(|x| x.angle).collect();
+        let first_desc = t
+            .torsions
+            .first()
+            .map(|x| {
+                format!(
+                    "θ1 = {:.2}° (环间 {:.2}°, d = {:.3} Å, {})",
+                    x.angle,
+                    x.interplanar_deg.unwrap_or(0.0),
+                    x.bond_length_a,
+                    x.bond_type
+                )
+            })
+            .unwrap_or_else(|| "未检测到环-环可旋转单键".to_string());
+        return Ok((
+            true,
+            json!({
+                "ok": true,
+                "result": {
+                    "analysis_id": analysis_id,
+                    "title": format!("拓扑核-翼锐角二面角与构象锁 ({analysis_id})"),
+                    "status": "completed",
+                    "summary": format!(
+                        "{}；共 {} 条旋转键（core-wing {}），{} 处弱相互作用锁（主核 {} 原子）",
+                        first_desc,
+                        t.torsions.len(),
+                        cw_count,
+                        t.short_contacts.len(),
+                        t.core_atoms.len()
+                    ),
+                    "metrics": {
+                        "torsion_count": t.torsions.len(),
+                        "core_wing_count": cw_count,
+                        "short_contact_count": t.short_contacts.len(),
+                        "core_atoms": t.core_atoms,
+                        "axis_used": t.axis_used,
+                        "torsions": t.torsions,
+                        "short_contacts": t.short_contacts,
+                    },
+                    "plot_x": plot_x,
+                    "plot_y": plot_y,
+                    "x_label": "Torsion Bond Index",
+                    "y_label": "Acute Torsion Angle (°)",
                 }
             }),
         ));
@@ -524,6 +579,7 @@ fn handle_request(
                 "items": [
                     { "id": "CORE-01", "category": "基础拓扑", "title": "紧束缚 pi-MO 轨道与能隙", "engine": "molforge-core", "state": "ready", "note": "纯 Rust Huckel pi-MO 求解器" },
                     { "id": "PROP-MPP", "category": "有机半导体表征", "title": "分子平面性 MPP / SDP 与离面偏离", "engine": "molforge-core", "state": "ready", "note": "纯 Rust 重原子最小二乘平面拟合（无需外部依赖）" },
+                    { "id": "PROP-TORSION", "category": "有机半导体表征", "title": "拓扑核-翼锐角二面角、环面夹角与构象锁", "engine": "molforge-core", "state": "ready", "note": "纯 Rust 最大稠环主核、四路径锐角择优 (|D|<=90°) 与非共价弱锁识别" },
                     { "id": "MD-RDF", "category": "分子动力学", "title": "径向分布函数 RDF g(r) 实算", "engine": "molforge-core", "state": "ready", "note": "纯 Rust 成对距离分布与配位数积分 g(r)/N(r)" },
                     { "id": "QC-01", "category": "从头算量子化学", "title": "CalChem v0.3.0 纯 Rust HF/DFT SCF", "engine": "calchem", "state": if cfg!(feature = "calchem") { "ready" } else { "disabled" }, "note": "进程内 HF/B3LYP/PBE/PBE0/CAM-B3LYP/wB97X-D 单点能与偶极" },
                     { "id": "QC-02", "category": "从头算量子化学", "title": "CalChem 几何结构优化", "engine": "calchem", "state": if cfg!(feature = "calchem") { "ready" } else { "disabled" }, "note": "纯 Rust 解析梯度几何优化" },
@@ -1913,6 +1969,149 @@ fn handle_request(
                 "document_replaced": document_replaced,
                 "document": latest_summary
             }))
+        }
+        (Method::Post, "/api/geometry/orient") => {
+            let body = read_json(req);
+            let apply = body["apply"].as_bool().unwrap_or(false);
+            let mol_snap = {
+                let st = state.lock().unwrap();
+                st.bus.mol.clone()
+            };
+            match topology::compute_core_first_orientation(&mol_snap) {
+                Ok(ori) => {
+                    let doc = if apply {
+                        let positions: Vec<(u32, [f64; 3])> = mol_snap
+                            .atoms
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(i, a)| ori.aligned_positions.get(i).map(|&p| (a.id, p)))
+                            .collect();
+                        let mut st = state.lock().unwrap();
+                        let _ = st.bus.execute(EditCommand::ApplyGeometry { positions });
+                        for (i, a) in st.bus.mol.atoms.iter_mut().enumerate() {
+                            if let Some(&p) = ori.aligned_positions.get(i) {
+                                a.pos2 = [p[0], p[1]];
+                            }
+                        }
+                        Some(st.doc_summary())
+                    } else {
+                        None
+                    };
+                    json_response(
+                        200,
+                        &json!({
+                            "ok": true,
+                            "orientation": ori,
+                            "document": doc,
+                        }),
+                    )
+                }
+                Err(e) => err_response(400, e.to_string()),
+            }
+        }
+        (Method::Post, "/api/geometry/align_batch") => {
+            let body = read_json(req);
+            let Some(ref_path) = body["reference_path"].as_str().map(|s| s.trim()).filter(|s| !s.is_empty()) else {
+                return err_response(400, "reference_path is required");
+            };
+            let target_paths: Vec<String> = body["target_paths"]
+                .as_array()
+                .map(|a| a.iter().filter_map(|v| v.as_str().map(|s| s.trim().to_string())).collect())
+                .unwrap_or_default();
+            if target_paths.is_empty() {
+                return err_response(400, "target_paths must be non-empty");
+            }
+            let allow_halogen_swap = body["allow_halogen_swap"].as_bool().unwrap_or(true);
+
+            let ref_bytes = match std::fs::read(ref_path) {
+                Ok(b) => b,
+                Err(e) => return err_response(400, format!("failed to read reference '{ref_path}': {e}")),
+            };
+            let ref_mol = match io::open_by_extension(ref_path, &ref_bytes) {
+                Ok(m) => m,
+                Err(e) => return err_response(400, e.to_string()),
+            };
+            let ref_ori = match topology::compute_core_first_orientation(&ref_mol) {
+                Ok(o) => o,
+                Err(e) => return err_response(400, e.to_string()),
+            };
+
+            let mut results = Vec::with_capacity(target_paths.len());
+            for tp in &target_paths {
+                let bytes = match std::fs::read(tp) {
+                    Ok(b) => b,
+                    Err(e) => {
+                        results.push(json!({ "path": tp, "ok": false, "error": e.to_string() }));
+                        continue;
+                    }
+                };
+                let mut mol = match io::open_by_extension(tp, &bytes) {
+                    Ok(m) => m,
+                    Err(e) => {
+                        results.push(json!({ "path": tp, "ok": false, "error": e.to_string() }));
+                        continue;
+                    }
+                };
+                match topology::align_molecule_to_reference(&ref_mol, &mol, allow_halogen_swap) {
+                    Ok(al) => {
+                        for (idx, p) in al.aligned_positions.iter().enumerate() {
+                            let s = [
+                                p[0] - ref_ori.center_angstrom[0],
+                                p[1] - ref_ori.center_angstrom[1],
+                                p[2] - ref_ori.center_angstrom[2],
+                            ];
+                            let r = &ref_ori.rotation_3x3;
+                            let rp = [
+                                r[0][0] * s[0] + r[0][1] * s[1] + r[0][2] * s[2],
+                                r[1][0] * s[0] + r[1][1] * s[1] + r[1][2] * s[2],
+                                r[2][0] * s[0] + r[2][1] * s[1] + r[2][2] * s[2],
+                            ];
+                            mol.atoms[idx].pos = rp;
+                            mol.atoms[idx].pos2 = [rp[0], rp[1]];
+                        }
+                        let planarity = summary::compute_planarity(&mol).ok();
+                        let torsions = topology::compute_torsions(&mol).ok();
+                        results.push(json!({
+                            "path": tp,
+                            "name": mol.name,
+                            "ok": true,
+                            "method": al.method,
+                            "matched_count": al.matched_count,
+                            "used_core_count": al.used_core_count,
+                            "rmsd_angstrom": al.rmsd_angstrom,
+                            "max_residual_angstrom": al.max_residual_angstrom,
+                            "mpp_angstrom": planarity.as_ref().map(|p| p.mpp_angstrom),
+                            "sdp_angstrom": planarity.as_ref().map(|p| p.sdp_angstrom),
+                            "primary_torsion_deg": torsions.as_ref().and_then(|t| t.torsions.first().map(|x| x.angle)),
+                            "torsions": torsions.map(|t| t.torsions),
+                        }));
+                    }
+                    Err(e) => {
+                        results.push(json!({ "path": tp, "ok": false, "error": e.to_string() }));
+                    }
+                }
+            }
+            json_response(
+                200,
+                &json!({
+                    "ok": true,
+                    "reference_name": ref_mol.name,
+                    "reference_axis": ref_ori.axis_used,
+                    "core_atoms": ref_ori.core_atoms,
+                    "items": results,
+                }),
+            )
+        }
+        (Method::Post, "/api/delivery/build_package") => {
+            let body = read_json(req);
+            let req_pkg: delivery::DeliveryPackageRequest = match serde_json::from_value(body) {
+                Ok(v) => v,
+                Err(e) => return err_response(400, format!("invalid delivery request: {e}")),
+            };
+            match delivery::build_collaborator_delivery_package(&req_pkg) {
+                Ok(res) => json_response(200, &json!(res)),
+                Err(e) => err_response(400, e.to_string()),
+            }
         }
         (Method::Post, "/api/ai/plan_workflow") => {
             let body = read_json(req);
