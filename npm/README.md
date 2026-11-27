@@ -1,6 +1,6 @@
 # @yangdw2024/molforge
 
-> Cross-platform CLI & Node.js wrapper for **MolForge Studio 8.1.0** — Electron 35 + React 19 + WebGPU + Pure Rust Core + CalChem v0.3.0.
+> CLI & Node.js launcher for **MolForge Studio 8.1.0** — Lightweight AI-assisted molecular workbench for 2D/3D structure prep, inspection & local engine orchestration (Electron + WebGPU + Rust).
 
 ## Instant Usage via `npx`
 

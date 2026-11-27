@@ -1,6 +1,6 @@
 # MolForge Studio (`molforge-studio` 8.1.0)
 
-Lightweight Python launcher, binary fetcher, and local HTTP core helper for **MolForge Studio 8.1.0** (Electron 35 + React 19 + WebGPU + pure Rust `molforge-server` + CalChem v0.3.0).
+Lightweight Python launcher, binary fetcher, and local HTTP core helper for **MolForge Studio 8.1.0** — a lightweight molecular workbench for 2D/3D structure prep, inspection & local engine orchestration.
 
 ## Installation
 

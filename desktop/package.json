@@ -1,7 +1,7 @@
 {
   "name": "molforge-studio",
   "version": "8.1.0",
-  "description": "MolForge Studio — Scientific Precision Electron Desktop Workstation for Molecular Modeling, Quantum Chemistry & Organic Semiconductors",
+  "description": "MolForge Studio — Lightweight AI-assisted Molecular Workbench for 2D/3D Structure Prep, Inspection & Local Engine Orchestration",
   "author": "MolForge Team",
   "license": "Apache-2.0",
   "private": true,
